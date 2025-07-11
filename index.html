@@ -29,8 +29,8 @@
         /* --- CHANGE: Increased transparency and blur on the filter panel --- */
         #filterPanel { 
             transition: transform 0.3s ease-in-out; 
-            background-color: rgba(249, 250, 251, 0.9); /* Made more transparent */
-            backdrop-filter: blur(6px); /* Increased blur */
+            background-color: rgba(249, 250, 251, 0.8); /* Made more transparent */
+            backdrop-filter: blur(4px); /* Increased blur */
         }
         .filter-drawer-open { transform: translateX(0) !important; }
         
@@ -140,7 +140,7 @@
         </div>
     </div>
 
-    <aside id="filterPanel" class="bg-gray-50 p-4 shadow-lg fixed inset-y-0 left-0 transform -translate-x-full z-40 w-4/5 sm:w-1/3 md:w-1/4 lg:w-1/5 xl:w-1/6 overflow-y-auto mt-16 max-h-[calc(100%-4rem)] transition-transform duration-300 ease-in-out rounded-r-lg">
+    <aside id="filterPanel" class="bg-gray-50 p-4 shadow-lg fixed inset-y-0 left-0 transform -translate-x-full z-40 w-4/5 sm:w-1/3 md:w-1/5 lg:w-1/6 xl:w-[280px] overflow-y-auto mt-16 max-h-[calc(100%-4rem)] transition-transform duration-300 ease-in-out rounded-r-lg">
         <div class="flex justify-between items-center mb-4">
             <h2 id="filtersTitle" class="text-xl headline tt-dark-blue">Filtrid</h2>
             <button id="closeFilterButton" class="text-tt-magenta hover:text-tt-dark-blue"><i class="fas fa-times fa-lg"></i></button>
