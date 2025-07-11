@@ -1,5 +1,195 @@
-    <!-- (Your body content ends here) -->
+<!DOCTYPE html>
+<html lang="et">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalTech kursused sügis 2025</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Proxima Nova', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"; line-height: 1.4; }
+        .proxima-nova-bold { font-weight: 700; }
+        .tt-dark-blue { color: #342b60; }
+        .bg-tt-dark-blue { background-color: #342b60; }
+        .hover\:bg-tt-dark-blue-hover:hover { background-color: #2a224d; }
+        .tt-light-blue { color: #4dbed2; }
+        .bg-tt-light-blue { background-color: #4dbed2; }
+        .tt-grey-1 { color: #9396b0; }
+        .border-tt-grey-1 { border-color: #9396b0; }
+        .tt-magenta { color: #e4067e; }
+        .bg-tt-magenta { background-color: #e4067e; }
+        .text-tt-magenta { color: #e4067e; }
+        .accent-tt-magenta { accent-color: #e4067e; }
+        .bg-tt-grey-2 { background-color: #f8f9fa; }
+
+        .headline { font-family: 'Proxima Nova', sans-serif; font-weight: 700; text-transform: uppercase; }
+        .body-text { font-family: 'Proxima Nova', sans-serif; font-weight: 400; text-transform: none; }
+
+        #filterPanel { 
+            transition: transform 0.3s ease-in-out; 
+            background-color: rgba(249, 250, 251, 0.95);
+            backdrop-filter: blur(4px);
+        }
+        .filter-drawer-open { transform: translateX(0) !important; }
+        
+        .filter-pill { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; margin-right: 0.5rem; margin-bottom: 0.5rem; background-color: #e9ecef; color: #495057; border-radius: 9999px; font-size: 0.875rem; border: 1px solid #ced4da; }
+        .filter-pill-remove { margin-left: 0.5rem; background: none; border: none; color: #6c757d; cursor: pointer; padding: 0; line-height: 1; }
+        
+        /* --- CALENDAR STYLES --- */
+        .calendar-grid-wrapper { overflow-x: auto; border: 1px solid #dee2e6; border-radius: 0.25rem; background-color: #fff; }
+        .calendar-grid { display: grid; grid-template-columns: 60px repeat(7, minmax(140px, 1fr)); }
+        
+        .grid-header-cell, .time-ruler-header {
+            padding: 0.75rem 0.5rem; text-align: center; font-weight: 600; color: white;
+            background-color: #342b60; border-right: 1px solid #4a3f7a; border-bottom: 1px solid #4a3f7a;
+            font-size: 0.875rem; line-height: 1.25;
+        }
+        .time-ruler-header { border-right: 1px solid #4a3f7a; }
+
+        .grid-body-cell, .time-ruler-body {
+            position: relative; border-right: 1px solid #e9ecef;
+            background-image: linear-gradient(to bottom, #f1f3f5 1px, transparent 1px);
+            background-size: 100% 60px;
+        }
+        .time-ruler-body { background-color: #f8f9fa; }
+        
+        .time-grid-ruler-hour { position: absolute; right: 0.5rem; transform: translateY(-50%); font-size: 0.75rem; color: #6c757d; }
+
+        .session-card {
+            position: absolute; border-left: 4px solid #e4067e; transition: all 0.2s ease-in-out;
+            z-index: 10; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border-radius: 0 2px 2px 0; padding: 0.25rem 0.5rem; overflow: hidden;
+            display: flex; flex-direction: column; cursor: default;
+        }
+        .session-card:hover { z-index: 11; transform: scale(1.02); box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
+        .session-card-content { font-size: 0.75rem; line-height: 1.3; }
+        .session-card .course-name { font-weight: 600; color: #342b60; }
+        .session-card .session-details { color: #495057; }
+        
+        /* --- CUSTOM TOOLTIP --- */
+        #customTooltip {
+            position: fixed;
+            display: none;
+            padding: 0.75rem;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            z-index: 100;
+            pointer-events: none;
+            max-width: 300px;
+            white-space: pre-wrap;
+        }
+        .tooltip-title { font-weight: bold; margin-bottom: 0.25rem; }
+        .tooltip-section-title { font-weight: bold; margin-top: 0.5rem; font-size: 0.8rem; text-transform: uppercase; color: #ccc;}
+
+        .course-description { -ms-overflow-style: none; scrollbar-width: none; }
+        .course-description::-webkit-scrollbar { display: none; }
+        
+        .searchable-dropdown { position: relative; }
+        .searchable-dropdown-list {
+            position: absolute; left: 0; right: 0; background: white; border: 1px solid #d1d5db; z-index: 50;
+            max-height: 200px; overflow-y: auto; border-radius: 0 0 0.375rem 0.375rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .searchable-dropdown-list-item { padding: 0.5rem; cursor: pointer; }
+        .searchable-dropdown-list-item:hover { background-color: #f3f4f6; }
+
+        #scrollTopBtn {
+            position: fixed; bottom: 20px; right: 20px; width: 40px; height: 40px; background-color: #342b60; color: white;
+            border-radius: 50%; display: none; align-items: center; justify-content: center; cursor: pointer; opacity: 0.8; transition: opacity 0.3s; z-index: 50;
+        }
+        #scrollTopBtn:hover { opacity: 1; }
+    </style>
+</head>
+<body class="bg-white text-black body-text">
+
+    <header class="sticky top-0 z-50 bg-tt-dark-blue text-white p-4 shadow-md">
+        <div class="container mx-auto flex items-center justify-between">
+            <div class="flex items-center">
+                <button id="filterToggleButton" class="mr-4 p-2 text-white hover:bg-tt-dark-blue-hover rounded" aria-label="Ava filtrid"><i class="fas fa-bars fa-lg"></i></button>
+                <h1 id="pageTitle" class="text-2xl proxima-nova-bold uppercase">TalTech kursused sügis 2025</h1>
+            </div>
+            <button id="languageToggle" class="p-2 bg-tt-magenta hover:bg-opacity-80 rounded" aria-label="Switch language"><i class="fas fa-globe"></i> <span id="langIndicator">EN</span></button>
+        </div>
+    </header>
+
+    <div class="container mx-auto p-4 my-4 bg-gray-50 bg-opacity-90 rounded shadow">
+        <div class="flex flex-col md:flex-row md:items-end gap-4">
+            <div class="flex-grow relative md:w-3/5">
+                <label for="searchInput" id="searchInputLabel" class="block text-sm font-medium text-gray-700 mb-1">Otsisõna (eralda komaga)</label>
+                <input type="search" id="searchInput" class="p-2 border border-gray-300 bg-white rounded-md w-full body-text" placeholder="Sisesta otsisõna või -sõnad...">
+            </div>
+            <div class="md:w-1/5">
+                <label for="searchFieldSelector" id="searchFieldSelectorLabel" class="block text-sm font-medium text-gray-700 mb-1">Otsi väljal</label>
+                <select id="searchFieldSelector" class="p-2 border border-gray-300 bg-white rounded-md w-full text-sm h-[2.625rem]"> 
+                    <option value="all">Kõik väljad</option>
+                    <option value="title">Aine nimetus</option>
+                    <option value="course_id">Ainekood</option>
+                    <option value="keyword">Märksõna</option>
+                    <option value="instructor">Õppejõud</option>
+                </select>
+            </div>
+            <div class="flex gap-2 mt-2 md:mt-0">
+                <button id="searchButton" class="bg-tt-magenta text-white p-2 rounded hover:bg-opacity-80 headline text-sm flex-grow h-[2.625rem]"><i class="fas fa-search mr-1"></i> <span id="searchButtonText">Otsi</span></button>
+                <button id="resetSearchButton" class="bg-gray-300 text-gray-700 p-2 rounded hover:bg-gray-400 headline text-sm flex-grow h-[2.625rem]"><i class="fas fa-undo mr-1"></i> <span id="resetSearchButtonText">Lähtesta</span></button>
+            </div>
+        </div>
+    </div>
+
+    <aside id="filterPanel" class="bg-gray-50 p-4 shadow-lg fixed inset-y-0 left-0 transform -translate-x-full z-40 w-4/5 sm:w-1/3 md:w-1/4 lg:w-1/5 xl:w-1/6 overflow-y-auto mt-16 max-h-[calc(100%-4rem)] transition-transform duration-300 ease-in-out rounded-r-lg">
+        <div class="flex justify-between items-center mb-4">
+            <h2 id="filtersTitle" class="text-xl headline tt-dark-blue">Filtrid</h2>
+            <button id="closeFilterButton" class="text-tt-magenta hover:text-tt-dark-blue"><i class="fas fa-times fa-lg"></i></button>
+        </div>
+        <div class="space-y-4">
+            <div><label for="schoolFilter" id="schoolFilterLabel" class="block text-sm font-medium tt-dark-blue headline">Teaduskond</label><select id="schoolFilter" class="mt-1 block w-full p-2 border-tt-grey-1 rounded-md shadow-sm text-sm"></select></div>
+            <div><label for="instituteFilter" id="instituteFilterLabel" class="block text-sm font-medium tt-dark-blue headline">Instituut</label><select id="instituteFilter" class="mt-1 block w-full p-2 border-tt-grey-1 rounded-md shadow-sm text-sm" disabled></select></div>
+            <div class="searchable-dropdown"><label for="groupFilterInput" id="groupFilterLabel" class="block text-sm font-medium tt-dark-blue headline">Rühm</label><input type="search" id="groupFilterInput" class="mt-1 block w-full p-2 border-tt-grey-1 rounded-md shadow-sm text-sm"><div id="groupFilterList" class="searchable-dropdown-list hidden"></div></div>
+            <div><label for="assessmentFormFilter" id="assessmentFormFilterLabel" class="block text-sm font-medium tt-dark-blue headline">Hindamisvorm</label><select id="assessmentFormFilter" class="mt-1 block w-full p-2 border-tt-grey-1 rounded-md shadow-sm text-sm"></select></div>
+            <div>
+                <label id="eapFilterLabel" class="block text-sm font-medium tt-dark-blue headline mb-1">EAP</label>
+                <div class="space-y-1">
+                    <label class="flex items-center text-sm"><input type="radio" name="eapFilter" value="" class="h-4 w-4 text-tt-magenta" checked><span id="eapAllLabel" class="ml-2">Kõik</span></label>
+                    <label class="flex items-center text-sm"><input type="radio" name="eapFilter" value="3" class="h-4 w-4 text-tt-magenta"><span id="eap3Label" class="ml-2">3 EAP</span></label>
+                    <label class="flex items-center text-sm"><input type="radio" name="eapFilter" value="6" class="h-4 w-4 text-tt-magenta"><span id="eap6Label" class="ml-2">6 EAP</span></label>
+                </div>
+            </div>
+            <div>
+                <label id="languageFilterLabel" class="block text-sm font-medium tt-dark-blue headline mb-1">Õppekeel</label>
+                <div class="space-y-1">
+                    <label class="flex items-center text-sm"><input type="radio" name="languageFilter" value="" class="h-4 w-4 text-tt-magenta" checked><span id="langAllLabel" class="ml-2">Kõik</span></label>
+                    <label class="flex items-center text-sm"><input type="radio" name="languageFilter" value="et" class="h-4 w-4 text-tt-magenta"><span id="langEtLabel" class="ml-2">Eesti keel</span></label>
+                    <label class="flex items-center text-sm"><input type="radio" name="languageFilter" value="en" class="h-4 w-4 text-tt-magenta"><span id="langEnLabel" class="ml-2">Inglise keel</span></label>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <div class="container mx-auto p-4">
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
+            <div id="resultsCounter" class="text-tt-dark-blue font-semibold"></div>
+            <div id="viewToggleButtonContainer" class="text-right"></div>
+        </div>
+        <div id="activeFiltersDisplay" class="mb-4"></div>
+        
+        <main id="courseList" class="w-full grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"></main>
+        <div id="weeklyView" class="w-full hidden"></div>
+    </div>
     
+    <button id="scrollTopBtn" title="Go to top"><i class="fas fa-arrow-up"></i></button>
+
+    <div id="loadingIndicator" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-[100]">
+        <div class="bg-white p-5 rounded-lg shadow-xl flex flex-col items-center">
+            <i class="fas fa-spinner fa-spin fa-3x tt-dark-blue"></i>
+            <p id="loadingText" class="mt-2 text-tt-dark-blue body-text">Laen andmeid...</p>
+        </div>
+    </div>
+    
+    <div id="customTooltip"></div>
+
     <script>
         // --- DOM Elements ---
         const searchInputDOM = document.getElementById('searchInput');
@@ -21,7 +211,7 @@
         const languageFilterRadiosDOM = document.querySelectorAll('input[name="languageFilter"]');
 
         // --- State & Constants ---
-        let allCourses = [], fullTimetableData = null, filteredCourses = [], currentLanguage = 'et', isCalendarViewVisible = false, totalFilteredSessions = 0;
+        let allCourses = [], filteredCourses = [], currentLanguage = 'et', isCalendarViewVisible = false, totalFilteredSessions = 0;
         const SEMESTER_START = new Date('2025-09-01T00:00:00'), SEMESTER_END = new Date('2026-01-31T23:59:59');
         const STUDY_WEEK_CUTOFF = new Date('2025-12-21T23:59:59');
         const CALENDAR_SESSION_LIMIT = 1000;
@@ -31,7 +221,6 @@
         
         // --- Data Sources ---
         const DATA_URL_COURSES = './courses_new.json';
-        const DATA_URL_TIMETABLE = './all_daily_timetable.json'; // Note: This is now only used as a fallback or for session counting logic if needed
         const DATA_URL_COURSE_GROUP_MAP = './course_to_groups_map.json';
         const DATA_URL_GROUP_FACULTY_MAP = './tpg2teaduskond_map.json';
 
@@ -150,7 +339,6 @@
             
             allUniqueGroups = [...new Set(Object.values(courseToGroupMap).flat())].sort();
             
-            // --- FIX: Build the school-to-institutes map right after initial data is loaded ---
             schoolToInstitutes.clear();
             allCourses.forEach(course => {
                 if (course.school_code) {
@@ -164,9 +352,7 @@
             });
         }
 
-        // --- FIX: This function is now only used for the small, filtered timetable data ---
         function mergeTimetableData(filteredTimetableData) {
-            // First, clear out any old session data from previous calendar views
             allCourses.forEach(course => {
                 course.sessions = [];
                 course.uniqueInstructors.clear();
@@ -238,16 +424,13 @@
                     const isOwnedByFaculty = course.school_code === activeFilters.school;
                     const isTakenByFacultyGroup = [...course.associatedGroups].some(group => groupsOfFaculty.has(group));
                     
-                    // --- FIX: Correct filtering logic for institute ---
-                    // If an institute is selected, the course must match BOTH the school and institute.
-                    // If no institute is selected, it can match either being owned by the faculty OR being taken by a faculty group.
                     if (activeFilters.institute) {
                         if (course.school_code !== activeFilters.school || course.institute_name !== activeFilters.institute) return false;
                     } else {
                         if (!isOwnedByFaculty && !isTakenByFacultyGroup) return false;
                     }
-                } else if (activeFilters.institute && course.institute_name !== activeFilters.institute) {
-                     return false;
+                } else if (activeFilters.institute) {
+                     if (course.institute_name !== activeFilters.institute) return false;
                 }
 
                 if (activeFilters.eap && course.eap != activeFilters.eap) return false;
@@ -258,10 +441,7 @@
                 return true;
             });
             
-            // This is tricky now. We can't know the session count until we query the server.
-            // We'll optimistically assume it's under the limit and let the calendar view handle the real count.
-            totalFilteredSessions = 0; // Reset this.
-
+            totalFilteredSessions = 0; 
             render();
         }
         
@@ -324,7 +504,7 @@
                     const cardRoot = button.closest('.flex-col');
                     const content = cardRoot.querySelector('.expandable-content');
                     const desc = cardRoot.querySelector('.course-description');
-                    if (!content || !desc) return; // Safety check
+                    if (!content || !desc) return;
                     
                     const icon = button.querySelector('i');
                     const span = button.querySelector('span');
@@ -348,21 +528,18 @@
             });
         }
         
-        // --- FIX: This entire function is replaced with the new server-side logic ---
         async function toggleCalendarView() {
             const loadingText = document.getElementById('loadingText');
             loadingText.textContent = uiTexts.loadingCalendarText[currentLanguage];
             loadingIndicatorDOM.classList.remove('hidden');
 
             try {
-                // 1. Get the list of course IDs the user is currently looking at.
                 const courseIds = filteredCourses.map(course => course.id).join(',');
-                if (!courseIds) { // Don't fetch if there are no courses
+                if (!courseIds) {
                     totalFilteredSessions = 0;
                     throw new Error("No courses selected.");
                 }
 
-                // 2. Ask our new "smart assistant" for just the data for these courses.
                 const response = await fetch(`/.netlify/functions/getTimetable?courses=${courseIds}`);
                 if (!response.ok) {
                     throw new Error(`Server returned status ${response.status}`);
@@ -370,29 +547,21 @@
                 
                 const filteredTimetableData = await response.json();
                 
-                // 3. The response IS the filtered data. Let's find out the session count.
                 totalFilteredSessions = filteredTimetableData.length;
 
                 if (totalFilteredSessions > CALENDAR_SESSION_LIMIT) {
-                    // Update the UI to show the limit was exceeded, even after fetching.
                     updateViewToggleButton(); 
                     throw new Error("Calendar limit exceeded after fetching.");
                 }
                 
-                // 4. Merge this small slice of data into our courses.
                 mergeTimetableData(filteredTimetableData);
 
             } catch(error) {
                 console.error("Failed to load calendar data:", error);
-                // Don't show the view, just hide the loading indicator. The error will be displayed in the button.
                 loadingIndicatorDOM.classList.add('hidden');
                 return;
             } finally {
-                loadingText.textContent = uiTexts.loadingText[currentLanguage];
-                // Hide loading indicator at the end, unless an error already hid it.
-                if(!loadingIndicatorDOM.classList.contains('hidden')) {
-                   loadingIndicatorDOM.classList.add('hidden');
-                }
+                loadingIndicatorDOM.classList.add('hidden');
             }
             
             isCalendarViewVisible = true;
@@ -611,32 +780,25 @@
             updateDependentFilters();
         }
         
-        // --- FIX: This function no longer depends on timetable data ---
         function updateDependentFilters() {
             const schoolCode = schoolFilterDOM.value;
-            activeFilters.school = schoolCode;
-
-            // The institute filter should ALWAYS be enabled.
+            
             instituteFilterDOM.disabled = false;
             
-            // Populate institutes based on the selected school
             const institutes = new Set();
             if (schoolCode) {
-                // If a school is selected, use the pre-built map to find its institutes
                 (schoolToInstitutes.get(schoolCode) || []).forEach(inst => institutes.add(inst));
             } else {
-                // If no school is selected, show all institutes from all schools
                 allCourses.forEach(course => {
                     if (course.institute_name) institutes.add(course.institute_name);
                 });
             }
 
-            const currentInstitute = instituteFilterDOM.value;
+            const currentInstitute = activeFilters.institute;
             instituteFilterDOM.innerHTML = `<option value="">${uiTexts.allInstitutes[currentLanguage]}</option>`;
             [...institutes].sort().forEach(i => instituteFilterDOM.add(new Option(i, i)));
             instituteFilterDOM.value = currentInstitute;
             
-            // Group filter logic remains the same
             groupFilterInput.value = activeFilters.group || '';
             let relevantGroups = [];
             if (schoolCode) {
@@ -683,9 +845,7 @@
 
             if (type === 'school') {
                 activeFilters.institute = '';
-                activeFilters.group = '';
-                if (document.getElementById('instituteFilter')) document.getElementById('instituteFilter').value = '';
-                if (document.getElementById('groupFilterInput')) document.getElementById('groupFilterInput').value = '';
+                document.getElementById('instituteFilter').value = '';
             }
 
             applyAllFiltersAndRender(false);
@@ -693,7 +853,7 @@
         }
 
         function clearAllFilters() { 
-            Object.keys(activeFilters).forEach(k => activeFilters[k] = ''); 
+            Object.keys(activeFilters).forEach(k => { activeFilters[k] = ''; });
             ['searchInput', 'schoolFilter', 'instituteFilter', 'assessmentFormFilter', 'groupFilterInput'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';}); 
             ['eapFilter','languageFilter'].forEach(name=>document.querySelector(`input[name="${name}"][value=""]`).checked=true);
             searchFieldSelectorDOM.value = 'all'; 
@@ -733,14 +893,11 @@
             document.getElementById('resetSearchButton').addEventListener('click', clearAllFilters);
             searchInputDOM.addEventListener('input', debounce(() => { activeFilters.searchTerm = searchInputDOM.value; activeFilters.searchFieldType = searchFieldSelectorDOM.value; applyAllFiltersAndRender(); }, 300));
             
-            // --- FIX: Correctly chain the filter updates ---
             schoolFilterDOM.addEventListener('change', e => { 
                 activeFilters.school = e.target.value; 
-                // When school changes, reset the institute
                 activeFilters.institute = ''; 
-                instituteFilterDOM.value = '';
-                applyAllFiltersAndRender(false); 
                 updateDependentFilters(); 
+                applyAllFiltersAndRender(false); 
             });
             instituteFilterDOM.addEventListener('change', e => { 
                 activeFilters.institute = e.target.value; 
