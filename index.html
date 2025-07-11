@@ -220,24 +220,12 @@
         let sessionDataCache = null, activeFilters = { searchTerm: '', searchFieldType: 'all', school: '', institute: '', eap: '', assessmentForm: '', teachingLanguage: '', group: '' };
         
         // --- Data Sources ---
-        // free public version of api is not stable - const PROXY_URL = 'https://api.allorigins.win/raw?url='; 
-        // The path to YOUR own reliable proxy function
-        const PROXY_URL = '/.netlify/functions/fetchData?url=';
-
-        // The rest of your code is EXACTLY THE SAME!
-        const coursesUrl = 'https://github.com/siyi-ma/tunniplaan/releases/download/v1.0-data/courses_new.json';
-        const timetableUrl = 'https://github.com/siyi-ma/tunniplaan/releases/download/v1.0-data/all_daily_timetable.json';
-        const courseGroupMapUrl = 'https://github.com/siyi-ma/tunniplaan/releases/download/v1.0-data/course_to_groups_map.json';
-        const groupFacultyMapUrl = 'https://github.com/siyi-ma/tunniplaan/releases/download/v1.0-data/tpg2teaduskond_map.json';
-
-        // Use the PROXY_URL to fetch data
-        const DATA_URL_COURSES = PROXY_URL + encodeURIComponent(coursesUrl);
-        const DATA_URL_TIMETABLE = PROXY_URL + encodeURIComponent(timetableUrl);
-        const DATA_URL_COURSE_GROUP_MAP = PROXY_URL + encodeURIComponent(courseGroupMapUrl);
-        const DATA_URL_GROUP_FACULTY_MAP = PROXY_URL + encodeURIComponent(groupFacultyMapUrl);
+        const DATA_URL_COURSES = './courses_new.json';
+        const DATA_URL_TIMETABLE = './all_daily_timetable.json';
+        const DATA_URL_COURSE_GROUP_MAP = './course_to_groups_map.json';
+        const DATA_URL_GROUP_FACULTY_MAP = './tpg2teaduskond_map.json';
 
 // Now your fetch calls will use these new DATA_URL_* constants and should work
-// Example:
 // fetch(DATA_URL_COURSES).then(...)
         // In-memory maps for fast lookups
         let schoolToInstitutes = new Map();
