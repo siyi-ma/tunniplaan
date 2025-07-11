@@ -26,10 +26,11 @@
         .headline { font-family: 'Proxima Nova', sans-serif; font-weight: 700; text-transform: uppercase; }
         .body-text { font-family: 'Proxima Nova', sans-serif; font-weight: 400; text-transform: none; }
 
+        /* --- CHANGE: Increased transparency and blur on the filter panel --- */
         #filterPanel { 
             transition: transform 0.3s ease-in-out; 
-            background-color: rgba(249, 250, 251, 0.95);
-            backdrop-filter: blur(4px);
+            background-color: rgba(249, 250, 251, 0.9); /* Made more transparent */
+            backdrop-filter: blur(6px); /* Increased blur */
         }
         .filter-drawer-open { transform: translateX(0) !important; }
         
@@ -214,7 +215,9 @@
         let allCourses = [], filteredCourses = [], currentLanguage = 'et', isCalendarViewVisible = false, totalFilteredSessions = 0;
         const SEMESTER_START = new Date('2025-09-01T00:00:00'), SEMESTER_END = new Date('2026-01-31T23:59:59');
         const STUDY_WEEK_CUTOFF = new Date('2025-12-21T23:59:59');
-        const CALENDAR_SESSION_LIMIT = 1000;
+        
+        // --- CHANGE: Increased calendar session limit ---
+        const CALENDAR_SESSION_LIMIT = 3000;
         let calendarDate = new Date(SEMESTER_START);
         
         let sessionDataCache = null, activeFilters = { searchTerm: '', searchFieldType: 'all', school: '', institute: '', eap: '', assessmentForm: '', teachingLanguage: '', group: '' };
@@ -962,4 +965,4 @@
         document.addEventListener('DOMContentLoaded', initializeApp);
     </script>
 </body>
-</html>
+</html>   
