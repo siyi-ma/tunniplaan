@@ -1,0 +1,4228 @@
+{
+  "HOX6061": [
+    "HAAB11",
+    "IACB51",
+    "IACB52",
+    "LAAB31",
+    "LAAB32",
+    "LAAB33",
+    "LAAB34",
+    "LAAB35",
+    "LAAB36",
+    "LAAB37",
+    "LATB51",
+    "TAAB31",
+    "TAAB32",
+    "YAFB11"
+  ],
+  "IDK0043": [
+    "EACB11",
+    "EACB12",
+    "EAEI11",
+    "EAEI12",
+    "EAEI13",
+    "EAEI14",
+    "EAKI11",
+    "EAKI12",
+    "EANB11",
+    "EANB12",
+    "EATI31",
+    "EATI32",
+    "HAAB11",
+    "HAJB11",
+    "LARB11",
+    "TVTB11",
+    "TVTB12"
+  ],
+  "YTG0060": [
+    "EARB11",
+    "EARB12",
+    "EARB13",
+    "HAAB11",
+    "IAAB51",
+    "IAAB52",
+    "IAAB53"
+  ],
+  "HHM1141": [
+    "HAAB11"
+  ],
+  "TER0520": [
+    "EAAB31",
+    "EAAB32",
+    "EAAB33",
+    "EAAB34",
+    "EAAB51",
+    "EAAB52",
+    "EAAB53",
+    "EAAB54",
+    "EAKI11",
+    "EAKI12",
+    "EARB11",
+    "EARB12",
+    "EARB13",
+    "HAAB11",
+    "IABB31",
+    "IABB32",
+    "TAAB11",
+    "TAAB12"
+  ],
+  "HHL0221": [
+    "HAAB11"
+  ],
+  "HHL0024": [
+    "HAAB11"
+  ],
+  "HHL0130": [
+    "HAAB11"
+  ],
+  "HHL0161": [
+    "HAAB31"
+  ],
+  "HHL1170": [
+    "HAAB31"
+  ],
+  "HHI0033": [
+    "HAAB31",
+    "LAAB51",
+    "LAAB52",
+    "LATB51"
+  ],
+  "HHL0042": [
+    "HAAB31"
+  ],
+  "HOA6039": [
+    "HAAB31"
+  ],
+  "TAF0055": [
+    "HAAB31",
+    "TAAB11",
+    "TAAB12"
+  ],
+  "TER0440": [
+    "HAAB51",
+    "IABB51",
+    "IABB52",
+    "IABB53",
+    "TAAB31",
+    "TAAB32",
+    "TABB31",
+    "TABB32",
+    "TABB33",
+    "TABB34",
+    "TABB35",
+    "TABB36"
+  ],
+  "HOL6010": [
+    "HAAB51"
+  ],
+  "MNF5520": [
+    "HAAB51"
+  ],
+  "HHL0026": [
+    "HAAB51"
+  ],
+  "HOE6020": [
+    "HAAB51"
+  ],
+  "HHM1150": [
+    "HAAB51"
+  ],
+  "HHM1151": [
+    "HAAB51"
+  ],
+  "MNA5450": [
+    "MVGM31"
+  ],
+  "HHL1083": [
+    "MVGM31"
+  ],
+  "MNE5230": [
+    "MVGM31"
+  ],
+  "MNI5160": [
+    "HAAM11",
+    "HAGM11",
+    "MVGM31"
+  ],
+  "MNR5350": [
+    "MVGM31"
+  ],
+  "MNR5320": [
+    "HAAM31",
+    "HAGM11",
+    "MVEB11",
+    "MVEB12",
+    "MVGM31",
+    "YVEM31"
+  ],
+  "MMP5690": [
+    "MAEM10"
+  ],
+  "MMA5230": [
+    "MAEM10"
+  ],
+  "MMK5320": [
+    "MAEM10"
+  ],
+  "MMO5570": [
+    "MAEM10"
+  ],
+  "MMO5600": [
+    "MAEM10"
+  ],
+  "MMJ5310": [
+    "MAEM30"
+  ],
+  "MMO5360": [
+    "MAEM30"
+  ],
+  "MMO5730": [
+    "MAEM30"
+  ],
+  "MMM5480": [
+    "MAEM30"
+  ],
+  "MMO5710": [
+    "MAEM30"
+  ],
+  "MMP5820": [
+    "MAEM30"
+  ],
+  "MMA5180": [
+    "TATM11",
+    "TATM12",
+    "TATM13",
+    "TATM14",
+    "TVTM11"
+  ],
+  "MES0015": [
+    "EANB51",
+    "EARB51",
+    "EARB52",
+    "MVEB51",
+    "MVEB52",
+    "TATM11"
+  ],
+  "MMK5250": [
+    "TARM31",
+    "TATM11",
+    "TATM12",
+    "TATM13",
+    "TATM14",
+    "TVTM11"
+  ],
+  "MMO5560": [
+    "TATM11"
+  ],
+  "MMM5430": [
+    "TATM11",
+    "TATM12",
+    "TATM13",
+    "TATM14",
+    "TVTM31"
+  ],
+  "MMM5490": [
+    "TATM12",
+    "TVTM11",
+    "TVTM31"
+  ],
+  "MMM5420": [
+    "TATM12"
+  ],
+  "MMO5500": [
+    "IVCM11",
+    "IVCM12",
+    "TATM13",
+    "TVTM11"
+  ],
+  "MMJ5320": [
+    "TATM13",
+    "TVTM11"
+  ],
+  "MMM5530": [
+    "TATM14"
+  ],
+  "MMM5520": [
+    "TATM14"
+  ],
+  "MMO5450": [
+    "TATM31",
+    "TATM32",
+    "TATM33",
+    "TATM34",
+    "TVTM31"
+  ],
+  "TMJ0190": [
+    "HAJB51",
+    "IAAM11",
+    "IAAM12",
+    "IABB11",
+    "IABB12",
+    "TABB51",
+    "TABB52",
+    "TABB53",
+    "TABB54",
+    "TABB55",
+    "TABB56",
+    "TABB57",
+    "TATM31",
+    "TATM32",
+    "TATM33",
+    "TATM34",
+    "TVTB51",
+    "TVTB52",
+    "TVTB53",
+    "TVTB54",
+    "TVTM31",
+    "VDSR51"
+  ],
+  "MMO5590": [
+    "TAAM11",
+    "TAAM31",
+    "TATM31",
+    "TATM32",
+    "TATM33",
+    "TATM34",
+    "TVTM31"
+  ],
+  "MMT5790": [
+    "TATM31",
+    "TATM32",
+    "TATM33",
+    "TATM34"
+  ],
+  "EAL0130": [
+    "EAUI91",
+    "TATM31",
+    "TATM32",
+    "TATM33",
+    "TATM34"
+  ],
+  "MMK5190": [
+    "TARM31",
+    "TATM31",
+    "TATM32",
+    "TATM33",
+    "TATM34",
+    "TVTM31"
+  ],
+  "MMK5260": [
+    "TATM31",
+    "TATM33"
+  ],
+  "MMO5470": [
+    "TATM31",
+    "TATM32",
+    "TATM33",
+    "TATM34",
+    "TVTM31"
+  ],
+  "MMK5280": [
+    "HAAM31",
+    "KATM31",
+    "MARM11",
+    "TATM31",
+    "TATM32",
+    "TATM33",
+    "TATM34"
+  ],
+  "MMM5350": [
+    "EALM11",
+    "EALM12",
+    "MARM11",
+    "TATM31",
+    "TATM32",
+    "TATM33",
+    "TATM34",
+    "TVTM31"
+  ],
+  "TMJ3300": [
+    "AAVM11",
+    "AAVM12",
+    "HAJM11",
+    "IAAM11",
+    "IAAM12",
+    "IABM31",
+    "IABM32",
+    "IABM33",
+    "LAFM11",
+    "MASM11",
+    "MATM11",
+    "MATM12",
+    "TATM32",
+    "TATM34",
+    "VAAM11",
+    "YASM31",
+    "YASM32"
+  ],
+  "MMO5660": [
+    "MAKM10"
+  ],
+  "MNI5180": [
+    "MAKM10"
+  ],
+  "MNA5470": [
+    "MAKM10"
+  ],
+  "MMO5680": [
+    "MAKM10"
+  ],
+  "MEF5160": [
+    "MAKM10"
+  ],
+  "MEM5250": [
+    "TAAM11",
+    "TARM11",
+    "TARM12"
+  ],
+  "MEM5260": [
+    "IABM31",
+    "IABM32",
+    "IABM33",
+    "TAAM11"
+  ],
+  "YFX0500": [
+    "EAAB31",
+    "EAAB32",
+    "EAAB51",
+    "EAAB52",
+    "EACB31",
+    "KATM11",
+    "LAAB51",
+    "LAAB52",
+    "LARB31",
+    "LATB51",
+    "TAAM11",
+    "YAFB11"
+  ],
+  "MEF5050": [
+    "TAAM11",
+    "TARM11",
+    "TARM12"
+  ],
+  "MEC5010": [
+    "TAAM11"
+  ],
+  "MEM5270": [
+    "IABM11",
+    "TAAM11",
+    "TARM12"
+  ],
+  "MEC5530": [
+    "TAAM31"
+  ],
+  "MEM5280": [
+    "IABM11",
+    "TAAM31",
+    "TARM12",
+    "TARM32"
+  ],
+  "MEF5080": [
+    "TAAM31",
+    "TARM32"
+  ],
+  "MEC5040": [
+    "TAAM31"
+  ],
+  "MMJ5260": [
+    "TAAM31",
+    "VAAM31"
+  ],
+  "MEM5230": [
+    "TAAM31"
+  ],
+  "MMA5170": [
+    "HAPM10"
+  ],
+  "MMP5570": [
+    "HAPM10"
+  ],
+  "MMP5660": [
+    "HAPM10"
+  ],
+  "MMP5640": [
+    "HAPM10"
+  ],
+  "MMP5610": [
+    "HAPM10"
+  ],
+  "MMP5740": [
+    "HAPM30"
+  ],
+  "MMP5620": [
+    "HAPM30"
+  ],
+  "MMP5730": [
+    "HAPM30"
+  ],
+  "MMP5560": [
+    "HAPM30"
+  ],
+  "MMP5630": [
+    "HAPM30"
+  ],
+  "MMP5590": [
+    "HAPM30"
+  ],
+  "MLE0010": [
+    "EAHM11",
+    "HAGM11",
+    "HAJB51",
+    "HAJM31",
+    "KVEM11",
+    "KVEM12",
+    "MARM11",
+    "TVTB11",
+    "TVTB12",
+    "TVTM11",
+    "VAMM11",
+    "YVEM11"
+  ],
+  "MMM5460": [
+    "TVTM31"
+  ],
+  "MMM5380": [
+    "TVTM31"
+  ],
+  "MMO3030": [
+    "TVTB11",
+    "TVTB12"
+  ],
+  "TSK0326": [
+    "TABB11",
+    "TABB12",
+    "TABB13",
+    "TABB14",
+    "TABB15",
+    "TABB16",
+    "TVTB11",
+    "TVTB12"
+  ],
+  "MEM3010": [
+    "TVTB11",
+    "TVTB12"
+  ],
+  "TMM2150": [
+    "TVTB11",
+    "TVTB12"
+  ],
+  "TET0010": [
+    "TAAB11",
+    "TAAB12",
+    "TABB11",
+    "TABB12",
+    "TABB13",
+    "TABB14",
+    "TABB15",
+    "TABB16",
+    "TVTB11",
+    "TVTB12"
+  ],
+  "MMS3030": [
+    "TVTB11",
+    "TVTB12"
+  ],
+  "MEM3020": [
+    "TVTB11",
+    "TVTB12"
+  ],
+  "MME3010": [
+    "TVTB31",
+    "TVTB32"
+  ],
+  "TER2550": [
+    "HAJB51",
+    "TVTB31",
+    "TVTB32"
+  ],
+  "TMJ0140": [
+    "IABB11",
+    "IABB12",
+    "TAAB11",
+    "TAAB12",
+    "TVTB31",
+    "TVTB32"
+  ],
+  "TSP0073": [
+    "TVTB31",
+    "TVTB32"
+  ],
+  "MOE5071": [
+    "TVTB31",
+    "TVTB32"
+  ],
+  "TMM2160": [
+    "TVTB51",
+    "TVTB52"
+  ],
+  "MMJ3040": [
+    "HAJB31",
+    "TVTB51",
+    "TVTB52",
+    "TVTB53",
+    "TVTB54"
+  ],
+  "TMK2350": [
+    "TVTB51",
+    "TVTB52",
+    "TVTB53",
+    "TVTB54"
+  ],
+  "TAK2830": [
+    "TVTB51",
+    "TVTB52",
+    "TVTB53",
+    "TVTB54"
+  ],
+  "MMJ3120": [
+    "TVTB51",
+    "TVTB52",
+    "TVTB53",
+    "TVTB54"
+  ],
+  "MMA3100": [
+    "TVTB51",
+    "TVTB52",
+    "TVTB53",
+    "TVTB54"
+  ],
+  "TMM2470": [
+    "TVTB51"
+  ],
+  "TER2620": [
+    "TVTB52",
+    "TVTB53",
+    "TVTB54"
+  ],
+  "TES1140": [
+    "TVTB54"
+  ],
+  "HHF1011": [
+    "IAIB51",
+    "IAIB52",
+    "IAIB53",
+    "TAAB11",
+    "TAAB12"
+  ],
+  "IDK1615": [
+    "TAAB11",
+    "TAAB12",
+    "TABB11",
+    "TABB12",
+    "TABB13",
+    "TABB14",
+    "TABB15",
+    "TABB16"
+  ],
+  "TEM0240": [
+    "IABB31",
+    "IABB32",
+    "TAAB11",
+    "TAAB12"
+  ],
+  "HLI0070": [
+    "EANB11",
+    "EANB12",
+    "EARB11",
+    "EARB12",
+    "EARB13",
+    "EAUI51",
+    "IACB31",
+    "IACB32",
+    "IAIB51",
+    "IAIB52",
+    "IAIB53",
+    "TAAB11",
+    "TAAB12"
+  ],
+  "MMO3010": [
+    "TAAB31",
+    "TAAB32",
+    "TABB11",
+    "TABB12",
+    "TABB13",
+    "TABB14",
+    "TABB15",
+    "TABB16"
+  ],
+  "TEM0050": [
+    "EAEI31",
+    "EAEI32",
+    "EAEI33",
+    "EAXM11",
+    "EAXM12",
+    "EAXM15",
+    "EAXM16",
+    "TAAB31",
+    "TAAB32"
+  ],
+  "TSK0014": [
+    "TAAB31",
+    "TAAB32"
+  ],
+  "TES0040": [
+    "IABB51",
+    "IABB52",
+    "IABB53",
+    "TAAB31",
+    "TAAB32",
+    "TABB54",
+    "TABB55",
+    "TABB56"
+  ],
+  "TET0060": [
+    "TAAB31",
+    "TAAB32"
+  ],
+  "TER0560": [
+    "TAAB51",
+    "TAAB52",
+    "TABB51",
+    "TABB52",
+    "TABB54",
+    "TABB55",
+    "TABB56",
+    "TABB57"
+  ],
+  "TAK0010": [
+    "TAAB51",
+    "TAAB52"
+  ],
+  "MEC3010": [
+    "TAAB51",
+    "TAAB52"
+  ],
+  "TET0065": [
+    "TAAB51",
+    "TAAB52"
+  ],
+  "TAF0080": [
+    "TAAB51",
+    "TAAB52",
+    "TABB54",
+    "TABB55",
+    "TABB56"
+  ],
+  "HOE6060": [
+    "TAAB51",
+    "TAAB52"
+  ],
+  "TET0090": [
+    "TAAB51",
+    "TAAB52"
+  ],
+  "ITE4230": [
+    "HAGM11",
+    "IVDM10"
+  ],
+  "MNI5240": [
+    "HAGM11"
+  ],
+  "MNI5210": [
+    "HAGM11",
+    "MARM31"
+  ],
+  "MNI5230": [
+    "HAGM11",
+    "MARM31"
+  ],
+  "MNE5260": [
+    "HAAM11",
+    "HAGM11"
+  ],
+  "MNL5620": [
+    "HAGM11"
+  ],
+  "DMK1021": [
+    "HAGM31",
+    "YVEM11"
+  ],
+  "MOT5010": [
+    "HAGM31",
+    "HAJM11"
+  ],
+  "ITE4150": [
+    "HAGM31",
+    "IAGM10",
+    "IVDM10",
+    "MARM31",
+    "YVEM31"
+  ],
+  "TEM0320": [
+    "TABB11",
+    "TABB12",
+    "TABB13",
+    "TABB14",
+    "TABB15",
+    "TABB16"
+  ],
+  "TMM0100": [
+    "TABB11",
+    "TABB12",
+    "TABB13",
+    "TABB14",
+    "TABB15",
+    "TABB16"
+  ],
+  "MMT3010": [
+    "TABB31",
+    "TABB32",
+    "TABB33",
+    "TABB34",
+    "TABB35",
+    "TABB36"
+  ],
+  "TME0070": [
+    "TABB31",
+    "TABB32",
+    "TABB33",
+    "TABB34",
+    "TABB35",
+    "TABB36"
+  ],
+  "MOE5070": [
+    "TABB31",
+    "TABB32",
+    "TABB33",
+    "TABB34",
+    "TABB35",
+    "TABB36"
+  ],
+  "TMM0430": [
+    "TABB31",
+    "TABB32",
+    "TABB33",
+    "TABB34",
+    "TABB35",
+    "TABB36"
+  ],
+  "MMS3010": [
+    "TABB31",
+    "TABB32",
+    "TABB33",
+    "TABB34",
+    "TABB35",
+    "TABB36"
+  ],
+  "MMJ3030": [
+    "TABB51",
+    "TABB52",
+    "TABB53",
+    "TABB54",
+    "TABB55",
+    "TABB56",
+    "TABB57"
+  ],
+  "MMA3030": [
+    "TABB51",
+    "TABB52",
+    "TABB53",
+    "TABB54",
+    "TABB55",
+    "TABB56",
+    "TABB57"
+  ],
+  "MMA3130": [
+    "TABB51"
+  ],
+  "MMA3080": [
+    "TABB51",
+    "TABB52",
+    "TABB53",
+    "TABB54",
+    "TABB55",
+    "TABB56",
+    "TABB57"
+  ],
+  "MMJ3110": [
+    "TABB52"
+  ],
+  "MMJ3100": [
+    "TABB52"
+  ],
+  "MMK3030": [
+    "TABB52",
+    "TABB53",
+    "TABB57"
+  ],
+  "TMM2460": [
+    "TABB53"
+  ],
+  "MMM3010": [
+    "TABB53"
+  ],
+  "MMM3060": [
+    "TABB53"
+  ],
+  "MEF3040": [
+    "TABB54",
+    "TABB55",
+    "TABB56"
+  ],
+  "MEL0030": [
+    "TABB57"
+  ],
+  "MMK3070": [
+    "TABB57"
+  ],
+  "EMT8130": [
+    "MARM31",
+    "MATM11",
+    "MATM12",
+    "TARM11"
+  ],
+  "TAF1010": [
+    "TARM11",
+    "TARM12"
+  ],
+  "MMA5070": [
+    "IABM31",
+    "IABM32",
+    "IABM33",
+    "TARM11",
+    "TARM12"
+  ],
+  "TAF1110": [
+    "TARM11",
+    "TARM12"
+  ],
+  "MMO5633": [
+    "TARM11",
+    "TARM12"
+  ],
+  "MMA5220": [
+    "TARM11"
+  ],
+  "MMA5050": [
+    "TARM31"
+  ],
+  "MMA5080": [
+    "TARM31"
+  ],
+  "MMA5210": [
+    "TARM31",
+    "TARM32"
+  ],
+  "MMA5060": [
+    "TARM31",
+    "TARM32"
+  ],
+  "MMA5090": [
+    "TARM31"
+  ],
+  "MEF5030": [
+    "TARM32"
+  ],
+  "MEF5150": [
+    "TARM32"
+  ],
+  "MOL5040": [
+    "HAJM11"
+  ],
+  "HOX7002": [
+    "HAJM11"
+  ],
+  "MOL5030": [
+    "HAJM11"
+  ],
+  "MOT5120": [
+    "HAJM31"
+  ],
+  "MOI5020": [
+    "HAJM31"
+  ],
+  "HOE7210": [
+    "HAJM31"
+  ],
+  "MOE5080": [
+    "HAJM31"
+  ],
+  "MOT5110": [
+    "HAJM31"
+  ],
+  "MOE3021": [
+    "HAJB11"
+  ],
+  "MOA3020": [
+    "HAJB11"
+  ],
+  "MOR3040": [
+    "HAJB11"
+  ],
+  "MOA3010": [
+    "HAJB11"
+  ],
+  "MOA3031": [
+    "HAJB11"
+  ],
+  "TES0020": [
+    "EAXM11",
+    "EAXM12",
+    "EAXM15",
+    "HAJB31"
+  ],
+  "MOE3010": [
+    "HAJB31"
+  ],
+  "MOT3010": [
+    "HAJB31"
+  ],
+  "MOE3120": [
+    "HAJB31"
+  ],
+  "MOE3050": [
+    "HAJB31"
+  ],
+  "MOT3020": [
+    "HAJB51"
+  ],
+  "MOR3030": [
+    "HAJB51"
+  ],
+  "MOE3060": [
+    "HAJB51"
+  ],
+  "NGG0401": [
+    "LARM11",
+    "LARM12"
+  ],
+  "LGM0202": [
+    "LARM11"
+  ],
+  "EKX0020": [
+    "EAKB30",
+    "EANB11",
+    "EANB12",
+    "EDJR31_V",
+    "EDJR32_V",
+    "EDJR34",
+    "EDJR35",
+    "EDKR31",
+    "EDKR32",
+    "LAAB31",
+    "LAAB32",
+    "LAAB33",
+    "LAAB34",
+    "LAAB35",
+    "LAAB36",
+    "LAAB37",
+    "LARM11",
+    "LARM12",
+    "LATB51",
+    "MAJB11_V",
+    "RAKM31_V",
+    "RATM31_V"
+  ],
+  "NSO8001": [
+    "LARM11",
+    "LARM12"
+  ],
+  "NGG0311": [
+    "LARM11",
+    "LARM12"
+  ],
+  "NSO7003": [
+    "LARM11",
+    "LARM12"
+  ],
+  "LGM0201": [
+    "LARM11",
+    "LARM12"
+  ],
+  "LGM0402": [
+    "LARM11",
+    "LARM12"
+  ],
+  "LGM0105": [
+    "LARM12"
+  ],
+  "NSO7005": [
+    "LARM12"
+  ],
+  "NSO7006": [
+    "LARM12"
+  ],
+  "LGM0401": [
+    "LARM12"
+  ],
+  "LGM0104": [
+    "LARM12"
+  ],
+  "LGM0205": [
+    "LARM31"
+  ],
+  "KAK0054": [
+    "EANB51",
+    "LARM31",
+    "LARM32"
+  ],
+  "LGM0503": [
+    "LARM31",
+    "LARM32"
+  ],
+  "NGG0319": [
+    "LARM31",
+    "LARM32"
+  ],
+  "NGG0317": [
+    "LARM31"
+  ],
+  "NSO8071": [
+    "LAFM31",
+    "LARM32"
+  ],
+  "NSO8003": [
+    "LARM32"
+  ],
+  "TMJ0130": [
+    "EAAB51",
+    "EAAB52",
+    "EAAB53",
+    "EAAB54",
+    "EARB11",
+    "EARB12",
+    "EARB13",
+    "IVSB31",
+    "IVSB32",
+    "LARB11",
+    "MVEB31",
+    "MVEB32",
+    "VDLR31",
+    "VDSR31",
+    "VDVR11",
+    "VDXR11",
+    "YAFB11"
+  ],
+  "YMX0230": [
+    "LARB11"
+  ],
+  "LGB0010": [
+    "LARB11"
+  ],
+  "LGB0030": [
+    "LARB11"
+  ],
+  "NSO8023": [
+    "LARB11",
+    "VDVR51"
+  ],
+  "YMA0090": [
+    "EAAB11",
+    "EAAB12",
+    "EAAB13",
+    "EAAB14",
+    "EAAB15",
+    "EACB11",
+    "EACB12",
+    "EAEI11",
+    "EAEI12",
+    "EAEI13",
+    "EAEI14",
+    "EAKI11",
+    "EAKI12",
+    "EANB11",
+    "EANB12",
+    "EARB11",
+    "EARB12",
+    "EARB13",
+    "EATI11",
+    "EATI12",
+    "EAUI11",
+    "IAAB11",
+    "IAAB12",
+    "IAAB13",
+    "IABB11",
+    "IABB12",
+    "IACB11",
+    "IACB12",
+    "IADB11",
+    "IADB12",
+    "IADB13",
+    "IADB14",
+    "IADB15",
+    "IAIB11",
+    "IAIB12",
+    "IAIB13",
+    "IAIB14",
+    "LAAB11",
+    "LAAB12",
+    "LAAB13",
+    "LAAB14",
+    "LAAB15",
+    "LAAB16",
+    "LAAB17",
+    "LARB11",
+    "LATB11",
+    "LATB12",
+    "LATB13",
+    "YAFB11"
+  ],
+  "NSO0171": [
+    "LARB31"
+  ],
+  "NSO7071": [
+    "LARB31"
+  ],
+  "LGB0050": [
+    "LARB31"
+  ],
+  "YKI0150": [
+    "EACB11",
+    "EACB12",
+    "EANB11",
+    "EANB12",
+    "EARB31",
+    "EARB32",
+    "EARB33",
+    "LARB31"
+  ],
+  "NSO7072": [
+    "LARB31",
+    "VAMM11",
+    "VDVR51",
+    "YAFB51"
+  ],
+  "LGB0060": [
+    "LARB31"
+  ],
+  "NGG0204": [
+    "LARB31"
+  ],
+  "NSO8024": [
+    "LARB31"
+  ],
+  "LGB0130": [
+    "LARB51"
+  ],
+  "ETG5104": [
+    "EAEI31",
+    "EAEI32",
+    "EAEI33",
+    "EAKI51",
+    "LARB51"
+  ],
+  "NSO8068": [
+    "LARB51"
+  ],
+  "LGB0070": [
+    "LARB51"
+  ],
+  "LGB0090": [
+    "LARB51"
+  ],
+  "NSO8025": [
+    "LARB51",
+    "YAFB51"
+  ],
+  "HHF3080": [
+    "EAAB51",
+    "EAAB52",
+    "EAAB53",
+    "EAAB54",
+    "IACB51",
+    "IACB52",
+    "LATB51",
+    "VDLR11",
+    "YAFB11"
+  ],
+  "YMX0010": [
+    "YAFB11"
+  ],
+  "YMX0081": [
+    "YAFB11"
+  ],
+  "YMR0310": [
+    "YAFB11"
+  ],
+  "YFR0080": [
+    "EAAB11",
+    "EAAB12",
+    "EAAB13",
+    "EAAB14",
+    "EAAB15",
+    "EAEI11",
+    "EAEI12",
+    "EAEI13",
+    "EAEI14",
+    "EAKI11",
+    "EAKI12",
+    "EANB11",
+    "EANB12",
+    "EARB11",
+    "EARB12",
+    "EARB13",
+    "EATI11",
+    "EATI12",
+    "EAUI11",
+    "IAAB11",
+    "IAAB12",
+    "IAAB13",
+    "IABB11",
+    "IABB12",
+    "IACB11",
+    "IACB12",
+    "IADB11",
+    "IADB12",
+    "IADB13",
+    "IADB14",
+    "IADB15",
+    "IAIB11",
+    "IAIB12",
+    "IAIB13",
+    "IAIB14",
+    "IVSB11",
+    "IVSB12",
+    "LAAB11",
+    "LAAB12",
+    "LAAB13",
+    "LAAB14",
+    "LAAB15",
+    "LAAB16",
+    "LAAB17",
+    "LATB11",
+    "LATB12",
+    "LATB13",
+    "MVEB11",
+    "MVEB12",
+    "YAFB11"
+  ],
+  "YFX0231": [
+    "YAFB31"
+  ],
+  "YMX0280": [
+    "EACB51",
+    "YAFB31"
+  ],
+  "YMX0090": [
+    "YAFB31"
+  ],
+  "YFX0591": [
+    "YAFB31"
+  ],
+  "YFX0511": [
+    "YAFB31"
+  ],
+  "YMX0321": [
+    "YAFB31"
+  ],
+  "YFX0233": [
+    "YAFB51"
+  ],
+  "YFX0610": [
+    "YAFB51"
+  ],
+  "YFX0250": [
+    "EAAB51",
+    "EAAB52",
+    "EAAB53",
+    "EAAB54",
+    "YAFB51"
+  ],
+  "NSO0181": [
+    "YAFB51"
+  ],
+  "YFX0530": [
+    "YAFB51"
+  ],
+  "YFX0601": [
+    "YAFB51"
+  ],
+  "EMD5120": [
+    "EARB51",
+    "YAFB51"
+  ],
+  "YFX0310": [
+    "YAFB51"
+  ],
+  "YMX8140": [
+    "LAFM11"
+  ],
+  "YFX1500": [
+    "LAFM11"
+  ],
+  "MMJ5280": [
+    "EAKM11",
+    "EARM31",
+    "KVEM31",
+    "KVEM32",
+    "LAFM11"
+  ],
+  "YFX1550": [
+    "LAFM11"
+  ],
+  "YMX8170": [
+    "LAFM11"
+  ],
+  "YFX1120": [
+    "LAFM31"
+  ],
+  "YFX1100": [
+    "LAFM31"
+  ],
+  "YFX1170": [
+    "LAFM31"
+  ],
+  "YMX8200": [
+    "LAFM31"
+  ],
+  "YFX1570": [
+    "LAFM31"
+  ],
+  "LTX1000": [
+    "LAFM31"
+  ],
+  "YFX1560": [
+    "LAFM31"
+  ],
+  "YFX1580": [
+    "LAFM31"
+  ],
+  "YFX1140": [
+    "LAFM31"
+  ],
+  "LKK0010": [
+    "LAAB51",
+    "YASM11"
+  ],
+  "LKG0040": [
+    "KATM31",
+    "YASM11",
+    "YASM12",
+    "YASM31",
+    "YASM32"
+  ],
+  "LKK0080": [
+    "KATM31",
+    "YASM11",
+    "YASM12"
+  ],
+  "MNF5510": [
+    "EAKM11",
+    "EARM31",
+    "HAAM31",
+    "IABM11",
+    "IACM31",
+    "IACM32",
+    "IAPM11",
+    "IAVM31",
+    "KATM11",
+    "VAAM31",
+    "YASM11",
+    "YASM12"
+  ],
+  "LKG0210": [
+    "YASM11",
+    "YASM12"
+  ],
+  "LKK0170": [
+    "YASM11",
+    "YASM12"
+  ],
+  "LKG0030": [
+    "YASM12"
+  ],
+  "LTK1100": [
+    "YASM12",
+    "YASM32"
+  ],
+  "LKG0090": [
+    "YASM12"
+  ],
+  "LKG0050": [
+    "KATM31",
+    "YASM31",
+    "YASM32"
+  ],
+  "LKK0110": [
+    "YASM31"
+  ],
+  "LKX0060": [
+    "YASM31",
+    "YASM32"
+  ],
+  "LKK0070": [
+    "YASM31"
+  ],
+  "LKX0030": [
+    "YASM31",
+    "YASM32"
+  ],
+  "IHT0060": [
+    "YASM31",
+    "YASM32",
+    "YVEM11"
+  ],
+  "LKG0080": [
+    "YASM32"
+  ],
+  "LKG0240": [
+    "LAAB11",
+    "LAAB12",
+    "LAAB13",
+    "LAAB14",
+    "LAAB15",
+    "LAAB16",
+    "LAAB17"
+  ],
+  "YKI0021": [
+    "LAAB11",
+    "LAAB12",
+    "LAAB13",
+    "LAAB14",
+    "LAAB15",
+    "LAAB16",
+    "LAAB17",
+    "LATB11",
+    "LATB12",
+    "LATB13"
+  ],
+  "YFX0022": [
+    "LAAB11",
+    "LAAB12",
+    "LAAB13",
+    "LAAB14",
+    "LAAB15",
+    "LAAB16",
+    "LAAB17",
+    "LATB11",
+    "LATB12",
+    "LATB13"
+  ],
+  "LKK0200": [
+    "EACB31",
+    "EANB31",
+    "LAAB11",
+    "LAAB12",
+    "LAAB13",
+    "LAAB14",
+    "LAAB15",
+    "LAAB16",
+    "LAAB17",
+    "LATB11",
+    "LATB12",
+    "LATB13"
+  ],
+  "YKI0022": [
+    "LAAB11",
+    "LAAB12",
+    "LAAB13",
+    "LAAB14",
+    "LAAB15",
+    "LAAB16",
+    "LAAB17",
+    "LATB11",
+    "LATB12",
+    "LATB13"
+  ],
+  "YXX0030": [
+    "LAAB11",
+    "LAAB12",
+    "LAAB13",
+    "LAAB14",
+    "LAAB15",
+    "LAAB16",
+    "LAAB17",
+    "LATB11",
+    "LATB12",
+    "LATB13"
+  ],
+  "YMX0223": [
+    "IACB51",
+    "IACB52",
+    "LAAB31",
+    "LAAB32",
+    "LAAB33",
+    "LAAB34",
+    "LAAB35",
+    "LAAB36",
+    "LAAB37"
+  ],
+  "LKK0220": [
+    "LAAB31",
+    "LAAB32",
+    "LAAB33"
+  ],
+  "YKA0060": [
+    "EACB51",
+    "LAAB31",
+    "LAAB32",
+    "LAAB33",
+    "LAAB34",
+    "LAAB35",
+    "LAAB36",
+    "LAAB37",
+    "LATB31",
+    "LATB32"
+  ],
+  "LKG0130": [
+    "LAAB31",
+    "LAAB32",
+    "LAAB33",
+    "LAAB34",
+    "LAAB35",
+    "LAAB36",
+    "LAAB37",
+    "LATB31",
+    "LATB32"
+  ],
+  "KTO0290": [
+    "LAAB31",
+    "LAAB32",
+    "LAAB33",
+    "LAAB34",
+    "LAAB35",
+    "LAAB36",
+    "LAAB37",
+    "LATB31",
+    "LATB32"
+  ],
+  "YTM0080": [
+    "LAAB34",
+    "LAAB35",
+    "LAAB36",
+    "LAAB37"
+  ],
+  "KAT0181": [
+    "EAKM11",
+    "LAAB51",
+    "LAAB52",
+    "LATB51"
+  ],
+  "KTO0360": [
+    "LAAB51",
+    "LATB31",
+    "LATB32"
+  ],
+  "TMJ0180": [
+    "IAIB51",
+    "IAIB52",
+    "IAIB53",
+    "LAAB51",
+    "LAAB52",
+    "LATB51"
+  ],
+  "KYF0280": [
+    "EANB31",
+    "LAAB51",
+    "LATB51"
+  ],
+  "EXX0040": [
+    "LAAB51",
+    "LAAB52",
+    "LATB31",
+    "LATB32"
+  ],
+  "YKA0013": [
+    "LAAB51",
+    "LAAB52",
+    "LATB51"
+  ],
+  "LKK0140": [
+    "LAAB51"
+  ],
+  "LKT0040": [
+    "LAAB51",
+    "LAAB52",
+    "LATB51"
+  ],
+  "YTP0010": [
+    "LAAB51",
+    "LAAB52",
+    "LATB51"
+  ],
+  "LKG0180": [
+    "LAAB52"
+  ],
+  "YTG0021": [
+    "LAAB52"
+  ],
+  "LKG0230": [
+    "LATB11",
+    "LATB12",
+    "LATB13"
+  ],
+  "LKT0200": [
+    "LATB11",
+    "LATB12",
+    "LATB13"
+  ],
+  "KTO0300": [
+    "LATB51"
+  ],
+  "LKT0140": [
+    "KATM31"
+  ],
+  "LKT0280": [
+    "KATM11",
+    "KATM31"
+  ],
+  "EAI0050": [
+    "EACB11",
+    "EACB12",
+    "EANB11",
+    "EANB12",
+    "KATM31"
+  ],
+  "LKT0260": [
+    "KATM31"
+  ],
+  "LKT0270": [
+    "KATM11",
+    "KATM31"
+  ],
+  "EAI0021": [
+    "EAEI11",
+    "EAEI12",
+    "EAEI13",
+    "EAEI14"
+  ],
+  "YKI0160": [
+    "EAEI11",
+    "EAEI12",
+    "EAEI13",
+    "EAEI14"
+  ],
+  "YMX0235": [
+    "EAEI11",
+    "EAEI12",
+    "EAEI13",
+    "EAEI14",
+    "EAKI11",
+    "EAKI12",
+    "EATI11",
+    "EATI12"
+  ],
+  "KCM0014": [
+    "EAEI11",
+    "EAEI12",
+    "EAEI13",
+    "EAEI14",
+    "EAKI11",
+    "EAKI12",
+    "EATI11",
+    "EATI12"
+  ],
+  "HLE0060": [
+    "EACB11",
+    "EACB12",
+    "EAEI11",
+    "EAEI12",
+    "EAEI13",
+    "EAEI14",
+    "EAKI11",
+    "EAKI12",
+    "EATI31",
+    "EATI32",
+    "MVEB11",
+    "MVEB12"
+  ],
+  "HLI0110": [
+    "EAEI11",
+    "EAEI12",
+    "EAEI13",
+    "EAEI14"
+  ],
+  "EPX5000": [
+    "EAEI11",
+    "EAEI12",
+    "EAEI13",
+    "EAEI14"
+  ],
+  "EEA5012": [
+    "EAEI31",
+    "EAEI32",
+    "EAEI33",
+    "EAKI31"
+  ],
+  "EMD5011": [
+    "EAEI31",
+    "EAEI32",
+    "EAEI33",
+    "EATI31",
+    "EATI32"
+  ],
+  "YMX0262": [
+    "EAAB31",
+    "EAAB32",
+    "EAAB33",
+    "EAAB34",
+    "EAEI31",
+    "EAEI32",
+    "EAEI33"
+  ],
+  "EMH5080": [
+    "EAEI31",
+    "EAEI32",
+    "EAEI33",
+    "EAKI31",
+    "EAKI51",
+    "EARB51"
+  ],
+  "EPM5100": [
+    "EAEI31",
+    "EAEI32",
+    "EAEI33",
+    "EATI31",
+    "EATI32",
+    "EAUI31",
+    "EAUI51",
+    "EAXM15"
+  ],
+  "EMD5021": [
+    "EAEI51",
+    "EAEI52",
+    "EAEI53",
+    "EATI51"
+  ],
+  "EEA0240": [
+    "EAEI51",
+    "EAEI52",
+    "EAEI53",
+    "EATI71",
+    "EATI72"
+  ],
+  "EKK5100": [
+    "EAEI51",
+    "EAEI52",
+    "EAEI53",
+    "EAXM11",
+    "EAXM12",
+    "EAXM15",
+    "IACM12"
+  ],
+  "HLE0080": [
+    "EAEI51",
+    "EAEI52",
+    "EAEI53",
+    "EAKI11",
+    "EAKI12"
+  ],
+  "EEA5011": [
+    "EAEI51",
+    "EAEI52",
+    "EAEI53",
+    "EAKI51",
+    "EATI31",
+    "EATI32",
+    "EAXM11",
+    "EAXM12",
+    "EAXM13",
+    "EAXM14",
+    "EAXM15",
+    "EAXM16",
+    "EAXM17",
+    "EAXM18"
+  ],
+  "EPX5501": [
+    "EAEI51",
+    "EAEI52",
+    "EAEI53",
+    "EAXM11",
+    "EAXM12",
+    "EAXM15"
+  ],
+  "EAK0070": [
+    "EAEI51",
+    "EAEI52",
+    "EAEI53"
+  ],
+  "EMD5023": [
+    "EAEI71",
+    "EAEI72",
+    "EAXM11",
+    "EAXM12",
+    "EAXM15"
+  ],
+  "EEK5052": [
+    "EAEI71",
+    "EAXM31"
+  ],
+  "EEA5020": [
+    "EAEI71",
+    "EAEI72",
+    "EAKI91",
+    "EAUI71",
+    "EAXM11",
+    "EAXM15"
+  ],
+  "EPX5520": [
+    "EAEI71",
+    "EAEI72",
+    "EAXM31",
+    "EAXM32",
+    "EAXM35"
+  ],
+  "EEK5012": [
+    "EAEI71",
+    "EAXM31"
+  ],
+  "EPX5300": [
+    "EAEI71",
+    "EAEI72",
+    "EAKI71",
+    "EATI91",
+    "EATI92",
+    "EAXM11",
+    "EAXM12",
+    "EAXM13",
+    "EAXM14",
+    "EAXM15",
+    "EAXM16",
+    "EAXM17",
+    "EAXM18"
+  ],
+  "ETS5000": [
+    "EAEI71"
+  ],
+  "EEK5031": [
+    "EAEI71",
+    "EAEI72",
+    "EAKI51",
+    "EATI51",
+    "EATI52",
+    "EAXM11"
+  ],
+  "EEK5021": [
+    "EAEI71",
+    "EAEI72",
+    "EAXM11",
+    "EAXM12"
+  ],
+  "EPX5532": [
+    "EAEI71",
+    "EAEI72",
+    "EAKI91",
+    "EATI72",
+    "EAXM31",
+    "EAXM32",
+    "EAXM35"
+  ],
+  "EPX5320": [
+    "EAEI91",
+    "EAEI92",
+    "EAXM31",
+    "EAXM32",
+    "EAXM35"
+  ],
+  "EPX5550": [
+    "EAEI91",
+    "EAEI92",
+    "EAKI91",
+    "EAUI91",
+    "EAXM31",
+    "EAXM32",
+    "EAXM35"
+  ],
+  "EEK5080": [
+    "EAEI91",
+    "EAXM31"
+  ],
+  "EEA5030": [
+    "EAEI91",
+    "EAEI92",
+    "EAKI91",
+    "EAXM31",
+    "EAXM32",
+    "EAXM33",
+    "EAXM34",
+    "EAXM35"
+  ],
+  "EPM5130": [
+    "EAEI91",
+    "EAEI92",
+    "EATI31",
+    "EAXM31",
+    "EAXM35"
+  ],
+  "HPP2030": [
+    "EAEI92",
+    "EATI91",
+    "EATI92",
+    "EAXM32",
+    "EAXM35",
+    "EAXM36"
+  ],
+  "EES5030": [
+    "AAVM11",
+    "AAVM12"
+  ],
+  "EES5070": [
+    "AAVM11"
+  ],
+  "EES5160": [
+    "AAVM11",
+    "AAVM12",
+    "EAMM31",
+    "EAMM32"
+  ],
+  "EES5040": [
+    "AAVM11",
+    "AAVM12",
+    "EAMM11",
+    "EAMM31"
+  ],
+  "EES5150": [
+    "AAVM11",
+    "AAVM12",
+    "EARM31"
+  ],
+  "EES5240": [
+    "AAVM11",
+    "AAVM12",
+    "EAMM11",
+    "EARM11"
+  ],
+  "EES5110": [
+    "AAVM31"
+  ],
+  "EES5010": [
+    "AAVM31",
+    "AAVM32"
+  ],
+  "EES5120": [
+    "AAVM31",
+    "EAMM31"
+  ],
+  "EEV5020": [
+    "AAVM31",
+    "AAVM32",
+    "EAMM11",
+    "EAMM31",
+    "EAMM32"
+  ],
+  "EES5050": [
+    "AAVM31",
+    "AAVM32",
+    "EAMM11"
+  ],
+  "EES5080": [
+    "AAVM31"
+  ],
+  "EES5250": [
+    "AAVM32"
+  ],
+  "EEV5030": [
+    "AAVM32",
+    "EAMM11",
+    "EAMM12",
+    "EAMM31"
+  ],
+  "YMX0224": [
+    "EAAB11",
+    "EAAB12",
+    "EAAB13",
+    "EAAB14",
+    "EAAB15",
+    "EANB11",
+    "EANB12",
+    "EARB11",
+    "EARB12",
+    "EARB13",
+    "MVEB11",
+    "MVEB12"
+  ],
+  "EEM3010": [
+    "EAAB11",
+    "EAAB12",
+    "EAAB13",
+    "EAAB14",
+    "EAAB15"
+  ],
+  "ATE3140": [
+    "EAAB11",
+    "EAAB12",
+    "EAAB13",
+    "EAAB14",
+    "EAAB15",
+    "EACB31"
+  ],
+  "EEV3010": [
+    "EAAB11",
+    "EAAB12",
+    "EAAB13",
+    "EAAB14",
+    "EAAB15"
+  ],
+  "AEK0210": [
+    "EAAB11",
+    "EAAB12",
+    "EAAB13",
+    "EAAB14",
+    "EAAB15"
+  ],
+  "EEM3020": [
+    "EAAB11",
+    "EAAB12",
+    "EAAB13",
+    "EAAB14",
+    "EAAB15"
+  ],
+  "TMK0200": [
+    "EAAB31",
+    "EAAB32",
+    "EAAB33",
+    "EAAB34",
+    "EAAB51",
+    "EAAB52",
+    "EAAB53",
+    "EAAB54",
+    "EACB11",
+    "EACB12",
+    "EANB31"
+  ],
+  "AEK0220": [
+    "EAAB31",
+    "EAAB32"
+  ],
+  "AEK0270": [
+    "EAAB31",
+    "EAAB32",
+    "EAAB33",
+    "EAAB34"
+  ],
+  "MHK0150": [
+    "EAAB31",
+    "EAAB32",
+    "EAAB33",
+    "EAAB34"
+  ],
+  "IAX0583": [
+    "EAAB31",
+    "EAAB32",
+    "EAAB33",
+    "EAAB34",
+    "IACB11",
+    "IACB12",
+    "MVEB11",
+    "MVEB12"
+  ],
+  "IAX0010": [
+    "EAAB31",
+    "EAAB32",
+    "EAAB33",
+    "EAAB34",
+    "IAAB11",
+    "IAAB12",
+    "IAAB13",
+    "IABB11",
+    "IABB12",
+    "IACB11",
+    "IACB12",
+    "IADB11",
+    "IADB12",
+    "IADB13",
+    "IADB14",
+    "IADB15"
+  ],
+  "EKE5080": [
+    "EAAB31",
+    "EAAB32",
+    "EAAB51",
+    "EAAB52",
+    "EAKI11",
+    "EAKI12"
+  ],
+  "ATM3060": [
+    "EAAB31",
+    "EAAB32",
+    "EAAB33",
+    "EAAB34"
+  ],
+  "EES3010": [
+    "EAAB31",
+    "EAAB32"
+  ],
+  "IDK0044": [
+    "EAAB51",
+    "EAAB52",
+    "EAAB53",
+    "EAAB54"
+  ],
+  "MHT0110": [
+    "EAAB51",
+    "EAAB52",
+    "EAAB53",
+    "EAAB54"
+  ],
+  "EEM3030": [
+    "EAAB51",
+    "EAAB52",
+    "EAAB53",
+    "EAAB54"
+  ],
+  "AEK0300": [
+    "EAAB51",
+    "EAAB52",
+    "EAAB53",
+    "EAAB54"
+  ],
+  "ATR0110": [
+    "EAAB51",
+    "EAAB52",
+    "EAAB53",
+    "EAAB54"
+  ],
+  "AEK0240": [
+    "EAAB51",
+    "EAAB52"
+  ],
+  "HPP2020": [
+    "EAAB51",
+    "EAAB52",
+    "EAAB53",
+    "EAAB54",
+    "EARB11",
+    "EARB12",
+    "EARB13"
+  ],
+  "EET3030": [
+    "EAAB53",
+    "EAAB54",
+    "VABA"
+  ],
+  "MHK0130": [
+    "EAAB53",
+    "EAAB54"
+  ],
+  "MES0085": [
+    "EAAB53",
+    "EAAB54",
+    "MATM31",
+    "MATM32",
+    "MVEB51",
+    "MVEB52"
+  ],
+  "ATR0040": [
+    "EAAB53",
+    "EAAB54",
+    "EARB51"
+  ],
+  "EEV3020": [
+    "EAAB53",
+    "EAAB54"
+  ],
+  "EEV5040": [
+    "EAMM11",
+    "EAMM12",
+    "MATM31",
+    "MATM32"
+  ],
+  "YMX8160": [
+    "EAMM11",
+    "EAMM12",
+    "IACM11",
+    "IACM12",
+    "IAVM11"
+  ],
+  "EEX5030": [
+    "EAMM11",
+    "EAMM12"
+  ],
+  "EEV5080": [
+    "EAMM11"
+  ],
+  "EEM0020": [
+    "EAMM12"
+  ],
+  "IAS0230": [
+    "EAMM12",
+    "IACM11",
+    "IACM12"
+  ],
+  "EEM0090": [
+    "EAMM12"
+  ],
+  "IAS0065": [
+    "EAMM12",
+    "IACM11",
+    "IACM12"
+  ],
+  "EMT0040": [
+    "EAMM12",
+    "EAMM32",
+    "MARM31",
+    "MATM31",
+    "MATM32"
+  ],
+  "EEV5060": [
+    "EAMM31"
+  ],
+  "EEV5130": [
+    "EAMM31"
+  ],
+  "EEM5010": [
+    "EAMM31",
+    "EAMM32"
+  ],
+  "EEM0040": [
+    "EAMM32"
+  ],
+  "IEE2630": [
+    "EAMM32",
+    "IACM31",
+    "IACM32",
+    "IAVM11"
+  ],
+  "IEE1720": [
+    "EAMM32"
+  ],
+  "IAS0023": [
+    "EAMM32",
+    "IACM32"
+  ],
+  "MLI0010": [
+    "EAKM11",
+    "EARM11",
+    "IACM31",
+    "IACM32",
+    "IAVM11",
+    "MASM11",
+    "VAAM11"
+  ],
+  "ITS8080": [
+    "IAPM31",
+    "MASM11"
+  ],
+  "EIS4120": [
+    "MASM11"
+  ],
+  "EIS4080": [
+    "MASM11"
+  ],
+  "EIS4170": [
+    "MASM11"
+  ],
+  "EIS4010": [
+    "MASM11"
+  ],
+  "EIS4210": [
+    "MASM31"
+  ],
+  "EIS4180": [
+    "MASM31"
+  ],
+  "EIS4190": [
+    "MASM31"
+  ],
+  "EIS4130": [
+    "MASM31"
+  ],
+  "YMX0261": [
+    "EACB51",
+    "EATI51",
+    "EATI52",
+    "EAXM11",
+    "EAXM12",
+    "EAXM15",
+    "EAXM16",
+    "EAXM18"
+  ],
+  "EKK5130": [
+    "EAKI71",
+    "EAXM13",
+    "EAXM14"
+  ],
+  "MSJ0001": [
+    "EAKI31",
+    "EAKI51",
+    "EARB31",
+    "EARB32",
+    "EARB33",
+    "EAXM13",
+    "EAXM14",
+    "MVEB51",
+    "MVEB52"
+  ],
+  "EKK5021": [
+    "EAKI71",
+    "EAXM13",
+    "EAXM14",
+    "EAXM17"
+  ],
+  "EKK5070": [
+    "EACB51",
+    "EAKI11",
+    "EAKI12",
+    "EAKI51",
+    "EAUI31",
+    "EAXM13"
+  ],
+  "EKK5050": [
+    "EAKI31",
+    "EAKI51",
+    "EAXM14"
+  ],
+  "ETT0250": [
+    "EATI71",
+    "EAXM16"
+  ],
+  "ETT0260": [
+    "EALM32",
+    "EATI71",
+    "EATI72",
+    "EAXM16",
+    "EAXM18"
+  ],
+  "ETT0240": [
+    "EATI71",
+    "EAXM16"
+  ],
+  "ETT0280": [
+    "EATI91",
+    "EAXM16"
+  ],
+  "EKE5030": [
+    "EAKI11",
+    "EAKI12",
+    "EAKI51",
+    "EAXM17"
+  ],
+  "ETG5120": [
+    "EATI31",
+    "EATI32",
+    "EAXM18"
+  ],
+  "ETG5170": [
+    "EATI72",
+    "EAXM18"
+  ],
+  "ETG5220": [
+    "EATI52",
+    "EAXM18"
+  ],
+  "ETG5111": [
+    "EATI71",
+    "EATI72",
+    "EAXM18"
+  ],
+  "EKK5012": [
+    "EAKI71",
+    "EAXM33",
+    "EAXM34"
+  ],
+  "EKK5090": [
+    "EAKI91",
+    "EAXM33",
+    "EAXM34",
+    "IACM32"
+  ],
+  "EKK5040": [
+    "EAKI91",
+    "EAXM33",
+    "EAXM34"
+  ],
+  "EEA5042": [
+    "EAKI71",
+    "EAXM33",
+    "EAXM34"
+  ],
+  "VLM0690": [
+    "EAXM34",
+    "VDXR71",
+    "VDXR72"
+  ],
+  "ETT0330": [
+    "EALM31",
+    "EALM32",
+    "EATI91",
+    "EAUI91",
+    "EAXM36"
+  ],
+  "ETS0140": [
+    "EATI91",
+    "EAXM36"
+  ],
+  "ETT0350": [
+    "EATI91",
+    "EAXM36"
+  ],
+  "ETS0160": [
+    "EATI91",
+    "EAXM36"
+  ],
+  "EAV6040": [
+    "EAKI91",
+    "EAXM37"
+  ],
+  "EMH5120": [
+    "EAXM37"
+  ],
+  "EKV5060": [
+    "EAXM37"
+  ],
+  "EAX6030": [
+    "EAKI71",
+    "EAXM37"
+  ],
+  "EKV5080": [
+    "EAKI91",
+    "EAXM37"
+  ],
+  "HOX6062": [
+    "EAKI11",
+    "EAKI12",
+    "EATI91",
+    "EATI92"
+  ],
+  "EKK5020": [
+    "EAKI11",
+    "EAKI12"
+  ],
+  "EAI0022": [
+    "EAKI31"
+  ],
+  "EMD5001": [
+    "EAKI31",
+    "EAUI31"
+  ],
+  "EAV6060": [
+    "EAKI51"
+  ],
+  "TMT0070": [
+    "EAKI71"
+  ],
+  "EKV5050": [
+    "EAKI91"
+  ],
+  "YFX0011": [
+    "MVEB11",
+    "MVEB12"
+  ],
+  "HLE0050": [
+    "MVEB11",
+    "MVEB12"
+  ],
+  "EAI0040": [
+    "MVEB11",
+    "MVEB12"
+  ],
+  "EMT0230": [
+    "MVEB11",
+    "MVEB12"
+  ],
+  "HOE6019": [
+    "MVEB11",
+    "MVEB12"
+  ],
+  "YKI0130": [
+    "MVEB31",
+    "MVEB32"
+  ],
+  "MER0150": [
+    "MVEB31",
+    "MVEB32"
+  ],
+  "MET0015": [
+    "MVEB31",
+    "MVEB32"
+  ],
+  "IEE1550": [
+    "IACM11",
+    "MVEB31",
+    "MVEB32"
+  ],
+  "MLE0040": [
+    "MVEB31",
+    "MVEB32"
+  ],
+  "MES0045": [
+    "EARB31",
+    "EARB32",
+    "EARB33",
+    "MVEB31",
+    "MVEB32"
+  ],
+  "TMT0350": [
+    "MVEB31",
+    "MVEB32"
+  ],
+  "ATR0030": [
+    "EARB52",
+    "MVEB51",
+    "MVEB52"
+  ],
+  "RAH1260": [
+    "EDJR14",
+    "EDKR12"
+  ],
+  "RAM0570": [
+    "EDKR12"
+  ],
+  "RAM0480": [
+    "EDKR12"
+  ],
+  "RAK0270": [
+    "EDKR12"
+  ],
+  "RAH1210": [
+    "EDJR14",
+    "EDKR12",
+    "EDTR13_V"
+  ],
+  "RAK0050": [
+    "EDKR12"
+  ],
+  "RAR2890": [
+    "EDJR14",
+    "EDKR12",
+    "EDTR13_V"
+  ],
+  "RAH1220": [
+    "EDKR12"
+  ],
+  "RAH1230": [
+    "EDJR11_V",
+    "EDJR14",
+    "EDKR31",
+    "EDKR32",
+    "EDTR11_V",
+    "EDTR13_V",
+    "MAJB11_V"
+  ],
+  "EVR0310": [
+    "EDKR31",
+    "EDKR32"
+  ],
+  "RAH1280": [
+    "EDKR31",
+    "EDKR32",
+    "MAJB11_V"
+  ],
+  "RAK0330": [
+    "EDKR31",
+    "EDKR32"
+  ],
+  "RAK0310": [
+    "EDKR31",
+    "EDKR32"
+  ],
+  "RAK0300": [
+    "EDKR31",
+    "EDKR32"
+  ],
+  "RAK0350": [
+    "EDKR51",
+    "EDKR52"
+  ],
+  "RAK0400": [
+    "EDKR51",
+    "EDKR52"
+  ],
+  "RAK0411": [
+    "EDKR51",
+    "EDKR52"
+  ],
+  "RAK0510": [
+    "EDKR51",
+    "EDKR52",
+    "EDKR72"
+  ],
+  "RAK0430": [
+    "EDKR72"
+  ],
+  "RAA0830": [
+    "EDKR72"
+  ],
+  "KAX0112": [
+    "EACB11",
+    "EACB12"
+  ],
+  "ITX0010": [
+    "EACB11",
+    "EACB12"
+  ],
+  "YMX0232": [
+    "EACB11",
+    "EACB12"
+  ],
+  "ITX0020": [
+    "EACB31",
+    "VDLR31"
+  ],
+  "EIS0130": [
+    "EACB31"
+  ],
+  "EIS0150": [
+    "EACB31"
+  ],
+  "KAK0055": [
+    "EACB31"
+  ],
+  "KAT0151": [
+    "EACB51"
+  ],
+  "KAT0141": [
+    "EACB51"
+  ],
+  "KAT0128": [
+    "EACB51"
+  ],
+  "EIS0160": [
+    "EACB51"
+  ],
+  "KAK8210": [
+    "EAKM11",
+    "EANB51"
+  ],
+  "EKO1100": [
+    "EAKM11"
+  ],
+  "KAK0150": [
+    "EAKM11"
+  ],
+  "SKK1110": [
+    "EAKB10",
+    "SDSR10"
+  ],
+  "ECK0070": [
+    "EAKB10"
+  ],
+  "ECA0160": [
+    "EAKB10"
+  ],
+  "SKE0123": [
+    "EAKB10",
+    "SDSR10",
+    "SDSR70"
+  ],
+  "ECK0140": [
+    "EAKB10"
+  ],
+  "SKK1770": [
+    "EAKB10",
+    "SDSR10"
+  ],
+  "SKK0030": [
+    "EAKB10",
+    "SDSR10"
+  ],
+  "ECK0010": [
+    "EAKB10"
+  ],
+  "ECK0190": [
+    "EAKB30"
+  ],
+  "ECK0220": [
+    "EAKB30"
+  ],
+  "ECK0240": [
+    "EAKB30"
+  ],
+  "ECK0230": [
+    "EAKB30"
+  ],
+  "ECK0430": [
+    "EAKB30"
+  ],
+  "EML0070": [
+    "EALM11"
+  ],
+  "EML0080": [
+    "EALM11",
+    "EALM12"
+  ],
+  "EML0130": [
+    "EALM11",
+    "EALM12"
+  ],
+  "EML0010": [
+    "EALM11",
+    "EALM12",
+    "EARB52"
+  ],
+  "MMK5270": [
+    "EALM11",
+    "EALM12",
+    "EARM11",
+    "MARM11"
+  ],
+  "EML0030": [
+    "EALM12"
+  ],
+  "EML0160": [
+    "EALM31",
+    "EALM32"
+  ],
+  "EMT0191": [
+    "EALM31",
+    "EALM32",
+    "MARM31"
+  ],
+  "EMT8600": [
+    "EALM31",
+    "EALM32",
+    "MARM11"
+  ],
+  "EMT0060": [
+    "EALM31",
+    "EALM32",
+    "MARM31",
+    "MATM11",
+    "MATM12"
+  ],
+  "EML0140": [
+    "EALM31"
+  ],
+  "EML0050": [
+    "EALM31",
+    "EALM32"
+  ],
+  "EML0110": [
+    "EALM32"
+  ],
+  "EVR0220": [
+    "EDJR14"
+  ],
+  "EVR0370": [
+    "EDJR14"
+  ],
+  "RAE0960": [
+    "EDJR14"
+  ],
+  "EVK0060": [
+    "EDJR14"
+  ],
+  "EVR0070": [
+    "EDJR34",
+    "EDJR35"
+  ],
+  "EVR0340": [
+    "EDJR34",
+    "EDJR35"
+  ],
+  "RAE0870": [
+    "EDJR34"
+  ],
+  "EVR0380": [
+    "EDJR34",
+    "EDJR35"
+  ],
+  "EVR0390": [
+    "EDJR34",
+    "EDJR35"
+  ],
+  "RAE1061": [
+    "EDJR34"
+  ],
+  "RAA0470": [
+    "EDJR35",
+    "EDJR55_V",
+    "EDJR75"
+  ],
+  "EVR0290": [
+    "EDJR35",
+    "EDJR55_V"
+  ],
+  "RAA0520": [
+    "EDJR74",
+    "EDTR53_V"
+  ],
+  "RAE0710": [
+    "EDJR74",
+    "EDJR75"
+  ],
+  "RAE0950": [
+    "EDJR74"
+  ],
+  "EVR0270": [
+    "EDJR71_V",
+    "EDJR74",
+    "EDJR75"
+  ],
+  "TMT0230": [
+    "EANB11",
+    "EANB12",
+    "EARM11"
+  ],
+  "KMX0050": [
+    "EANB11",
+    "EANB12"
+  ],
+  "HPP0300": [
+    "EANB11",
+    "EANB12",
+    "IACB51",
+    "IACB52",
+    "IAIB51",
+    "IAIB52",
+    "IAIB53"
+  ],
+  "MXX0070": [
+    "EANB31"
+  ],
+  "MES0240": [
+    "EANB31",
+    "EARB31",
+    "EARB32",
+    "EARB33"
+  ],
+  "KMP0065": [
+    "EANB51"
+  ],
+  "KMM0430": [
+    "EANB51"
+  ],
+  "MTX0030": [
+    "EANB51"
+  ],
+  "KMT0045": [
+    "EANB51"
+  ],
+  "KYP0120": [
+    "EANB51"
+  ],
+  "EKT0070": [
+    "EANB51"
+  ],
+  "KYF0290": [
+    "EANB51"
+  ],
+  "KMX0060": [
+    "EANB51"
+  ],
+  "ECK0330": [
+    "EAHM11"
+  ],
+  "ECK0310": [
+    "EAHM11",
+    "EAHM31"
+  ],
+  "ECK0170": [
+    "EAHM11",
+    "EAHM31"
+  ],
+  "ECK0300": [
+    "EAHM11",
+    "EAHM31"
+  ],
+  "ECK0320": [
+    "EAHM11"
+  ],
+  "ECK0380": [
+    "EAHM11"
+  ],
+  "ECK0360": [
+    "EAHM31"
+  ],
+  "ECK0280": [
+    "EAHM31"
+  ],
+  "SKK0240": [
+    "SDSR10"
+  ],
+  "SKK3040": [
+    "SDSR10",
+    "SDSR50",
+    "SDSR70"
+  ],
+  "SKK1610": [
+    "SDSR10"
+  ],
+  "SKK0490": [
+    "SDSR10"
+  ],
+  "ECK0470": [
+    "SDSR30"
+  ],
+  "SKK1800": [
+    "SDSR30",
+    "SDSR50"
+  ],
+  "SKK1680": [
+    "SDSR30"
+  ],
+  "SKK0380": [
+    "SDSR30",
+    "SDSR50"
+  ],
+  "MTM0010": [
+    "EARB31",
+    "EARB32",
+    "EARB33",
+    "SDSR30"
+  ],
+  "SKK1740": [
+    "SDSR30",
+    "SDSR50"
+  ],
+  "SKK1120": [
+    "SDSR50",
+    "SDSR70"
+  ],
+  "SKK1760": [
+    "SDSR50",
+    "SDSR70"
+  ],
+  "SKK1720": [
+    "SDSR50",
+    "SDSR70"
+  ],
+  "SKR0130": [
+    "SDSR70"
+  ],
+  "EKW0400": [
+    "KVEM11",
+    "KVEM12"
+  ],
+  "EKX0560": [
+    "KVEM11",
+    "KVEM12"
+  ],
+  "EKP0360": [
+    "KVEM11",
+    "KVEM12"
+  ],
+  "EKW0421": [
+    "KVEM11"
+  ],
+  "EKX0350": [
+    "KVEM11",
+    "KVEM12"
+  ],
+  "EKX0411": [
+    "KVEM11",
+    "KVEM12"
+  ],
+  "EKT0030": [
+    "KVEM12"
+  ],
+  "EKP0630": [
+    "KVEM12"
+  ],
+  "EKP0711": [
+    "KVEM12"
+  ],
+  "EKW0580": [
+    "KVEM31",
+    "KVEM32"
+  ],
+  "EKX0413": [
+    "KVEM31",
+    "KVEM32"
+  ],
+  "EKW0470": [
+    "KVEM31",
+    "KVEM32"
+  ],
+  "EKT0060": [
+    "KVEM32"
+  ],
+  "EKT0050": [
+    "KVEM32"
+  ],
+  "EKM3300": [
+    "EARM11"
+  ],
+  "EKM1300": [
+    "EARM11"
+  ],
+  "EKM3200": [
+    "EARM11"
+  ],
+  "EKM1100": [
+    "EARM11"
+  ],
+  "EKM2600": [
+    "EARM31"
+  ],
+  "EKM3500": [
+    "EARM31"
+  ],
+  "EKM2400": [
+    "EARM31"
+  ],
+  "ETG5101": [
+    "EATI11",
+    "EATI12",
+    "VDVR11"
+  ],
+  "EAI0010": [
+    "EATI11",
+    "EATI12"
+  ],
+  "ETT0210": [
+    "EATI11",
+    "EATI12"
+  ],
+  "YFX0012": [
+    "EATI32"
+  ],
+  "ETT0220": [
+    "EATI51",
+    "EATI52"
+  ],
+  "EAV0030": [
+    "EATI51",
+    "EATI52"
+  ],
+  "ETG5160": [
+    "EATI72"
+  ],
+  "ETG5400": [
+    "EATI72",
+    "EATI92"
+  ],
+  "NSO0170": [
+    "EATI92"
+  ],
+  "VMV0530": [
+    "EATI92",
+    "VDVR31"
+  ],
+  "ETG5190": [
+    "EATI92"
+  ],
+  "EMT0200": [
+    "EARB11",
+    "EARB12",
+    "EARB13"
+  ],
+  "EMT0020": [
+    "EARB11",
+    "EARB12",
+    "EARB13"
+  ],
+  "EMT0010": [
+    "EARB11",
+    "EARB12",
+    "EARB13"
+  ],
+  "MEA5380": [
+    "EARB31",
+    "EARB32",
+    "EARB33"
+  ],
+  "MES0235": [
+    "EARB31",
+    "EARB32",
+    "EARB33"
+  ],
+  "MEL0010": [
+    "EARB31",
+    "EARB32",
+    "EARB33"
+  ],
+  "EMT0050": [
+    "EARB51"
+  ],
+  "MER0125": [
+    "EARB51",
+    "EARB52"
+  ],
+  "HPI0630": [
+    "EARB51",
+    "EARB52"
+  ],
+  "IAS0130": [
+    "EARB51",
+    "EARB52",
+    "IACB31",
+    "IACB32",
+    "KATM11"
+  ],
+  "EMD5040": [
+    "EARB51"
+  ],
+  "IAS1420": [
+    "EARB52",
+    "IACB51",
+    "IACB52"
+  ],
+  "EMT0110": [
+    "MATM11",
+    "MATM12"
+  ],
+  "EMT1135": [
+    "MARM31",
+    "MATM11",
+    "MATM12"
+  ],
+  "EMX0010": [
+    "MATM12"
+  ],
+  "EEV5120": [
+    "MATM31",
+    "MATM32"
+  ],
+  "EMT0190": [
+    "MATM31",
+    "MATM32"
+  ],
+  "EMT0210": [
+    "MATM31",
+    "MATM32"
+  ],
+  "EMT0170": [
+    "MARM11"
+  ],
+  "EMT0140": [
+    "IABM33",
+    "MARM11"
+  ],
+  "EMT0150": [
+    "MARM11"
+  ],
+  "EMT0180": [
+    "MARM31"
+  ],
+  "ITE4320": [
+    "IAGM10"
+  ],
+  "ITE6140": [
+    "IAGM10"
+  ],
+  "ITE6110": [
+    "IAGM10"
+  ],
+  "ITE4220": [
+    "IAGM10",
+    "IVDM10"
+  ],
+  "ITI0210": [
+    "IAIB31",
+    "IAIB32",
+    "IAIB33",
+    "IAPM11",
+    "IAVM31",
+    "IVSM31",
+    "IVSM32"
+  ],
+  "ITB8832": [
+    "IABM11",
+    "IAPM11",
+    "IVSM31",
+    "IVSM32"
+  ],
+  "IDU1550": [
+    "IABB31",
+    "IABB32",
+    "IABM32",
+    "IAPM11",
+    "IAVM11"
+  ],
+  "ITI8730": [
+    "IAPM11",
+    "IVCM31",
+    "IVCM32",
+    "VAMM11"
+  ],
+  "ITT8060": [
+    "IAPM11"
+  ],
+  "ITS8035": [
+    "IAPM11"
+  ],
+  "ITS8020": [
+    "IAPM11"
+  ],
+  "ITX8300": [
+    "IAPM11"
+  ],
+  "IAS0220": [
+    "IACB31",
+    "IACB32",
+    "IAIB51",
+    "IAIB52",
+    "IAIB53",
+    "IAPM11",
+    "IVSM31",
+    "IVSM32"
+  ],
+  "ITV9070": [
+    "IAPM11"
+  ],
+  "ITX8302": [
+    "IAPM31",
+    "IVSM31",
+    "IVSM32"
+  ],
+  "ITI0207": [
+    "IABM11",
+    "IAIB51",
+    "IAIB52",
+    "IAIB53",
+    "IAPM31"
+  ],
+  "ITB8802": [
+    "IABM11",
+    "IAPM31"
+  ],
+  "ITI0211": [
+    "IACM11",
+    "IACM12",
+    "IAIB51",
+    "IAIB52",
+    "IAIB53",
+    "IAPM31"
+  ],
+  "ITB8826": [
+    "IABM11",
+    "IAPM31"
+  ],
+  "ITC8290": [
+    "IAPM31",
+    "IVCM31",
+    "IVCM32"
+  ],
+  "ITI8740": [
+    "IAPM31"
+  ],
+  "IAX0043": [
+    "IAIB31",
+    "IAIB32",
+    "IAIB33"
+  ],
+  "ITI0204": [
+    "IABB51",
+    "IABB52",
+    "IABB53",
+    "IAIB31",
+    "IAIB32",
+    "IAIB33"
+  ],
+  "ITI0402": [
+    "IAIB31",
+    "IAIB32",
+    "IAIB33"
+  ],
+  "ITI0302": [
+    "IAIB31",
+    "IAIB32",
+    "IAIB33"
+  ],
+  "ITI0223": [
+    "IAIB51",
+    "IAIB52",
+    "IAIB53"
+  ],
+  "ITI0224": [
+    "IAIB51",
+    "IAIB52",
+    "IAIB53"
+  ],
+  "ITI0303": [
+    "IAIB51",
+    "IAIB52",
+    "IAIB53"
+  ],
+  "YFX0060": [
+    "IAIB51",
+    "IAIB52",
+    "IAIB53"
+  ],
+  "HOE7120": [
+    "IAIB51",
+    "IAIB52",
+    "IAIB53"
+  ],
+  "YMR0050": [
+    "IAIB51",
+    "IAIB52",
+    "IAIB53"
+  ],
+  "ITI0218": [
+    "IAIB51",
+    "IAIB52",
+    "IAIB53"
+  ],
+  "ICD0022": [
+    "IADB31",
+    "IADB32",
+    "IADB33",
+    "IADB34",
+    "IADB35",
+    "IAIB51",
+    "IAIB52",
+    "IAIB53"
+  ],
+  "ITI0105": [
+    "IAIB11",
+    "IAIB12",
+    "IAIB13",
+    "IAIB14"
+  ],
+  "ICA0019": [
+    "IAAB11",
+    "IAAB12",
+    "IAAB13",
+    "IAIB11",
+    "IAIB12",
+    "IAIB13",
+    "IAIB14",
+    "IVCM11",
+    "IVCM12",
+    "IVSB11",
+    "IVSB12"
+  ],
+  "ITI0102": [
+    "IAAB11",
+    "IAAB12",
+    "IAAB13",
+    "IADB11",
+    "IADB12",
+    "IADB13",
+    "IADB14",
+    "IADB15",
+    "IAIB11",
+    "IAIB12",
+    "IAIB13",
+    "IAIB14"
+  ],
+  "ITI0002": [
+    "IAAB11",
+    "IAAB12",
+    "IAAB13",
+    "IADB11",
+    "IADB12",
+    "IADB13",
+    "IADB14",
+    "IADB15",
+    "IAIB11",
+    "IAIB12",
+    "IAIB13",
+    "IAIB14",
+    "VABA"
+  ],
+  "ITI0401": [
+    "IAIB11",
+    "IAIB12",
+    "IAIB13",
+    "IAIB14"
+  ],
+  "ITI0101": [
+    "IAAB11",
+    "IAAB12",
+    "IAAB13",
+    "IACB11",
+    "IACB12",
+    "IADB11",
+    "IADB12",
+    "IADB13",
+    "IADB14",
+    "IADB15",
+    "IAIB11",
+    "IAIB12",
+    "IAIB13",
+    "IAIB14"
+  ],
+  "ICM0012": [
+    "IAAM11",
+    "IAAM12"
+  ],
+  "ICM0005": [
+    "IAAM11",
+    "IAAM12"
+  ],
+  "ICM0023": [
+    "IAAM11",
+    "IAAM12"
+  ],
+  "ICM0008": [
+    "IAAM11",
+    "IAAM12"
+  ],
+  "ICM0007": [
+    "IAAM11",
+    "IAAM12"
+  ],
+  "ICM0019": [
+    "IAAM31",
+    "IAAM32"
+  ],
+  "ICM0033": [
+    "IAAM31",
+    "IAAM32"
+  ],
+  "ICM0014": [
+    "IAAB51",
+    "IAAB52",
+    "IAAB53",
+    "IAAM31",
+    "IAAM32"
+  ],
+  "ICM0032": [
+    "IAAM31",
+    "IAAM32"
+  ],
+  "ICM0009": [
+    "IAAM31",
+    "IAAM32"
+  ],
+  "ICM0004": [
+    "IAAM31",
+    "IAAM32"
+  ],
+  "ICA0012": [
+    "IAAB11",
+    "IAAB12",
+    "IAAB13"
+  ],
+  "ICA0003": [
+    "IAAB31",
+    "IAAB32",
+    "IADB31",
+    "IADB32",
+    "IADB33",
+    "IADB34",
+    "IADB35"
+  ],
+  "ICD0007": [
+    "IAAB31",
+    "IAAB32",
+    "IADB31",
+    "IADB32",
+    "IADB33",
+    "IADB34",
+    "IADB35"
+  ],
+  "ICA0009": [
+    "IAAB31",
+    "IAAB32"
+  ],
+  "ICA0020": [
+    "IAAB31",
+    "IAAB32",
+    "IACB51",
+    "IACB52",
+    "IVSB31",
+    "IVSB32"
+  ],
+  "ICA0005": [
+    "IAAB31",
+    "IAAB32",
+    "IADB31",
+    "IADB32",
+    "IADB33",
+    "IADB34",
+    "IADB35"
+  ],
+  "MLI0007": [
+    "IAAB31",
+    "IAAB32"
+  ],
+  "ICA0002": [
+    "IAAB31",
+    "IAAB32",
+    "IVSB51",
+    "IVSB52"
+  ],
+  "ICA0016": [
+    "IAAB51",
+    "IAAB52",
+    "IAAB53"
+  ],
+  "ICS0020": [
+    "IAAB51",
+    "IAAB52",
+    "IAAB53",
+    "IVSB51",
+    "IVSB52"
+  ],
+  "ICD0004": [
+    "IAAB51",
+    "IAAB52",
+    "IAAB53",
+    "IADB51",
+    "IADB52",
+    "IADB53",
+    "IADB54",
+    "IADB55"
+  ],
+  "ICA0022": [
+    "IAAB51",
+    "IAAB52",
+    "IAAB53"
+  ],
+  "ICD0011": [
+    "IAAB51",
+    "IAAB52",
+    "IAAB53",
+    "IADB51",
+    "IADB52",
+    "IADB53",
+    "IADB54",
+    "IADB55"
+  ],
+  "ICY0016": [
+    "IAAB51",
+    "IAAB52",
+    "IAAB53"
+  ],
+  "NSO0160": [
+    "IAAB51",
+    "IAAB52",
+    "IAAB53",
+    "IADB11",
+    "IADB12",
+    "IADB13",
+    "IADB14",
+    "IADB15"
+  ],
+  "ICA0008": [
+    "IAAB51",
+    "IAAB52",
+    "IAAB53"
+  ],
+  "ICY0021": [
+    "IADB31",
+    "IADB32",
+    "IADB33",
+    "IADB34",
+    "IADB35"
+  ],
+  "ICY0006": [
+    "IADB31",
+    "IADB32",
+    "IADB33",
+    "IADB34",
+    "IADB35"
+  ],
+  "ICD0001": [
+    "IADB31",
+    "IADB32",
+    "IADB33",
+    "IADB34",
+    "IADB35"
+  ],
+  "ICY0025": [
+    "IADB31",
+    "IADB32",
+    "IADB33",
+    "IADB34",
+    "IADB35"
+  ],
+  "ICD0008": [
+    "IADB31",
+    "IADB32",
+    "IADB33",
+    "IADB34",
+    "IADB35"
+  ],
+  "ICD0023": [
+    "IADB31",
+    "IADB32",
+    "IADB33",
+    "IADB34",
+    "IADB35"
+  ],
+  "ICD0027": [
+    "IADB51",
+    "IADB52",
+    "IADB53",
+    "IADB54",
+    "IADB55"
+  ],
+  "ICD0003": [
+    "IADB51",
+    "IADB52",
+    "IADB53",
+    "IADB54",
+    "IADB55"
+  ],
+  "ICD0020": [
+    "IADB51",
+    "IADB52",
+    "IADB53",
+    "IADB54",
+    "IADB55"
+  ],
+  "ICD0026": [
+    "IADB51",
+    "IADB52",
+    "IADB53",
+    "IADB54",
+    "IADB55"
+  ],
+  "ICD0018": [
+    "IADB51",
+    "IADB52",
+    "IADB53",
+    "IADB54",
+    "IADB55"
+  ],
+  "ITC8020": [
+    "IVCM31",
+    "IVCM32"
+  ],
+  "ITX8071": [
+    "IAVM31",
+    "IVCM31",
+    "IVCM32"
+  ],
+  "ITC8200": [
+    "IVCM31",
+    "IVCM32"
+  ],
+  "ITX8205": [
+    "IVCM31",
+    "IVCM32"
+  ],
+  "ITC8080": [
+    "IVCM31",
+    "IVCM32"
+  ],
+  "ITC8230": [
+    "IVCM31",
+    "IVCM32"
+  ],
+  "ITC8075": [
+    "IAVM31",
+    "IVCM31",
+    "IVCM32"
+  ],
+  "ICS0002": [
+    "IVSB11",
+    "IVSB12"
+  ],
+  "ICS0006": [
+    "IVSB11",
+    "IVSB12"
+  ],
+  "ICS0001": [
+    "IVSB11",
+    "IVSB12"
+  ],
+  "ICS0004": [
+    "IVSB11",
+    "IVSB12"
+  ],
+  "ICS0012": [
+    "IVSB31",
+    "IVSB32",
+    "VAMM11"
+  ],
+  "ICS0036": [
+    "IVSB31",
+    "IVSB32"
+  ],
+  "ICS0017": [
+    "IVSB31",
+    "IVSB32"
+  ],
+  "ICS0021": [
+    "IVSB31",
+    "IVSB32"
+  ],
+  "ICS0010": [
+    "IVSB31",
+    "IVSB32"
+  ],
+  "ICS0011": [
+    "IVSB31",
+    "IVSB32"
+  ],
+  "ICS0030": [
+    "IVSB51",
+    "IVSB52"
+  ],
+  "ICS0027": [
+    "IVSB51",
+    "IVSB52"
+  ],
+  "ICS0024": [
+    "IVSB51",
+    "IVSB52"
+  ],
+  "ICS0022": [
+    "IVCM11",
+    "IVCM12",
+    "IVSB51",
+    "IVSB52",
+    "VAMM11"
+  ],
+  "YFX0120": [
+    "IVSB51",
+    "IVSB52"
+  ],
+  "ICS0033": [
+    "IVSB51",
+    "IVSB52"
+  ],
+  "ICS0028": [
+    "IVSB51",
+    "IVSB52"
+  ],
+  "IEE1220": [
+    "IACB11",
+    "IACB12"
+  ],
+  "IAS0001": [
+    "IACB11",
+    "IACB12"
+  ],
+  "IAS0090": [
+    "IACB31",
+    "IACB32"
+  ],
+  "IAX0586": [
+    "IACB31",
+    "IACB32",
+    "VABA"
+  ],
+  "YMX0340": [
+    "IACB31",
+    "IACB32"
+  ],
+  "YMX0242": [
+    "IACB31",
+    "IACB32"
+  ],
+  "IEE1030": [
+    "IACB31",
+    "IACB32"
+  ],
+  "HLI0091": [
+    "IABB31",
+    "IABB32",
+    "IACB31",
+    "IACB32"
+  ],
+  "ICA0001": [
+    "IACB31",
+    "IACB32"
+  ],
+  "HLI0080": [
+    "IACB31",
+    "IACB32"
+  ],
+  "HOE6056": [
+    "IACB51",
+    "IACB52"
+  ],
+  "YFX0050": [
+    "IACB51",
+    "IACB52"
+  ],
+  "IEE1040": [
+    "IACB51",
+    "IACB52",
+    "IACM11",
+    "IACM12"
+  ],
+  "IAS0360": [
+    "IACM31",
+    "IACM32"
+  ],
+  "IAS0550": [
+    "IACM31"
+  ],
+  "IEE2560": [
+    "IACM31",
+    "IAVM31"
+  ],
+  "IEE2520": [
+    "IACM31",
+    "IACM32"
+  ],
+  "IAS0370": [
+    "IACM31"
+  ],
+  "IAS0450": [
+    "IACM31",
+    "IACM32"
+  ],
+  "IAS0470": [
+    "IACM31",
+    "IACM32"
+  ],
+  "IAS0190": [
+    "IACM32"
+  ],
+  "IAS0430": [
+    "IACM11",
+    "IVSM31",
+    "IVSM32"
+  ],
+  "ITX8522": [
+    "IVSM31",
+    "IVSM32"
+  ],
+  "IEP2050": [
+    "IAVM11"
+  ],
+  "ITC8250": [
+    "IAVM11",
+    "IVCM11",
+    "IVCM12"
+  ],
+  "IEE2610": [
+    "IAVM11"
+  ],
+  "IEE2580": [
+    "IAVM31"
+  ],
+  "IAS0320": [
+    "IACM11",
+    "IACM12",
+    "IAVM31"
+  ],
+  "IEE2670": [
+    "IAVM31"
+  ],
+  "ITB2201": [
+    "IABB11",
+    "IABB12"
+  ],
+  "ITB2401": [
+    "IABB11",
+    "IABB12"
+  ],
+  "ITB2203": [
+    "IABB31",
+    "IABB32"
+  ],
+  "YMX0231": [
+    "IABB31",
+    "IABB32"
+  ],
+  "HOE7051": [
+    "IABB31",
+    "IABB32",
+    "IABM31",
+    "IABM32",
+    "IABM33"
+  ],
+  "YMX0241": [
+    "IABB51",
+    "IABB52",
+    "IABB53"
+  ],
+  "ITB1706": [
+    "IABB51",
+    "IABB52",
+    "IABB53"
+  ],
+  "ITB2430": [
+    "IABM11"
+  ],
+  "MMA5150": [
+    "IABM11"
+  ],
+  "ITB8805": [
+    "IABM11"
+  ],
+  "ITB8813": [
+    "IABM11"
+  ],
+  "ITB8833": [
+    "IABM31",
+    "IABM32",
+    "IABM33"
+  ],
+  "ITB8831": [
+    "IABM31",
+    "IABM32",
+    "IABM33"
+  ],
+  "ITB8810": [
+    "IABM31",
+    "IABM32",
+    "IABM33"
+  ],
+  "ITB8824": [
+    "IABM32"
+  ],
+  "ITB8828": [
+    "IABM33"
+  ],
+  "VAY0880": [
+    "VDLR11",
+    "VDXR11"
+  ],
+  "VLL1360": [
+    "VDLR11",
+    "VDXR31",
+    "VDXR32"
+  ],
+  "VLL1370": [
+    "VDLR11"
+  ],
+  "VAY0800": [
+    "VDLR11",
+    "VDSR11",
+    "VDXR11"
+  ],
+  "VAY0810": [
+    "VDLR11",
+    "VDSR11",
+    "VDVR11",
+    "VDXR11"
+  ],
+  "VAY1110": [
+    "VDLR11",
+    "VDSR11",
+    "VDVR11",
+    "VDXR11"
+  ],
+  "VAY1000": [
+    "VDLR11",
+    "VDSR11",
+    "VDVR11",
+    "VDXR11"
+  ],
+  "VAA0240": [
+    "VDLR31"
+  ],
+  "VLL0520": [
+    "VDLR31"
+  ],
+  "VAY0890": [
+    "VDLR31",
+    "VDVR11",
+    "VDXR11"
+  ],
+  "VAA0050": [
+    "VDLR31",
+    "VDSR31"
+  ],
+  "VMV0610": [
+    "VDLR31"
+  ],
+  "VLL1380": [
+    "VDLR31"
+  ],
+  "VAA0320": [
+    "VDLR31",
+    "VDSR31"
+  ],
+  "VAY1040": [
+    "VDLR31",
+    "VDSR31",
+    "VDVR71",
+    "VDXR11"
+  ],
+  "VLL1230": [
+    "VDLR51",
+    "VDXR71",
+    "VDXR72"
+  ],
+  "VLL1330": [
+    "VDLR51"
+  ],
+  "VLL1440": [
+    "VDLR51"
+  ],
+  "VLL1430": [
+    "VDLR51"
+  ],
+  "VLL1460": [
+    "VDLR51"
+  ],
+  "VLL1340": [
+    "VDLR71"
+  ],
+  "VMS0690": [
+    "VDLR71",
+    "VDVR51"
+  ],
+  "VLL1390": [
+    "VDLR71"
+  ],
+  "VAY0770": [
+    "VDSR11",
+    "VDXR11"
+  ],
+  "VLK0340": [
+    "VDXR31",
+    "VDXR32",
+    "VDXR71",
+    "VDXR72"
+  ],
+  "VLM0570": [
+    "VDXR31",
+    "VDXR32"
+  ],
+  "VLM0770": [
+    "VDXR31",
+    "VDXR32",
+    "VDXR51",
+    "VDXR52"
+  ],
+  "VLM0490": [
+    "VDXR31",
+    "VDXR32"
+  ],
+  "VLM0510": [
+    "VDXR31",
+    "VDXR32"
+  ],
+  "VLM0860": [
+    "VDXR31",
+    "VDXR32"
+  ],
+  "VLM0590": [
+    "VDXR51",
+    "VDXR52"
+  ],
+  "VLM0470": [
+    "VDXR51",
+    "VDXR52"
+  ],
+  "VLM0530": [
+    "VDXR51",
+    "VDXR52"
+  ],
+  "VLM1080": [
+    "VDXR51",
+    "VDXR52"
+  ],
+  "VLM0450": [
+    "VDXR51",
+    "VDXR52"
+  ],
+  "VLM0960": [
+    "VDXR51",
+    "VDXR52"
+  ],
+  "VLL1310": [
+    "VDVR71",
+    "VDXR51",
+    "VDXR52"
+  ],
+  "VLM0460": [
+    "VDXR71"
+  ],
+  "VLM0580": [
+    "VDXR71"
+  ],
+  "VLM0430": [
+    "VDXR71",
+    "VDXR72"
+  ],
+  "VLM0610": [
+    "VDXR71"
+  ],
+  "VLM1120": [
+    "VDXR71",
+    "VDXR72"
+  ],
+  "VLM1180": [
+    "VDXR72"
+  ],
+  "VLM1200": [
+    "VDXR72"
+  ],
+  "VLM0950": [
+    "VDXR72"
+  ],
+  "VME0360": [
+    "VAAM11",
+    "VAAM31"
+  ],
+  "VME0370": [
+    "VAAM11"
+  ],
+  "VME0270": [
+    "VAAM11",
+    "VAAM31"
+  ],
+  "VME0470": [
+    "VAAM11",
+    "VAMM11"
+  ],
+  "VME0390": [
+    "VAAM11",
+    "VAMM11"
+  ],
+  "VME0420": [
+    "VAAM31"
+  ],
+  "VME0260": [
+    "VAAM31",
+    "VAMM11"
+  ],
+  "VME0530": [
+    "VAAM31"
+  ],
+  "VME0520": [
+    "VAAM31",
+    "VAMM11"
+  ],
+  "VME0410": [
+    "VAAM31",
+    "VAMM11"
+  ],
+  "VAY1050": [
+    "VDSR11",
+    "VDVR31"
+  ],
+  "VMS0650": [
+    "VDSR11"
+  ],
+  "VAA0410": [
+    "VDSR31"
+  ],
+  "VMS0500": [
+    "VDSR31"
+  ],
+  "VMS0670": [
+    "VDSR31"
+  ],
+  "VAY1020": [
+    "VDSR51"
+  ],
+  "VMS0640": [
+    "VDSR51"
+  ],
+  "VMS0630": [
+    "VDSR51"
+  ],
+  "VMV0690": [
+    "VDSR51"
+  ],
+  "VMS0770": [
+    "VDSR51",
+    "VDVR71"
+  ],
+  "VMS0700": [
+    "VDSR71"
+  ],
+  "VMS0730": [
+    "VDSR71"
+  ],
+  "VMS0720": [
+    "VDSR71"
+  ],
+  "VMS0710": [
+    "VDSR71"
+  ],
+  "VAA0420": [
+    "VDVR11"
+  ],
+  "VMV0550": [
+    "VDVR11"
+  ],
+  "VAA0380": [
+    "VDVR11"
+  ],
+  "VMV0650": [
+    "VDVR11"
+  ],
+  "VMV0680": [
+    "VDVR31"
+  ],
+  "VAA0400": [
+    "VDVR31"
+  ],
+  "VAY0780": [
+    "VDVR31"
+  ],
+  "VAY1030": [
+    "VDVR31"
+  ],
+  "EKE5060": [
+    "VDVR51"
+  ],
+  "VMV0570": [
+    "VDVR51"
+  ],
+  "VMV0630": [
+    "VDVR51"
+  ],
+  "VMV0590": [
+    "VDVR71"
+  ],
+  "VMV0730": [
+    "VDVR71"
+  ]
+}
