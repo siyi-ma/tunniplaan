@@ -176,7 +176,6 @@
         const DATA_URL_COURSES = './courses_new.json';
         const DATA_URL_COURSE_GROUP_MAP = './course_to_groups_map.json';
         const DATA_URL_GROUP_FACULTY_MAP = './tpg2teaduskond_map.json';
-        // --- CHANGE: Added new data source for instructor search ---
         const DATA_URL_INSTRUCTOR_MAP = './course_to_instructors_map.json';
 
         // In-memory maps for fast lookups
@@ -262,7 +261,6 @@
         };
         
         // --- Data Processing Functions ---
-        // --- CHANGE: Function now accepts the new instructor map ---
         function processInitialData(courseData, courseToGroupMap, groupToFacultyData, courseToInstructorMap) {
             groupToFacultyNameMap.clear();
             facultyToGroupsMap.clear();
@@ -282,7 +280,6 @@
             allCourses = courseData.map(c => ({ 
                 ...c, 
                 sessions: [], 
-                // --- CHANGE: Populate uniqueInstructors immediately from the new map, cleaning the names ---
                 uniqueInstructors: new Set((courseToInstructorMap[c.id] || []).map(name => name.split('(')[0].trim())),
                 associatedGroups: new Set(courseToGroupMap[c.id] || []) 
             }));
@@ -309,7 +306,6 @@
             });
         }
 
-        // --- CHANGE: This function now only merges session data. Instructor data is separate. ---
         function mergeTimetableData(filteredTimetableData) {
             allCourses.forEach(course => course.sessions = []);
 
@@ -350,7 +346,6 @@
                         const searchField = activeFilters.searchFieldType;
                         const instructorsStr = Array.from(course.uniqueInstructors).join(' ').toLowerCase();
                         
-                        // --- CHANGE: Expanded keyword search logic ---
                         const keywordsStr = `${(course.keywords_et || []).join(' ')} ${course.description_short_et || ''} ${course.learning_outcomes_et || ''} ${currentLanguage === 'et' ? (course.assessment_form_et || '') : (course.assessment_form_en || course.assessment_form_et || '')}`.toLowerCase();
                         
                         const titleStr = `${course.name_et||''} ${course.name_en||''}`.toLowerCase();
@@ -370,20 +365,12 @@
                     }
                 }
                 
-                if (activeFilters.school) {
-                    const facultyNameET = (allSchoolNames.get(activeFilters.school) || {}).et || '';
-                    const normalizedKey = facultyNameET.toUpperCase().replace(/\s+/g, '');
-                    const groupsOfFaculty = facultyToGroupsMap.get(normalizedKey) || new Set();
-                    const isOwnedByFaculty = course.school_code === activeFilters.school;
-                    const isTakenByFacultyGroup = [...course.associatedGroups].some(group => groupsOfFaculty.has(group));
-                    
-                    if (activeFilters.institute) {
-                        if (course.school_code !== activeFilters.school || course.institute_name !== activeFilters.institute) return false;
-                    } else {
-                        if (!isOwnedByFaculty && !isTakenByFacultyGroup) return false;
-                    }
-                } else if (activeFilters.institute) {
-                     if (course.institute_name !== activeFilters.institute) return false;
+                // --- FIX: Stricter faculty filtering ---
+                if (activeFilters.school && course.school_code !== activeFilters.school) {
+                    return false;
+                }
+                if (activeFilters.institute && course.institute_name !== activeFilters.institute) {
+                    return false;
                 }
 
                 if (activeFilters.eap && course.eap != activeFilters.eap) return false;
@@ -736,15 +723,11 @@
         function updateDependentFilters() {
             const schoolCode = schoolFilterDOM.value;
             
-            instituteFilterDOM.disabled = false;
+            instituteFilterDOM.disabled = !schoolCode;
             
             const institutes = new Set();
             if (schoolCode) {
                 (schoolToInstitutes.get(schoolCode) || []).forEach(inst => institutes.add(inst));
-            } else {
-                allCourses.forEach(course => {
-                    if (course.institute_name) institutes.add(course.institute_name);
-                });
             }
 
             const currentInstitute = activeFilters.institute;
