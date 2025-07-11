@@ -1,0 +1,1326 @@
+[
+  {
+    "tpg": "HAAB11",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "HAAB31",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "HAAB51",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "MVGM31",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "HAAM11",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "HAAM31",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "MAEM10",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "MAEM30",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TATM11",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TATM12",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TATM13",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TATM14",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TATM31",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TATM32",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TATM33",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TATM34",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "MAKM10",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TAAM11",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TAAM31",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "HAPM10",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "HAPM30",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TVTM11",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TVTM31",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TVTB11",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TVTB12",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TVTB31",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TVTB32",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TVTB51",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TVTB52",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TVTB53",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TVTB54",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TAAB11",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TAAB12",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TAAB31",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TAAB32",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TAAB51",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TAAB52",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "HAGM11",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "HAGM31",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TABB11",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TABB12",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TABB13",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TABB14",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TABB15",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TABB16",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TABB31",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TABB32",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TABB33",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TABB34",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TABB35",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TABB36",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TABB51",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TABB52",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TABB53",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TABB54",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TABB55",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TABB56",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TABB57",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TARM11",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TARM12",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TARM31",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "TARM32",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "HAJM11",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "HAJM31",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "HAJB11",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "HAJB31",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "HAJB51",
+    "teaduskond": "MAJANDUSTEADUSKOND"
+  },
+  {
+    "tpg": "LARM11",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LARM12",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LARM31",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LARM32",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LARB11",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LARB31",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LARB51",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "YAFB11",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "YAFB31",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "YAFB51",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LAFM11",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LAFM31",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "YASM11",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "YASM12",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "YASM31",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "YASM32",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LAAB11",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LAAB12",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LAAB13",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LAAB14",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LAAB15",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LAAB16",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LAAB17",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LAAB31",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LAAB32",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LAAB33",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LAAB34",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LAAB35",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LAAB36",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LAAB37",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LAAB51",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LAAB52",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LATB11",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LATB12",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LATB13",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LATB31",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LATB32",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "LATB51",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "KATM11",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "KATM31",
+    "teaduskond": "LOODUSTEADUSKOND"
+  },
+  {
+    "tpg": "EAEI11",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAEI12",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAEI13",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAEI14",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAEI31",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAEI32",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAEI33",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAEI51",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAEI52",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAEI53",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAEI71",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAEI72",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAEI91",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAEI92",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "AAVM11",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "AAVM12",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "AAVM31",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "AAVM32",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAAB11",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAAB12",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAAB13",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAAB14",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAAB15",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAAB31",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAAB32",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAAB33",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAAB34",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAAB51",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAAB52",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAAB53",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAAB54",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAMM11",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAMM12",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAMM31",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAMM32",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "MASM11",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "MASM31",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAXM11",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAXM12",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAXM13",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAXM14",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAXM15",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAXM16",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAXM17",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAXM18",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAXM31",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAXM32",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAXM33",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAXM34",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAXM35",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAXM36",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAXM37",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAKI11",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAKI12",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAKI31",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAKI51",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAKI71",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAKI91",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "MVEB11",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "MVEB12",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "MVEB31",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "MVEB32",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "MVEB51",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "MVEB52",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EDKR12",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EDKR31",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EDKR32",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EDKR51",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EDKR52",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EDKR72",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EACB11",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EACB12",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EACB31",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EACB51",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAKM11",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAKB10",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAKB30",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EALM11",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EALM12",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EALM31",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EALM32",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EDJR14",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EDJR34",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EDJR35",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EDJR74",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EDJR75",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EANB11",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EANB12",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EANB31",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EANB51",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAHM11",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EAHM31",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "SDSR10",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "SDSR30",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "SDSR50",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "SDSR70",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "KVEM11",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "KVEM12",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "KVEM31",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "KVEM32",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EARM11",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EARM31",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EATI11",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EATI12",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EATI31",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EATI32",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EATI51",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EATI52",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EATI71",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EATI72",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EATI91",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EATI92",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EARB11",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EARB12",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EARB13",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EARB31",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EARB32",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EARB33",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EARB51",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "EARB52",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "MATM11",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "MATM12",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "MATM31",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "MATM32",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "MARM11",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "MARM31",
+    "teaduskond": "INSENERITEADUSKOND"
+  },
+  {
+    "tpg": "IAGM10",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IVDM10",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IAPM11",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IAPM31",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IAIB31",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IAIB32",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IAIB33",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IAIB51",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IAIB52",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IAIB53",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IAIB11",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IAIB12",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IAIB13",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IAIB14",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IAAM11",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IAAM12",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IAAM31",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IAAM32",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IAAB11",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IAAB12",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IAAB13",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IAAB31",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IAAB32",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IAAB51",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IAAB52",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IAAB53",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IADB11",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IADB12",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IADB13",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IADB14",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IADB15",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IADB31",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IADB32",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IADB33",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IADB34",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IADB35",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IADB51",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IADB52",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IADB53",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IADB54",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IADB55",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IVCM31",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IVCM32",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IVSB11",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IVSB12",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IVSB31",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IVSB32",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IVSB51",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IVSB52",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IVCM11",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IVCM12",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IACB11",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IACB12",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IACB31",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IACB32",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IACB51",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IACB52",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IACM11",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IACM12",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IACM31",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IACM32",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IVSM31",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IVSM32",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IAVM11",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IAVM31",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IABB11",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IABB12",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IABB31",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IABB32",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IABB51",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IABB52",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IABB53",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IABM11",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IABM31",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IABM32",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "IABM33",
+    "teaduskond": "INFOTEHNOLOOGIA TEADUSKOND"
+  },
+  {
+    "tpg": "VDLR11",
+    "teaduskond": "EESTI MEREAKADEEMIA"
+  },
+  {
+    "tpg": "VDLR31",
+    "teaduskond": "EESTI MEREAKADEEMIA"
+  },
+  {
+    "tpg": "VDLR51",
+    "teaduskond": "EESTI MEREAKADEEMIA"
+  },
+  {
+    "tpg": "VDLR71",
+    "teaduskond": "EESTI MEREAKADEEMIA"
+  },
+  {
+    "tpg": "VDXR11",
+    "teaduskond": "EESTI MEREAKADEEMIA"
+  },
+  {
+    "tpg": "VDXR31",
+    "teaduskond": "EESTI MEREAKADEEMIA"
+  },
+  {
+    "tpg": "VDXR32",
+    "teaduskond": "EESTI MEREAKADEEMIA"
+  },
+  {
+    "tpg": "VDXR51",
+    "teaduskond": "EESTI MEREAKADEEMIA"
+  },
+  {
+    "tpg": "VDXR52",
+    "teaduskond": "EESTI MEREAKADEEMIA"
+  },
+  {
+    "tpg": "VDXR71",
+    "teaduskond": "EESTI MEREAKADEEMIA"
+  },
+  {
+    "tpg": "VDXR72",
+    "teaduskond": "EESTI MEREAKADEEMIA"
+  },
+  {
+    "tpg": "VAAM11",
+    "teaduskond": "EESTI MEREAKADEEMIA"
+  },
+  {
+    "tpg": "VAAM31",
+    "teaduskond": "EESTI MEREAKADEEMIA"
+  },
+  {
+    "tpg": "VAMM11",
+    "teaduskond": "EESTI MEREAKADEEMIA"
+  },
+  {
+    "tpg": "VDSR11",
+    "teaduskond": "EESTI MEREAKADEEMIA"
+  },
+  {
+    "tpg": "VDSR31",
+    "teaduskond": "EESTI MEREAKADEEMIA"
+  },
+  {
+    "tpg": "VDSR51",
+    "teaduskond": "EESTI MEREAKADEEMIA"
+  },
+  {
+    "tpg": "VDSR71",
+    "teaduskond": "EESTI MEREAKADEEMIA"
+  },
+  {
+    "tpg": "VDVR11",
+    "teaduskond": "EESTI MEREAKADEEMIA"
+  },
+  {
+    "tpg": "VDVR31",
+    "teaduskond": "EESTI MEREAKADEEMIA"
+  },
+  {
+    "tpg": "VDVR51",
+    "teaduskond": "EESTI MEREAKADEEMIA"
+  },
+  {
+    "tpg": "VDVR71",
+    "teaduskond": "EESTI MEREAKADEEMIA"
+  }
+]
