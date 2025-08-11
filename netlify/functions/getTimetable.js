@@ -18,6 +18,13 @@ exports.handler = async (event) => {
     // 2. Find and read the massive JSON file on the server.
     // This path looks for the file in the root of your published site.
     const dataPath = path.resolve(process.cwd(), 'all_daily_timetable.json');
+    console.log('Resolved timetable path:', dataPath);
+    try {
+      await fs.access(dataPath);
+      console.log('Timetable file exists!');
+    } catch (err) {
+      console.error('Timetable file does NOT exist:', err);
+    }
     const timetableData = await fs.readFile(dataPath, 'utf-8');
     const allEvents = JSON.parse(timetableData);
 
