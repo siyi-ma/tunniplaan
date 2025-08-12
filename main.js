@@ -487,8 +487,12 @@ function translateAssessmentForm(value) {
         function getSessionData() {
             if (sessionDataCache) return sessionDataCache;
             let allSessions = filteredCourses.flatMap(c => c.sessions.map(s => ({...s, aine: `${c.id} - ${currentLanguage === 'et' ? c.name_et : (c.name_en || c.name_et)}`})));
-            if (activeFilters.group) { allSessions = allSessions.filter(s => s.ryhmad?.split(',').includes(activeFilters.group)); }
-            
+            if (activeFilters.group) {
+                const groupFilter = activeFilters.group.trim().toLowerCase();
+                allSessions = allSessions.filter(s =>
+                    s.ryhmad?.split(',').map(g => g.trim().toLowerCase()).includes(groupFilter)
+                );
+            }
             const sessionsByDate = new Map();
             allSessions.forEach(s => {
                 if (!s.date) return;
@@ -628,11 +632,32 @@ function translateAssessmentForm(value) {
         }
         
         function populateFilterOptions() {
-            const schools = [...allSchoolNames.entries()].map(([code, names]) => ({
-                code: code,
-                name: names[currentLanguage] || names['et']
-            })).sort((a, b) => a.name.localeCompare(b.name));
-            
+            // --- Patch: Always include all faculties from tpg2teaduskond_map.json ---
+            let mappedFaculties = [];
+            try {
+                // Synchronously fetch and parse tpg2teaduskond_map.json (already loaded elsewhere, but fallback here)
+                mappedFaculties = Array.from(new Set(
+                    (window.tpg2teaduskondData || [])
+                        .map(obj => obj.teaduskond)
+                        .filter(Boolean)
+                ));
+            } catch (e) { mappedFaculties = []; }
+
+            // Build a set of all faculties from both course data and mapping file
+            const allFacultiesSet = new Set();
+            // Add from course data
+            allSchoolNames.forEach((names, code) => {
+                allFacultiesSet.add(names[currentLanguage] || names['et']);
+            });
+            // Add from mapping file
+            mappedFaculties.forEach(fac => allFacultiesSet.add(fac));
+
+            // Build dropdown data
+            const schools = Array.from(allFacultiesSet).sort().map((name, idx) => ({
+                code: name.replace(/\s+/g, '').toUpperCase(),
+                name: name
+            }));
+
             const populateSelect = (el, data, label) => { const c = el.value; el.innerHTML = `<option value="">${label}</option>`; data.forEach(i => i.code && i.name && el.add(new Option(i.name, i.code))); el.value = c; };
             populateSelect(schoolFilterDOM, schools, uiTexts.allSchools[currentLanguage]);
             
