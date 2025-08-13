@@ -17,7 +17,7 @@ exports.handler = async (event) => {
   try {
     // 2. Find and read the massive JSON file on the server.
     // This path looks for the file in the root of your published site.
-    const dataPath = path.resolve(process.cwd(), 'all_dailytimetables.json');
+    const dataPath = path.resolve(process.cwd(), 'sessions.json');
     console.log('Resolved timetable path:', dataPath);
     try {
       await fs.access(dataPath);

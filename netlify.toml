@@ -1,2 +1,2 @@
 [functions]
-included_files = ["all_dailytimetables.json"]
+included_files = ["sessions.json"]
