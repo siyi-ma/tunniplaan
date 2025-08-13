@@ -398,9 +398,33 @@ function getSessionData() {
         const groupFilter = activeFilters.group.toLowerCase();
         allSessions = allSessions.filter(s => (s.groups || []).some(g => g.group && g.group.toLowerCase() === groupFilter));
     }
-    const sessionsByDate = new Map();
+    // Deduplicate sessions by unique key: course_id, date, start, end, room
+    const sessionKey = s => `${s.course_id || s.id}_${s.date}_${s.start}_${s.end}_${s.room}`;
+    const uniqueSessionMap = new Map();
     allSessions.forEach(s => {
         if (!s.date) return;
+        const key = sessionKey(s);
+        if (!uniqueSessionMap.has(key)) {
+            uniqueSessionMap.set(key, {...s});
+        } else {
+            // Merge groups for duplicate sessions
+            const existing = uniqueSessionMap.get(key);
+            if (Array.isArray(existing.groups) && Array.isArray(s.groups)) {
+                // Merge group objects by group name
+                const allGroups = [...existing.groups, ...s.groups];
+                // Remove duplicates by group name and status
+                const groupMap = new Map();
+                allGroups.forEach(g => {
+                    if (g && g.group) {
+                        groupMap.set(g.group + '_' + g.status, g);
+                    }
+                });
+                existing.groups = Array.from(groupMap.values());
+            }
+        }
+    });
+    const sessionsByDate = new Map();
+    uniqueSessionMap.forEach(s => {
         const sessionDate = parseDate(s.date);
         if (isNaN(sessionDate.getTime())) return;
         const dateKey = sessionDate.toISOString().split('T')[0];
