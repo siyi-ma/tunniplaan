@@ -30,7 +30,7 @@ exports.handler = async (event) => {
 
     // 3. Filter the data to find only matching events. This is the magic part.
     const filteredEvents = allEvents.filter(event => 
-      requestedCourses.has(event.ainekood)
+      requestedCourses.has(event.course_id)
     );
 
     // 4. Send back only the small, filtered list.
