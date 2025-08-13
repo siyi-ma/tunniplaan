@@ -437,7 +437,8 @@ function getSessionData() {
 }
 
 function renderWeeklyView() {
-    sessionDataCache = null; const sessionsByDate = getSessionData();
+    sessionDataCache = null;
+    const sessionsByDate = getSessionData();
     let todayStatusHTML = '';
     const today = new Date();
     const todayDateString = today.toLocaleDateString(currentLanguage === 'et' ? 'et-EE' : 'en-GB', { day:'numeric', month:'long', year:'numeric'});
@@ -451,9 +452,13 @@ function renderWeeklyView() {
         const studyWeek = getStudyWeek(today);
         if(studyWeek) todayStatusHTML = `<div class="text-center font-semibold text-tt-dark-blue p-2 bg-gray-100 rounded">${uiTexts.todayIs[currentLanguage](todayDateString, studyWeek)}</div>`;
     }
-    weeklyViewDOM.innerHTML = `<div class="mb-4">${todayStatusHTML}</div><div class="flex justify-between items-center mb-4 gap-4"><div id="dateRangeDisplay" class="text-xl font-bold text-tt-dark-blue text-left flex-grow"></div><div class="flex items-center gap-2"><button id="prevMonthBtn" class="p-2 w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-200" title="Eelmine kuu"><i class="fas fa-angle-double-left"></i></button><button id="prevWeekBtn" class="p-2 w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-200" title="Eelmine nädal"><i class="fas fa-angle-left"></i></button><button id="todayBtn" class="px-3 py-1.5 rounded text-sm font-medium bg-tt-dark-blue text-white hover:bg-tt-dark-blue-hover">${uiTexts.today[currentLanguage]}</button><button id="nextWeekBtn" class="p-2 w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-200" title="Järgmine nädal"><i class="fas fa-angle-right"></i></button><button id="nextMonthBtn" class="p-2 w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-200" title="Järgmine kuu"><i class="fas fa-angle-double-right"></i></button></div></div><div id="calendarContent" class="calendar-grid-wrapper"></div>`;
-    
-    const calendarContent = document.getElementById('calendarContent'), dateRangeDisplay = document.getElementById('dateRangeDisplay');
+
+    weeklyViewDOM.innerHTML = `<div class="mb-4">${todayStatusHTML}</div><div class="flex justify-between items-center mb-4 gap-4"><div id="dateRangeDisplay" class="text-xl font-bold text-tt-dark-blue text-left flex-grow"></div><div class="flex items-center gap-2"><button id="prevMonthBtn" class="p-2 w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-200" title="Eelmine kuu"><i class="fas fa-angle-double-left"></i></button><button id="prevWeekBtn" class="p-2 w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-200" title="Eelmine nädal"><i class="fas fa-angle-left"></i></button><button id="todayBtn" class="px-3 py-1.5 rounded text-sm font-medium bg-tt-dark-blue text-white hover:bg-tt-dark-blue-hover">${uiTexts.today[currentLanguage]}</button><button id="nextWeekBtn" class="p-2 w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-200" title="Järgmine nädal"><i class="fas fa-angle-right"></i></button><button id="nextMonthBtn" class="p-2 w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-200" title="Järgmine kuu"><i class="fas fa-angle-double-right"></i></button></div></div><div id="veebopeSection"></div><div id="calendarContent" class="calendar-grid-wrapper"></div>`;
+
+    const calendarContent = document.getElementById('calendarContent');
+    const veebopeSection = document.getElementById('veebopeSection');
+    const dateRangeDisplay = document.getElementById('dateRangeDisplay');
+
     const updateCalendar = () => {
         const startDate = new Date(calendarDate);
         startDate.setDate(startDate.getDate() - (startDate.getDay() + 6) % 7);
@@ -465,6 +470,49 @@ function renderWeeklyView() {
         const dayNames = currentLanguage === 'et' ? ['E','T','K','N','R','L','P'] : ['M','T','W','T','F','S','S'];
         const totalHours = END_HOUR - START_HOUR;
         let hasAnySessionThisWeek = false;
+
+        // --- Veebõpe sessions ---
+        // Collect all sessions for the week
+        let weekDates = [];
+        for (let i = 0; i < 7; i++) {
+            const dayDate = new Date(startDate); dayDate.setDate(dayDate.getDate() + i);
+            weekDates.push(dayDate.toISOString().split('T')[0]);
+        }
+        let veebopeSessions = [];
+        weekDates.forEach(dateKey => {
+            const daySessions = sessionsByDate.get(dateKey) || [];
+            daySessions.forEach(session => {
+                if ((session.type && session.type.toLowerCase() === 'veebõpe') || (session.room && session.room.toLowerCase() === 'veebõpe') || (session.room && session.room.toLowerCase() === 'online')) {
+                    veebopeSessions.push(session);
+                }
+            });
+        });
+
+        // Remove veebõpe sessions from the main calendar grid
+        weekDates.forEach(dateKey => {
+            let daySessions = sessionsByDate.get(dateKey) || [];
+            sessionsByDate.set(dateKey, daySessions.filter(session => !((session.type && session.type.toLowerCase() === 'veebõpe') || (session.room && session.room.toLowerCase() === 'veebõpe') || (session.room && session.room.toLowerCase() === 'online'))));
+        });
+
+        // Render veebõpe section
+        if (veebopeSessions.length > 0) {
+            let veebopeHTML = `<div class="veebope-header" style="font-weight:bold; font-size:1.1em; margin-bottom:8px;">Veebõpe</div><div class="veebope-list" style="display:flex; flex-wrap:wrap; gap:16px;">`;
+            veebopeSessions.forEach(session => {
+                const name = session.aine || '';
+                const instructors = Array.isArray(session.instructor) ? session.instructor.map(i => i.name).filter(Boolean).join(' | ') : (session.instructor?.name || '');
+                veebopeHTML += `<div class="veebope-card" style="background:#fff; border-left:4px solid #4dbed2; box-shadow:0 1px 4px #eee; padding:12px 16px; min-width:220px; max-width:320px; margin-bottom:8px;">
+                    <div style="font-weight:bold;">${name}</div>
+                    <div style="font-size:0.95em; color:#444;">${session.type || ''}</div>
+                    <div style="font-size:0.95em; color:#444;">${instructors}</div>
+                </div>`;
+            });
+            veebopeHTML += `</div>`;
+            veebopeSection.innerHTML = veebopeHTML;
+        } else {
+            veebopeSection.innerHTML = '';
+        }
+
+        // --- Main calendar grid ---
         let gridHTML = `<div class="calendar-grid"><div class="time-ruler-header"></div>`;
         for (let i = 0; i < 7; i++) {
             const dayDate = new Date(startDate); dayDate.setDate(dayDate.getDate() + i);
@@ -499,9 +547,16 @@ function renderWeeklyView() {
                 const electiveGroups = (session.groups || []).filter(g => g.status === 'valikuline').map(g => g.group);
                 const displayInstructors = getInstructorDisplayName(session.instructor);
                 let tooltipHTML = `<div class="tooltip-title">${session.aine}</div><div>${displayInstructors}</div><div class="text-gray-300">${session.type}</div><div class="text-gray-300">${session.start} - ${session.end} @ ${session.room || 'N/A'}</div>`;
-                if (mandatoryGroups.length > 0) tooltipHTML += `<div class="tooltip-section-title">${uiTexts.mandatoryForGroups[currentLanguage]}:</div><div>${mandatoryGroups.join(', ')}</div>`;
-                if (electiveGroups.length > 0) tooltipHTML += `<div class="tooltip-section-title">${uiTexts.electiveForGroups[currentLanguage]}:</div><div>${electiveGroups.join(', ')}</div>`;
-                
+                if (mandatoryGroups.length > 0) {
+                    tooltipHTML += `<div class="tooltip-section-title">${uiTexts.mandatoryForGroups[currentLanguage]}:</div><ul class="tooltip-group-list">`;
+                    mandatoryGroups.forEach(g => { tooltipHTML += `<li>${g}</li>`; });
+                    tooltipHTML += `</ul>`;
+                }
+                if (electiveGroups.length > 0) {
+                    tooltipHTML += `<div class="tooltip-section-title">${uiTexts.electiveForGroups[currentLanguage]}:</div><ul class="tooltip-group-list">`;
+                    electiveGroups.forEach(g => { tooltipHTML += `<li>${g}</li>`; });
+                    tooltipHTML += `</ul>`;
+                }
                 gridHTML += `<div class="session-card" data-tooltip="${encodeURIComponent(tooltipHTML)}" style="top: ${top}px; height: ${height}px; left: ${left}; width: ${width}; border-left-color: ${borderColor}"><div class='session-card-content'><div class='course-name truncate'>${session.aine || ''}</div><div class='session-details truncate'>${displayInstructors}</div><div class='session-details'>${session.start || ''} - ${session.end || ''}</div><div class='session-details truncate'><i class='fas fa-map-marker-alt fa-fw text-gray-400'></i> ${session.room || 'N/A'}</div></div></div>`;
             });
             gridHTML += `</div>`;
