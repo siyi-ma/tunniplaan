@@ -413,6 +413,8 @@ function getSessionData() {
         const groupFilter = activeFilters.group.toLowerCase();
         allSessions = allSessions.filter(s => (s.groups || []).some(g => g.group && g.group.toLowerCase() === groupFilter));
     }
+    // Separate veebiõpe sessions (null/empty date)
+    let veebiopeSessions = allSessions.filter(s => !s.date || s.date === '' || s.date === null);
     // Deduplicate sessions by unique key: course_id, date, start, end, room
     const sessionKey = s => `${s.course_id || s.id}_${s.date}_${s.start}_${s.end}_${s.room}`;
     const uniqueSessionMap = new Map();
@@ -447,13 +449,14 @@ function getSessionData() {
         sessionsByDate.get(dateKey).push({...s});
     });
     sessionsByDate.forEach(calculateOverlaps);
-    sessionDataCache = sessionsByDate;
-    return sessionsByDate;
+    // Attach veebiõpe sessions to the cache for use in renderWeeklyView
+    sessionDataCache = { sessionsByDate, veebiopeSessions };
+    return sessionDataCache;
 }
 
 function renderWeeklyView() {
     sessionDataCache = null;
-    const sessionsByDate = getSessionData();
+    const { sessionsByDate, veebiopeSessions } = getSessionData();
     let todayStatusHTML = '';
     const today = new Date();
     const todayDateString = today.toLocaleDateString(currentLanguage === 'et' ? 'et-EE' : 'en-GB', { day:'numeric', month:'long', year:'numeric'});
@@ -487,40 +490,45 @@ function renderWeeklyView() {
         let hasAnySessionThisWeek = false;
 
         // --- Veebõpe sessions ---
-        // Collect all sessions for the week
+        // Remove veebiõpe sessions from the main calendar grid
         let weekDates = [];
         for (let i = 0; i < 7; i++) {
             const dayDate = new Date(startDate); dayDate.setDate(dayDate.getDate() + i);
             weekDates.push(dayDate.toISOString().split('T')[0]);
         }
-        // Identify veebiõpe sessions: null/empty date and time
-        let allSessions = [];
-        sessionsByDate.forEach(daySessions => {
-            allSessions = allSessions.concat(daySessions);
-        });
-        let veebopeSessions = allSessions.filter(session =>
-            (!session.date || session.date === '' || session.date === null) &&
-            (!session.start || session.start === '' || session.start === null) &&
-            (!session.end || session.end === '' || session.end === null)
-        );
-        // Debug: Log identified veebiõpe sessions
-        console.log('[DEBUG] Veebiope sessions found (null date/time):', veebopeSessions.length, veebopeSessions);
-
-        // Remove veebiõpe sessions from the main calendar grid
         weekDates.forEach(dateKey => {
             let daySessions = sessionsByDate.get(dateKey) || [];
             sessionsByDate.set(dateKey, daySessions.filter(session => !((!session.date || session.date === '' || session.date === null) && (!session.start || session.start === '' || session.start === null) && (!session.end || session.end === '' || session.end === null))));
         });
 
         // Render veebõpe section
-        if (veebopeSessions.length > 0) {
-            let veebopeHTML = `<div class="veebope-header" style="font-weight:bold; font-size:1.1em; margin-bottom:8px;">Veebõpe</div><div class="veebope-list" style="display:flex; flex-wrap:wrap; gap:16px;">`;
-            veebopeSessions.forEach(session => {
+        // Also include veebiõpe courses with no sessions at all
+        let veebopeHTML = '';
+        let allVeebiopeCourses = filteredCourses.filter(course => {
+            if (!Array.isArray(course.sessions) || course.sessions.length === 0) return true;
+            return course.sessions.every(s => (!s.date || s.date === '' || s.date === null) && (!s.start || s.start === '' || s.start === null) && (!s.end || s.end === '' || s.end === null));
+        });
+        if (veebiopeSessions.length > 0 || allVeebiopeCourses.length > 0) {
+            veebopeHTML += `<div class="veebope-header" style="font-weight:bold; font-size:1.1em; margin-bottom:8px;">Veebõpe</div><div class="veebope-list" style="display:flex; flex-wrap:wrap; gap:16px;">`;
+            // Render sessions with null/empty date
+            veebiopeSessions.forEach(session => {
                 const name = session.aine || '';
                 const instructors = Array.isArray(session.instructor) ? session.instructor.map(i => i.name).filter(Boolean).join(' | ') : (session.instructor?.name || '');
                 veebopeHTML += `<div class="veebope-card" style="background:#fff; border-left:4px solid #4dbed2; box-shadow:0 1px 4px #eee; padding:12px 16px; min-width:220px; max-width:320px; margin-bottom:8px;">
                     <div style="font-weight:bold;">${name}</div>
                     <div style="font-size:0.95em; color:#444;">${session.type || ''}</div>
+                    <div style="font-size:0.95em; color:#444;">${instructors}</div>
+                </div>`;
+            });
+            // Render veebiõpe courses with no sessions
+            allVeebiopeCourses.forEach(course => {
+                // If course has sessions, skip those already rendered above
+                if (Array.isArray(course.sessions) && course.sessions.length > 0 && course.sessions.some(s => s.date || s.start || s.end)) return;
+                const name = `${course.id || ''} - ${currentLanguage === 'et' ? course.name_et : (course.name_en || course.name_et)}`;
+                const instructors = Array.isArray(course.instructors) ? course.instructors.map(i => i.name).filter(Boolean).join(' | ') : (course.instructors?.name || '');
+                veebopeHTML += `<div class="veebope-card" style="background:#fff; border-left:4px solid #4dbed2; box-shadow:0 1px 4px #eee; padding:12px 16px; min-width:220px; max-width:320px; margin-bottom:8px;">
+                    <div style="font-weight:bold;">${name}</div>
+                    <div style="font-size:0.95em; color:#444;">Veebõpe</div>
                     <div style="font-size:0.95em; color:#444;">${instructors}</div>
                 </div>`;
             });
