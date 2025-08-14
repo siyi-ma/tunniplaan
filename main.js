@@ -161,19 +161,21 @@ function mergeTimetableData(filteredTimetableData) {
 function applyAllFiltersAndRender(resetView = true) {
     if (resetView) { isCalendarViewVisible = false; calendarDate = new Date(SEMESTER_START); }
     
-    filteredCourses = allCourses.filter(course => {
+    // Identify veebiõpe courses: no sessions, or all sessions have null/empty date/start/end
+    let veebiopeCourses = [];
+    let regularCourses = [];
+    allCourses.forEach(course => {
+        let passesFilters = true;
         if (activeFilters.school === 'DOKTOR') {
-            if (!course.groups || !course.groups.includes('DOKTOR')) return false;
+            if (!course.groups || !course.groups.includes('DOKTOR')) passesFilters = false;
         } else if (activeFilters.school && course.school_code !== activeFilters.school) {
-            return false;
+            passesFilters = false;
         }
-
-        if (activeFilters.institute && course.institute_name !== activeFilters.institute) return false;
-        if (activeFilters.eap && course.eap != activeFilters.eap) return false;
-        if (activeFilters.assessmentForm && (course.assessment_form_et !== activeFilters.assessmentForm)) return false;
-        if (activeFilters.teachingLanguage && course[`keel_${activeFilters.teachingLanguage}`] !== "1") return false;
-        if (activeFilters.group && !(course.groups || []).includes(activeFilters.group)) return false;
-        
+        if (activeFilters.institute && course.institute_name !== activeFilters.institute) passesFilters = false;
+        if (activeFilters.eap && course.eap != activeFilters.eap) passesFilters = false;
+        if (activeFilters.assessmentForm && (course.assessment_form_et !== activeFilters.assessmentForm)) passesFilters = false;
+        if (activeFilters.teachingLanguage && course[`keel_${activeFilters.teachingLanguage}`] !== "1") passesFilters = false;
+        if (activeFilters.group && !(course.groups || []).includes(activeFilters.group)) passesFilters = false;
         const rawSearchTerm = (activeFilters.searchTerm || '').toLowerCase();
         if (rawSearchTerm) {
             const searchTerms = rawSearchTerm.split(',').map(t => t.trim()).filter(Boolean);
@@ -198,13 +200,26 @@ function applyAllFiltersAndRender(resetView = true) {
                         matchFound = searchTerms.some(term => combinedStr.includes(term));
                         break;
                 }
-                if (!matchFound) return false;
+                if (!matchFound) passesFilters = false;
             }
         }
-        return true;
+        // Improved veebiõpe detection
+        let isVeebiope = false;
+        if (!Array.isArray(course.sessions) || course.sessions.length === 0) {
+            isVeebiope = true;
+        } else {
+            isVeebiope = course.sessions.every(s => (!s.date || s.date === '' || s.date === null) && (!s.start || s.start === '' || s.start === null) && (!s.end || s.end === '' || s.end === null));
+        }
+        if (passesFilters) {
+            if (isVeebiope) {
+                veebiopeCourses.push(course);
+            } else {
+                regularCourses.push(course);
+            }
+        }
     });
-    
-    totalFilteredSessions = 0; 
+    filteredCourses = [...veebiopeCourses, ...regularCourses];
+    totalFilteredSessions = 0;
     render();
 }
 
@@ -478,19 +493,23 @@ function renderWeeklyView() {
             const dayDate = new Date(startDate); dayDate.setDate(dayDate.getDate() + i);
             weekDates.push(dayDate.toISOString().split('T')[0]);
         }
-        // Collect all veebiõpe sessions from all sessions, regardless of date
+        // Identify veebiõpe sessions: null/empty date and time
         let allSessions = [];
         sessionsByDate.forEach(daySessions => {
             allSessions = allSessions.concat(daySessions);
         });
-        let veebopeSessions = allSessions.filter(session => session.is_veebiope === true || session.is_veebiope === "true");
+        let veebopeSessions = allSessions.filter(session =>
+            (!session.date || session.date === '' || session.date === null) &&
+            (!session.start || session.start === '' || session.start === null) &&
+            (!session.end || session.end === '' || session.end === null)
+        );
         // Debug: Log identified veebiõpe sessions
-        console.log('[DEBUG] Veebiope sessions found:', veebopeSessions.length, veebopeSessions);
+        console.log('[DEBUG] Veebiope sessions found (null date/time):', veebopeSessions.length, veebopeSessions);
 
-        // Remove veebõpe sessions from the main calendar grid
+        // Remove veebiõpe sessions from the main calendar grid
         weekDates.forEach(dateKey => {
             let daySessions = sessionsByDate.get(dateKey) || [];
-            sessionsByDate.set(dateKey, daySessions.filter(session => !(session.is_veebiope === true)));
+            sessionsByDate.set(dateKey, daySessions.filter(session => !((!session.date || session.date === '' || session.date === null) && (!session.start || session.start === '' || session.start === null) && (!session.end || session.end === '' || session.end === null))));
         });
 
         // Render veebõpe section
