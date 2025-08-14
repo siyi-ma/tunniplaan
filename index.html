@@ -18,11 +18,11 @@
     
 </head>
 <body class="bg-white text-black body-text">
-    <div class="container mx-auto text-right text-xs text-tt-grey-1 mt-2 mb-2]">
-        This site was synced with <a href="https://tunniplaan.taltech.ee/#/public" target="_blank" rel="noopener noreferrer" class="hover:underline">TalTech Timetable</a> on 13.08.2025
+    <div id="syncInfo" class="container mx-auto text-right text-xs text-tt-grey-1 mt-2 mb-2]">
+        This site was synced with <a href="https://tunniplaan.taltech.ee/#/public" target="_blank" rel="noopener noreferrer" class="underline">TalTech Timetable</a> on <span id="syncDate">...</span>
     </div>
 
-    <header class="sticky top-0 z-50 bg-tt-dark-blue text-white p-4 shadow-md">
+    <header class="sticky top-0 z-50 bg-tt-dark-blue text-white p-2 shadow-md">
         <div class="container mx-auto flex items-center justify-between">
             <div class="flex items-center">
                 <button id="filterToggleButton" class="mr-4 p-2 text-white hover:bg-tt-dark-blue-hover rounded" aria-label="Ava filtrid"><i class="fas fa-bars fa-lg"></i></button>
@@ -57,7 +57,7 @@
 
     <aside id="filterPanel" class="bg-gray-50 p-4 shadow-lg fixed inset-y-0 left-0 transform -translate-x-full z-40 w-4/5 sm:w-1/3 md:w-1/5 lg:w-1/6 xl:w-[280px] overflow-y-auto mt-16 max-h-[calc(100%-4rem)] transition-transform duration-300 ease-in-out rounded-r-lg">
         <div class="flex justify-between items-center mb-4">
-            <h2 id="filtersTitle" class="text-xl headline tt-dark-blue">Filtrid</h2>
+            <h2 id="filtersTitle" class="text-xl headline tt-dark-blue" style="margin-top: 12px;">Filtrid</h2>
             <button id="closeFilterButton" class="text-tt-magenta hover:text-tt-dark-blue"><i class="fas fa-times fa-lg"></i></button>
         </div>
         <div class="space-y-4">
@@ -107,5 +107,18 @@
     <div id="customTooltip"></div>
 
     <script src="main.js" defer></script>
+    <script>
+fetch('./unified_courses.json', { method: 'HEAD' })
+  .then(response => {
+    const lastModified = response.headers.get('Last-Modified');
+    if (lastModified) {
+      const d = new Date(lastModified);
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      document.getElementById('syncDate').textContent = `${day}.${month}.${year}`;
+    }
+  });
+</script>
 </body>
 </html>

@@ -105,40 +105,40 @@ const getStudyWeek = (currentDate) => {
 };
 
 // --- Data Processing Functions ---
-function postProcessUnifiedData() {
+function postProcessUnifiedData(groupToFacultyLookup = {}) {
     allSchoolNames.clear();
     schoolToInstitutes.clear();
     facultyToGroupsMap.clear();
     const uniqueGroups = new Set();
 
+    // Build facultyToGroupsMap ONLY from groupToFacultyMap
+    const groupToFacultyMap = window.groupToFacultyMap || {};
+    Object.values(groupToFacultyMap).forEach(facultyCode => {
+        if (!facultyToGroupsMap.has(facultyCode)) {
+            facultyToGroupsMap.set(facultyCode, new Set());
+        }
+    });
+    Object.entries(groupToFacultyMap).forEach(([group, facultyCode]) => {
+        if (facultyToGroupsMap.has(facultyCode)) {
+            facultyToGroupsMap.get(facultyCode).add(group);
+        }
+    });
+
+    // Build other maps as before
     allCourses.forEach(course => {
-        // Step 1: Unconditionally collect ALL groups from every course.
         if (course.groups && course.groups.length > 0) {
             course.groups.forEach(group => uniqueGroups.add(group));
         }
-        
-        // Step 2: Conditionally build maps for courses that have a school/faculty.
-        // This now correctly includes courses with school_code: "DOKTOR".
         if (course.school_code && course.school_name) {
             allSchoolNames.set(course.school_code, { et: course.school_name, en: course.school_name_en || course.school_name });
-            
             if (!schoolToInstitutes.has(course.school_code)) {
                 schoolToInstitutes.set(course.school_code, new Set());
             }
             if (course.institute_name) {
                 schoolToInstitutes.get(course.school_code).add(course.institute_name);
             }
-            
-            if (course.groups && course.groups.length > 0) {
-                if (!facultyToGroupsMap.has(course.school_code)) {
-                    facultyToGroupsMap.set(course.school_code, new Set());
-                }
-                course.groups.forEach(group => facultyToGroupsMap.get(course.school_code).add(group));
-            }
         }
     });
-    
-    // Finalize the master list of all unique groups.
     allUniqueGroups = [...uniqueGroups].sort();
 }
 
@@ -572,7 +572,7 @@ function renderWeeklyView() {
     document.getElementById('nextMonthBtn').addEventListener('click', () => { calendarDate.setMonth(calendarDate.getMonth() + 1); updateCalendar(); });
     updateCalendar();
 }
-
+        facultyToGroupsMap = new Map();
 function setupSearchableDropdown(inputId, listId, data, onSelect) {
     const input = document.getElementById(inputId), list = document.getElementById(listId);
     const populateList = (items) => { list.innerHTML = items.map(item => `<div class="searchable-dropdown-list-item" data-value="${item}">${item}</div>`).join(''); };
@@ -606,9 +606,31 @@ function updateDependentFilters() {
     let institutes = new Set();
     let relevantGroups = [];
     if (schoolCode) {
-        (schoolToInstitutes.get(schoolCode) || []).forEach(inst => institutes.add(inst));
-        relevantGroups = [...(facultyToGroupsMap.get(schoolCode) || [])].sort();
+        // Only include institutes whose code starts with the faculty code
+        allCourses.forEach(course => {
+            if (course.institute_code && course.institute_code.startsWith(schoolCode) && course.institute_name) {
+                institutes.add(course.institute_name);
+            }
+        });
+        // Only include groups that are mapped to the selected faculty and actually exist in courses of that faculty
+        const validGroups = new Set();
+        allCourses.forEach(course => {
+            if (course.school_code === schoolCode && Array.isArray(course.groups)) {
+                course.groups.forEach(group => {
+                    if (facultyToGroupsMap.has(schoolCode) && facultyToGroupsMap.get(schoolCode).has(group)) {
+                        validGroups.add(group);
+                    }
+                });
+            }
+        });
+        relevantGroups = [...validGroups].sort();
     } else {
+        // If no faculty selected, show all institutes and all groups
+        allCourses.forEach(course => {
+            if (course.institute_name) {
+                institutes.add(course.institute_name);
+            }
+        });
         relevantGroups = allUniqueGroups;
     }
     const currentInstitute = activeFilters.institute;
@@ -752,31 +774,26 @@ async function initializeApp() {
     try {
         const coursesRes = await fetch(DATA_URL_UNIFIED_COURSES);
         if (!coursesRes.ok) throw new Error(`Failed to load initial data file.`);
-        allCourses = await coursesRes.json();
-        
+        const responseData = await coursesRes.json();
+        allCourses = responseData.courses || [];
+        window.groupToFacultyMap = responseData.groupToFacultyMap || {};
         postProcessUnifiedData();
-        
         const params = new URLSearchParams(window.location.search);
         activeFilters.school = params.get('faculty') || '';
         const instituteCodeFromURL = params.get('institutecode') || '';
         activeFilters.group = params.get('group') || '';
-        
         if (instituteCodeFromURL) {
             const relevantCourse = allCourses.find(c => c.institute_code === instituteCodeFromURL);
             if (relevantCourse) activeFilters.institute = relevantCourse.institute_name;
         }
-        
         if (activeFilters.school) schoolFilterDOM.value = activeFilters.school;
-
         setupEventListeners();
         setLanguage('et');
-        
         if (activeFilters.institute) instituteFilterDOM.value = activeFilters.institute;
         if (activeFilters.group) groupFilterInput.value = activeFilters.group;
         if (activeFilters.school || activeFilters.institute || activeFilters.group) {
             applyAllFiltersAndRender(false);
         }
-
     } catch (error) {
         console.error("Initialization failed:", error);
         courseListContainerDOM.innerHTML = `<div class="p-4 bg-red-100 text-red-800 rounded-md col-span-full"><strong>Error: Could not load initial data.</strong><br>${error.message}</div>`;
