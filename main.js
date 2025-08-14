@@ -482,7 +482,7 @@ function renderWeeklyView() {
         weekDates.forEach(dateKey => {
             const daySessions = sessionsByDate.get(dateKey) || [];
             daySessions.forEach(session => {
-                if ((session.type && session.type.toLowerCase() === 'veebõpe') || (session.room && session.room.toLowerCase() === 'veebõpe') || (session.room && session.room.toLowerCase() === 'online')) {
+                if (session.is_veebiope === true) {
                     veebopeSessions.push(session);
                 }
             });
@@ -491,7 +491,7 @@ function renderWeeklyView() {
         // Remove veebõpe sessions from the main calendar grid
         weekDates.forEach(dateKey => {
             let daySessions = sessionsByDate.get(dateKey) || [];
-            sessionsByDate.set(dateKey, daySessions.filter(session => !((session.type && session.type.toLowerCase() === 'veebõpe') || (session.room && session.room.toLowerCase() === 'veebõpe') || (session.room && session.room.toLowerCase() === 'online'))));
+            sessionsByDate.set(dateKey, daySessions.filter(session => !(session.is_veebiope === true)));
         });
 
         // Render veebõpe section
@@ -531,22 +531,25 @@ function renderWeeklyView() {
                 const top = ((session.startMin - START_HOUR*60) / 60) * HOUR_HEIGHT_PX, height = Math.max(20, (session.endMin - session.startMin)/60 * HOUR_HEIGHT_PX - 2);
                 const width = `calc(${100 / (session.maxCols || 1)}% - 4px)`, left = `${(100 / (session.maxCols || 1)) * (session.col || 0)}%`;
                 let borderColor = '#e4067e';
-                if (activeFilters.group && session.groups) {
+                // If any group in session.groups is elective, use tt-light-blue
+                if (session.groups && session.groups.some(g => g.ainekv === 'valikuline')) {
+                    borderColor = '#4dbed2';
+                } else if (activeFilters.group && session.groups) {
                     const groupInfo = session.groups.find(g => g.group === activeFilters.group);
-                    if (groupInfo) {
-                        if (groupInfo.status === 'kohustuslik') borderColor = '#e4067e';
-                        else if (groupInfo.status === 'valikuline') borderColor = '#4dbed2';
-                    }
+                    if (groupInfo && groupInfo.status === 'kohustuslik') borderColor = '#e4067e';
                 }
                 const getInstructorDisplayName = (instr) => {
                     if (!instr || !instr.name) return 'N/A';
                     if (Array.isArray(instr)) return instr.map(i => i.name).filter(Boolean).join(', ');
                     return instr.name;
                 };
-                const mandatoryGroups = (session.groups || []).filter(g => g.status === 'kohustuslik').map(g => g.group);
-                const electiveGroups = (session.groups || []).filter(g => g.status === 'valikuline').map(g => g.group);
+                const mandatoryGroups = (session.groups || []).filter(g => g.ainekv === 'kohustuslik').map(g => g.group);
+                const electiveGroups = (session.groups || []).filter(g => g.ainekv === 'valikuline').map(g => g.group);
                 const displayInstructors = getInstructorDisplayName(session.instructor);
                 let tooltipHTML = `<div class="tooltip-title">${session.aine}</div><div>${displayInstructors}</div><div class="text-gray-300">${session.type}</div><div class="text-gray-300">${session.start} - ${session.end} @ ${session.room || 'N/A'}</div>`;
+                if (session.comment) {
+                    tooltipHTML += `<div class='tooltip-comment' style='margin-top:4px; color:#666; font-style:italic;'>${session.comment}</div>`;
+                }
                 if (mandatoryGroups.length > 0) {
                     tooltipHTML += `<div class="tooltip-section-title">${uiTexts.mandatoryForGroups[currentLanguage]}:</div><ul class="tooltip-group-list">`;
                     mandatoryGroups.forEach(g => { tooltipHTML += `<li>${g}</li>`; });
