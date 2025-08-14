@@ -316,12 +316,34 @@ function createCourseCardHTML(course) {
 }
 
 function renderCardView(courses) {
+    // Separate online (veebiõpe) and offline courses
+    let veebiopeCourses = courses.filter(course => {
+        if (!Array.isArray(course.sessions) || course.sessions.length === 0) return true;
+        return course.sessions.every(s => (!s.date || s.date === '' || s.date === null) && (!s.start || s.start === '' || s.start === null) && (!s.end || s.end === '' || s.end === null));
+    });
+    let regularCourses = courses.filter(course => !veebiopeCourses.includes(course));
     resultsCounterDOM.textContent = uiTexts.resultsFound[currentLanguage](courses.length);
-    courseListContainerDOM.innerHTML = courses.length === 0 ? `<p class="text-center text-tt-grey-1 col-span-full">${uiTexts.noCoursesFound[currentLanguage]}</p>` : courses.map(createCourseCardHTML).join('');
+    let html = '';
+    if (veebiopeCourses.length > 0) {
+        // Online courses: no 'Veebõpe' header, no 'Veebõpe' text, dark blue border
+        html += veebiopeCourses.map(course => {
+            // Create card HTML for online course, but ensure 'Veebõpe' is never included
+            let cardHTML = createCourseCardHTML(course);
+            // Change border color to tt dark blue (#002a5c)
+            cardHTML = cardHTML.replace('border border-tt-grey-1', 'border border-tt-dark-blue').replace('border-left:4px solid #4dbed2;', 'border-left:4px solid #002a5c;');
+            // No need to remove 'Veebõpe' text, as it is never added
+            return cardHTML;
+        }).join('');
+        // No horizontal line between online and offline courses
+    }
+    if (regularCourses.length > 0) {
+        html += regularCourses.map(createCourseCardHTML).join('');
+    }
+    courseListContainerDOM.innerHTML = courses.length === 0 ? `<p class="text-center text-tt-grey-1 col-span-full">${uiTexts.noCoursesFound[currentLanguage]}</p>` : html;
     document.querySelectorAll('.expand-button').forEach(button => {
         if (button.dataset.listener) return;
         button.addEventListener('click', () => {
-            const cardRoot = button.closest('.flex-col'), content = cardRoot.querySelector('.expandable-content'), desc = cardRoot.querySelector('.course-description');
+            const cardRoot = button.closest('.flex-col') || button.closest('.bg-white'), content = cardRoot.querySelector('.expandable-content'), desc = cardRoot.querySelector('.course-description');
             if (!content || !desc) return;
             const icon = button.querySelector('i'), span = button.querySelector('span'), isHidden = content.classList.contains('hidden');
             content.classList.toggle('hidden');
@@ -502,33 +524,68 @@ function renderWeeklyView() {
         });
 
         // Render veebõpe section
-        // Also include veebiõpe courses with no sessions at all
-        let veebopeHTML = '';
+        // Deduplicate veebiõpe courses by course id
+        // (declaration moved below, only one set exists)
+        // Render compact row style
+        if (veebiopeCourseMap.size > 0) {
+            let veebopeHTML = `<div class="veebope-header" style="font-weight:bold; font-size:1.1em; margin-bottom:8px;">Veebõpe</div><div class="veebope-list" style="display:flex; flex-direction:row; flex-wrap:nowrap; gap:24px; overflow-x:auto; background:#f5f6fa; padding:12px 0;">`;
+            veebiopeCourseMap.forEach(item => {
+                let name, type, instructors;
+                if (item.name_et || item.name_en) {
+                    name = `${item.id || ''} - ${currentLanguage === 'et' ? item.name_et : (item.name_en || item.name_et)}`;
+                    type = item.sessions && item.sessions[0] ? item.sessions[0].type || '' : '';
+                    instructors = Array.isArray(item.instructors) ? item.instructors.map(i => i.name).filter(Boolean).join(' | ') : (item.instructors?.name || '');
+                } else {
+                    name = item.aine || '';
+                    type = item.type || '';
+                    instructors = Array.isArray(item.instructor) ? item.instructor.map(i => i.name).filter(Boolean).join(' | ') : (item.instructor?.name || '');
+                }
+                veebopeHTML += `<div class="veebope-card" style="background:#fff; border-left:4px solid #4dbed2; box-shadow:0 1px 4px #eee; padding:12px 16px; min-width:220px; max-width:320px; margin-bottom:8px;">
+                    <div style="font-weight:bold;">${name}</div>
+                    <div style="font-size:0.95em; color:#444;">${type ? type : 'Veebõpe'}</div>
+                    <div style="font-size:0.95em; color:#444;">${instructors}</div>
+                </div>`;
+            });
+            veebopeHTML += `</div>`;
+            veebopeSection.innerHTML = veebopeHTML;
+        } else {
+            veebopeSection.innerHTML = '';
+        }
+        // Deduplicate veebiõpe courses by course id
         let allVeebiopeCourses = filteredCourses.filter(course => {
             if (!Array.isArray(course.sessions) || course.sessions.length === 0) return true;
             return course.sessions.every(s => (!s.date || s.date === '' || s.date === null) && (!s.start || s.start === '' || s.start === null) && (!s.end || s.end === '' || s.end === null));
         });
-        if (veebiopeSessions.length > 0 || allVeebiopeCourses.length > 0) {
-            veebopeHTML += `<div class="veebope-header" style="font-weight:bold; font-size:1.1em; margin-bottom:8px;">Veebõpe</div><div class="veebope-list" style="display:flex; flex-wrap:wrap; gap:16px;">`;
-            // Render sessions with null/empty date
-            veebiopeSessions.forEach(session => {
-                const name = session.aine || '';
-                const instructors = Array.isArray(session.instructor) ? session.instructor.map(i => i.name).filter(Boolean).join(' | ') : (session.instructor?.name || '');
+        // Map course id to course info for deduplication
+        const veebiopeCourseMap = new Map();
+        allVeebiopeCourses.forEach(course => {
+            veebiopeCourseMap.set(course.id, course);
+        });
+        // Add sessions with null/empty date that have a course_id not already in map
+        veebiopeSessions.forEach(session => {
+            if (!veebiopeCourseMap.has(session.course_id || session.id)) {
+                veebiopeCourseMap.set(session.course_id || session.id, session);
+            }
+        });
+        // Render compact row style
+        if (veebiopeCourseMap.size > 0) {
+            let veebopeHTML = `<div class="veebope-header" style="font-weight:bold; font-size:1.1em; margin-bottom:8px;">Veebõpe</div><div class="veebope-list" style="display:flex; flex-direction:row; flex-wrap:nowrap; gap:24px; overflow-x:auto; background:#f5f6fa; padding:12px 0;">`;
+            veebiopeCourseMap.forEach(item => {
+                // If item is a course object
+                let name, type, instructors;
+                if (item.name_et || item.name_en) {
+                    name = `${item.id || ''} - ${currentLanguage === 'et' ? item.name_et : (item.name_en || item.name_et)}`;
+                    type = item.sessions && item.sessions[0] ? item.sessions[0].type || '' : '';
+                    instructors = Array.isArray(item.instructors) ? item.instructors.map(i => i.name).filter(Boolean).join(' | ') : (item.instructors?.name || '');
+                } else {
+                    // If item is a session object
+                    name = item.aine || '';
+                    type = item.type || '';
+                    instructors = Array.isArray(item.instructor) ? item.instructor.map(i => i.name).filter(Boolean).join(' | ') : (item.instructor?.name || '');
+                }
                 veebopeHTML += `<div class="veebope-card" style="background:#fff; border-left:4px solid #4dbed2; box-shadow:0 1px 4px #eee; padding:12px 16px; min-width:220px; max-width:320px; margin-bottom:8px;">
                     <div style="font-weight:bold;">${name}</div>
-                    <div style="font-size:0.95em; color:#444;">${session.type || ''}</div>
-                    <div style="font-size:0.95em; color:#444;">${instructors}</div>
-                </div>`;
-            });
-            // Render veebiõpe courses with no sessions
-            allVeebiopeCourses.forEach(course => {
-                // If course has sessions, skip those already rendered above
-                if (Array.isArray(course.sessions) && course.sessions.length > 0 && course.sessions.some(s => s.date || s.start || s.end)) return;
-                const name = `${course.id || ''} - ${currentLanguage === 'et' ? course.name_et : (course.name_en || course.name_et)}`;
-                const instructors = Array.isArray(course.instructors) ? course.instructors.map(i => i.name).filter(Boolean).join(' | ') : (course.instructors?.name || '');
-                veebopeHTML += `<div class="veebope-card" style="background:#fff; border-left:4px solid #4dbed2; box-shadow:0 1px 4px #eee; padding:12px 16px; min-width:220px; max-width:320px; margin-bottom:8px;">
-                    <div style="font-weight:bold;">${name}</div>
-                    <div style="font-size:0.95em; color:#444;">Veebõpe</div>
+                    <div style="font-size:0.95em; color:#444;">${type}</div>
                     <div style="font-size:0.95em; color:#444;">${instructors}</div>
                 </div>`;
             });

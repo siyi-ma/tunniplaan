@@ -38,6 +38,7 @@ body { font-family: 'Proxima Nova', system-ui, -apple-system, BlinkMacSystemFont
 .session-card .course-name { font-weight: 600; color: #342b60; }
 .session-card .session-details { color: #495057; }
 #customTooltip { position: fixed; display: none; padding: 0.75rem; background-color: rgba(0, 0, 0, 0.8); color: white; border-radius: 0.375rem; font-size: 0.875rem; line-height: 1.5; z-index: 100; pointer-events: none; max-width: 300px; white-space: pre-wrap; }
+
 .tooltip-title { font-weight: bold; margin-bottom: 0.25rem; }
 .tooltip-section-title { font-weight: bold; margin-top: 0.5rem; font-size: 0.8rem; text-transform: uppercase; color: #ccc;}
 .course-description { -ms-overflow-style: none; scrollbar-width: none; }
