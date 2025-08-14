@@ -478,15 +478,14 @@ function renderWeeklyView() {
             const dayDate = new Date(startDate); dayDate.setDate(dayDate.getDate() + i);
             weekDates.push(dayDate.toISOString().split('T')[0]);
         }
-        let veebopeSessions = [];
-        weekDates.forEach(dateKey => {
-            const daySessions = sessionsByDate.get(dateKey) || [];
-            daySessions.forEach(session => {
-                if (session.is_veebiope === true) {
-                    veebopeSessions.push(session);
-                }
-            });
+        // Collect all veebiõpe sessions from all sessions, regardless of date
+        let allSessions = [];
+        sessionsByDate.forEach(daySessions => {
+            allSessions = allSessions.concat(daySessions);
         });
+        let veebopeSessions = allSessions.filter(session => session.is_veebiope === true || session.is_veebiope === "true");
+        // Debug: Log identified veebiõpe sessions
+        console.log('[DEBUG] Veebiope sessions found:', veebopeSessions.length, veebopeSessions);
 
         // Remove veebõpe sessions from the main calendar grid
         weekDates.forEach(dateKey => {
