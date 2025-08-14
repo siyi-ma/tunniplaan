@@ -104,6 +104,21 @@ const getStudyWeek = (currentDate) => {
     return weekNumber <= 16 ? weekNumber : null;
 };
 
+// --- NEW HELPER FUNCTION ---
+/**
+ * Reliably checks if a course is online-only.
+ * A course is considered online-only if it has at least one session, and ALL of its sessions
+ * have the `is_veebiope` flag set to true.
+ * @param {object} course The course object to check.
+ * @returns {boolean} True if the course is exclusively online.
+ */
+function isCourseOnlineOnly(course) {
+    if (Array.isArray(course.sessions) && course.sessions.length > 0) {
+        return course.sessions.every(s => s.is_veebiope === true);
+    }
+    return false;
+}
+
 // --- Data Processing Functions ---
 function postProcessUnifiedData() {
     allSchoolNames.clear();
@@ -136,17 +151,7 @@ function postProcessUnifiedData() {
                 schoolToInstitutes.get(course.school_code).add(course.institute_name);
             }
         }
-
-        // --- NEW: Pre-classify courses for reliability ---
-        // A course is online if it has sessions AND every session has `is_veebiope: true`.
-        if (Array.isArray(course.sessions) && course.sessions.length > 0) {
-            course.isOnlineOnly = course.sessions.every(s => s.is_veebiope === true);
-        } else {
-            // If there's no session data, it cannot be an online-only course.
-            course.isOnlineOnly = false;
-        }
     });
-
     allUniqueGroups = [...uniqueGroups].sort();
 }
 
@@ -158,17 +163,11 @@ function mergeTimetableData(filteredTimetableData) {
         }
         sessionsByCourse.get(session.course_id).push(session);
     });
-    // Update courses with new session data and re-classify them
+    
     allCourses.forEach(course => {
         const courseSessions = sessionsByCourse.get(course.id);
         if (courseSessions) {
             course.sessions = courseSessions;
-            // Re-run classification after fetching new data
-            if (Array.isArray(course.sessions) && course.sessions.length > 0) {
-                course.isOnlineOnly = course.sessions.every(s => s.is_veebiope === true);
-            } else {
-                course.isOnlineOnly = false;
-            }
         }
     });
 }
@@ -179,18 +178,18 @@ function applyAllFiltersAndRender(resetView = true) {
     
     let veebiopeCourses = [];
     let regularCourses = [];
-    allCourses.forEach(course => {
-        let passesFilters = true;
+    
+    const currentlyPassingCourses = allCourses.filter(course => {
         if (activeFilters.school === 'DOKTOR') {
-            if (!course.groups || !course.groups.includes('DOKTOR')) passesFilters = false;
+            if (!course.groups || !course.groups.includes('DOKTOR')) return false;
         } else if (activeFilters.school && course.school_code !== activeFilters.school) {
-            passesFilters = false;
+            return false;
         }
-        if (activeFilters.institute && course.institute_name !== activeFilters.institute) passesFilters = false;
-        if (activeFilters.eap && course.eap != activeFilters.eap) passesFilters = false;
-        if (activeFilters.assessmentForm && (course.assessment_form_et !== activeFilters.assessmentForm)) passesFilters = false;
-        if (activeFilters.teachingLanguage && course[`keel_${activeFilters.teachingLanguage}`] !== "1") passesFilters = false;
-        if (activeFilters.group && !(course.groups || []).includes(activeFilters.group)) passesFilters = false;
+        if (activeFilters.institute && course.institute_name !== activeFilters.institute) return false;
+        if (activeFilters.eap && course.eap != activeFilters.eap) return false;
+        if (activeFilters.assessmentForm && (course.assessment_form_et !== activeFilters.assessmentForm)) return false;
+        if (activeFilters.teachingLanguage && course[`keel_${activeFilters.teachingLanguage}`] !== "1") return false;
+        if (activeFilters.group && !(course.groups || []).includes(activeFilters.group)) return false;
         const rawSearchTerm = (activeFilters.searchTerm || '').toLowerCase();
         if (rawSearchTerm) {
             const searchTerms = rawSearchTerm.split(',').map(t => t.trim()).filter(Boolean);
@@ -215,18 +214,24 @@ function applyAllFiltersAndRender(resetView = true) {
                         matchFound = searchTerms.some(term => combinedStr.includes(term));
                         break;
                 }
-                if (!matchFound) passesFilters = false;
+                if (!matchFound) return false;
             }
         }
+        return true;
+    });
 
-        // Use the pre-calculated flag for classification
-        if (passesFilters) {
-            if (course.isOnlineOnly) {
-                veebiopeCourses.push(course);
-            } else {
-                regularCourses.push(course);
-            }
+    currentlyPassingCourses.forEach(course => {
+        if (isCourseOnlineOnly(course)) {
+            veebiopeCourses.push(course);
+        } else {
+            regularCourses.push(course);
         }
+    });
+
+    // --- ENHANCED DEBUGGING LOG ---
+    console.log(`[Filter Applied] Courses passing filters: ${currentlyPassingCourses.length}. Identified as online: ${veebiopeCourses.length}.`, {
+        onlineCourseIds: veebiopeCourses.map(c => c.id),
+        regularCourseIds: regularCourses.map(c => c.id)
     });
 
     filteredCourses = [...veebiopeCourses, ...regularCourses];
@@ -331,28 +336,23 @@ function createCourseCardHTML(course, isOnlineCourse = false) {
 }
 
 function renderCardView(courses) {
-    // Separate online and offline courses using the pre-calculated flag.
-    const veebiopeCourses = courses.filter(course => course.isOnlineOnly === true);
-    const regularCourses = courses.filter(course => course.isOnlineOnly !== true);
+    const veebiopeCourses = courses.filter(isCourseOnlineOnly);
+    const regularCourses = courses.filter(course => !isCourseOnlineOnly(course));
 
-    // USER REQUEST: Add console log for debugging.
+    // For debugging, as requested
     console.log(`[renderCardView] Courses identified as online (${veebiopeCourses.length}):`, veebiopeCourses.map(c => c.id));
 
     resultsCounterDOM.textContent = uiTexts.resultsFound[currentLanguage](courses.length);
     
-    // Build the HTML for each group. Online courses have the 'isOnlineCourse' flag set to true.
     const veebiopeHTML = veebiopeCourses.map(course => createCourseCardHTML(course, true)).join('');
     const regularHTML = regularCourses.map(course => createCourseCardHTML(course, false)).join('');
 
-    // Combine the HTML. Online courses will appear first. No headers.
     const combinedHTML = veebiopeHTML + regularHTML;
 
-    // Update the DOM.
     courseListContainerDOM.innerHTML = courses.length === 0
         ? `<p class="text-center text-tt-grey-1 col-span-full">${uiTexts.noCoursesFound[currentLanguage]}</p>`
         : combinedHTML;
 
-    // Re-attach event listeners for the 'Show more' buttons
     document.querySelectorAll('.expand-button').forEach(button => {
         if (button.dataset.listener) return;
         button.addEventListener('click', () => {
@@ -383,7 +383,6 @@ async function toggleCalendarView() {
         const filteredTimetableData = await response.json();
         totalFilteredSessions = filteredTimetableData.length;
         
-        // This function now also re-classifies courses based on the new timetable data
         mergeTimetableData(filteredTimetableData);
 
         if (totalFilteredSessions > CALENDAR_SESSION_LIMIT) {
@@ -453,7 +452,6 @@ function getSessionData() {
         allSessions = allSessions.filter(s => (s.groups || []).some(g => g.group && g.group.toLowerCase() === groupFilter));
     }
     
-    // Separate sessions based on the `is_veebiope` flag.
     let veebiopeSessions = allSessions.filter(s => s.is_veebiope === true);
     let contactSessions = allSessions.filter(s => s.is_veebiope !== true);
 
@@ -530,13 +528,14 @@ function renderWeeklyView() {
 
         const veebiopeCourseMap = new Map();
         filteredCourses.forEach(course => {
-            if (course.isOnlineOnly) {
+            if (isCourseOnlineOnly(course)) {
                 veebiopeCourseMap.set(course.id, course);
             }
         });
         veebiopeSessions.forEach(session => {
             if (!veebiopeCourseMap.has(session.course_id || session.id)) {
-                veebiopeCourseMap.set(session.course_id || session.id, session);
+                const courseName = filteredCourses.find(c => c.id === session.course_id)?.name_et || '';
+                veebiopeCourseMap.set(session.course_id || session.id, {...session, aine: `${session.course_id} - ${courseName}`});
             }
         });
 
@@ -544,11 +543,11 @@ function renderWeeklyView() {
             let veebopeHTML = `<div class="veebope-header" style="font-weight:bold; font-size:1.1em; margin-bottom:8px;">Veebõpe</div><div class="veebope-list" style="display:flex; flex-direction:row; flex-wrap:nowrap; gap:24px; overflow-x:auto; background:#f5f6fa; padding:12px 0;">`;
             veebiopeCourseMap.forEach(item => {
                 let name, type, instructors;
-                if (item.name_et || item.name_en) {
+                if (item.name_et || item.name_en) { // If it's a full course object
                     name = `${item.id || ''} - ${currentLanguage === 'et' ? item.name_et : (item.name_en || item.name_et)}`;
                     type = item.sessions && item.sessions[0] ? item.sessions[0].type || '' : '';
                     instructors = Array.isArray(item.instructors) ? item.instructors.map(i => i.name).filter(Boolean).join(' | ') : (item.instructors?.name || '');
-                } else {
+                } else { // If it's a session object
                     name = item.aine || '';
                     type = item.type || '';
                     instructors = Array.isArray(item.instructor) ? item.instructor.map(i => i.name).filter(Boolean).join(' | ') : (item.instructor?.name || '');
@@ -829,7 +828,6 @@ async function initializeApp() {
         allCourses = responseData.courses || [];
         window.groupToFacultyMap = responseData.groupToFacultyMap || {};
         
-        // This now also pre-classifies courses as online/regular
         postProcessUnifiedData();
         
         const params = new URLSearchParams(window.location.search);
