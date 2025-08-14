@@ -548,16 +548,19 @@ function renderWeeklyView() {
                 const displayInstructors = getInstructorDisplayName(session.instructor);
                 let tooltipHTML = `<div class="tooltip-title">${session.aine}</div><div>${displayInstructors}</div><div class="text-gray-300">${session.type}</div><div class="text-gray-300">${session.start} - ${session.end} @ ${session.room || 'N/A'}</div>`;
                 if (session.comment) {
-                    tooltipHTML += `<div class='tooltip-comment' style='margin-top:4px; color:#666; font-style:italic;'>${session.comment}</div>`;
+                    tooltipHTML += `<div class='tooltip-comment' style='margin-top:4px;'>${session.comment}</div>`;
                 }
-                if (mandatoryGroups.length > 0) {
+                // Show all mandatory/elective groups from session.groups, not just filtered
+                const allMandatoryGroups = (session.groups || []).filter(g => g.ainekv === 'kohustuslik').map(g => g.group);
+                const allElectiveGroups = (session.groups || []).filter(g => g.ainekv === 'valikuline').map(g => g.group);
+                if (allMandatoryGroups.length > 0) {
                     tooltipHTML += `<div class="tooltip-section-title">${uiTexts.mandatoryForGroups[currentLanguage]}:</div><ul class="tooltip-group-list">`;
-                    mandatoryGroups.forEach(g => { tooltipHTML += `<li>${g}</li>`; });
+                    allMandatoryGroups.forEach(g => { tooltipHTML += `<li>${g}</li>`; });
                     tooltipHTML += `</ul>`;
                 }
-                if (electiveGroups.length > 0) {
+                if (allElectiveGroups.length > 0) {
                     tooltipHTML += `<div class="tooltip-section-title">${uiTexts.electiveForGroups[currentLanguage]}:</div><ul class="tooltip-group-list">`;
-                    electiveGroups.forEach(g => { tooltipHTML += `<li>${g}</li>`; });
+                    allElectiveGroups.forEach(g => { tooltipHTML += `<li>${g}</li>`; });
                     tooltipHTML += `</ul>`;
                 }
                 gridHTML += `<div class="session-card" data-tooltip="${encodeURIComponent(tooltipHTML)}" style="top: ${top}px; height: ${height}px; left: ${left}; width: ${width}; border-left-color: ${borderColor}"><div class='session-card-content'><div class='course-name truncate'>${session.aine || ''}</div><div class='session-details truncate'>${displayInstructors}</div><div class='session-details'>${session.start || ''} - ${session.end || ''}</div><div class='session-details truncate'><i class='fas fa-map-marker-alt fa-fw text-gray-400'></i> ${session.room || 'N/A'}</div></div></div>`;
