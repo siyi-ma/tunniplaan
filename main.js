@@ -532,7 +532,7 @@ function renderWeeklyView() {
         })));
         let veebiopeSessions = allSessions.filter(session =>
             session.is_veebiope === true &&
-            (!activeFilters.group || (session.groups || []).some(g => g.group === activeFilters.group))
+            (!activeFilters.group || (session.groups || []).some(g => g.group && g.group.toLowerCase() === activeFilters.group.toLowerCase()))
         );
         console.log('Online sessions found for calendar view:', veebiopeSessions);
 
@@ -568,6 +568,24 @@ function renderWeeklyView() {
             });
             veebiopeHTML += `</div>`;
             veebiopeSection.innerHTML = veebiopeHTML;
+
+            // Tooltip hover logic for .veebiope-card
+            const tooltipDiv = customTooltipDOM;
+            veebiopeSection.querySelectorAll('.veebiope-card').forEach(card => {
+                card.addEventListener('mouseenter', function(e) {
+                    const tooltipHTML = decodeURIComponent(card.getAttribute('data-tooltip'));
+                    tooltipDiv.innerHTML = tooltipHTML;
+                    tooltipDiv.style.display = 'block';
+                    const rect = card.getBoundingClientRect();
+                    tooltipDiv.style.position = 'fixed';
+                    tooltipDiv.style.left = `${rect.right + 10}px`;
+                    tooltipDiv.style.top = `${rect.top}px`;
+                    tooltipDiv.style.zIndex = 9999;
+                });
+                card.addEventListener('mouseleave', function(e) {
+                    tooltipDiv.style.display = 'none';
+                });
+            });
         } else {
             veebiopeSection.innerHTML = '';
         }
