@@ -498,8 +498,13 @@ function renderWeeklyView() {
         const totalHours = END_HOUR - START_HOUR;
         let hasAnySessionThisWeek = false;
 
-        // --- Online sessions (is_veebiope) ---
-        // Collect all online sessions BEFORE date filtering
+        const weekDates = [];
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(startDate);
+            d.setDate(d.getDate() + i);
+            weekDates.push(d.toISOString().split('T')[0]);
+        }
+        // Collect all online sessions (is_veebiope ===True) BEFORE date filtering
         let allSessions = filteredCourses.flatMap(c => (c.sessions || []).map(s => ({
             ...s,
             aine: `${c.id} - ${currentLanguage === 'et' ? c.name_et : (c.name_en || c.name_et)}`
