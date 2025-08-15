@@ -465,24 +465,32 @@ function getSessionData() {
 
 function renderWeeklyView() {
         // --- Tooltip HTML generator ---
-        function buildSessionTooltipHTML({ name, instructors, type, mandatoryGroups, electiveGroups, comment }) {
+        function buildSessionTooltipHTML({ name, instructors, type, start, end, room, mandatoryGroups, electiveGroups, comment, showTimeAndRoom }) {
             let tooltipHTML = `<div class="tooltip-title">${name}</div>`;
             tooltipHTML += `<div>${instructors}</div>`;
             tooltipHTML += `<div class="text-gray-300">${type || ''}</div>`;
-            if (mandatoryGroups && mandatoryGroups.length > 0) {
-                tooltipHTML += `<div class="tooltip-section-title">Mandatory for groups:</div><ul class="tooltip-group-list">`;
-                mandatoryGroups.forEach(g => { tooltipHTML += `<li>${g}</li>`; });
-                tooltipHTML += `</ul>`;
-            }
-            if (electiveGroups && electiveGroups.length > 0) {
-                tooltipHTML += `<div class="tooltip-section-title">Elective for groups:</div><ul class="tooltip-group-list">`;
-                electiveGroups.forEach(g => { tooltipHTML += `<li>${g}</li>`; });
-                tooltipHTML += `</ul>`;
+            if (showTimeAndRoom) {
+                // Format time as '12:00 - 13:00'
+                const timeStr = (start && end) ? `${start} - ${end}` : '';
+                if (timeStr) tooltipHTML += `<div><strong>Time:</strong> ${timeStr}</div>`;
+                if (room) tooltipHTML += `<div><strong>Room:</strong> ${room}</div>`;
             }
             if (comment) {
                 tooltipHTML += `<div class="text-gray-400">${comment}</div>`;
             }
-            tooltipHTML += `</div>`;
+            // Bilingual group labels
+            const mandatoryLabel = currentLanguage === 'et' ? 'Kohustuslik rühmadele:' : 'Mandatory for groups:';
+            const electiveLabel = currentLanguage === 'et' ? 'Valikuline rühmadele:' : 'Elective for groups:';
+            if (mandatoryGroups && mandatoryGroups.length > 0) {
+                tooltipHTML += `<div class="tooltip-section-title">${mandatoryLabel}</div><ul class="tooltip-group-list">`;
+                mandatoryGroups.forEach(g => { tooltipHTML += `<li>${g}</li>`; });
+                tooltipHTML += `</ul>`;
+            }
+            if (electiveGroups && electiveGroups.length > 0) {
+                tooltipHTML += `<div class="tooltip-section-title">${electiveLabel}</div><ul class="tooltip-group-list">`;
+                electiveGroups.forEach(g => { tooltipHTML += `<li>${g}</li>`; });
+                tooltipHTML += `</ul>`;
+            }
             return tooltipHTML;
         }
     sessionDataCache = null;
@@ -568,9 +576,13 @@ function renderWeeklyView() {
                     name,
                     instructors,
                     type: session.type,
+                    start: session.start,
+                    end: session.end,
+                    room: session.room,
                     mandatoryGroups,
                     electiveGroups,
-                    comment: session.comment
+                    comment: session.comment,
+                    showTimeAndRoom: false // online session, do not show time/room
                 });
                 tooltipHTML += `<div style='margin-top:0.5em;'>`;
                 tooltipHTML += `<div><strong>Time:</strong> ${session.start || ''} - ${session.end || ''}</div>`;
@@ -629,6 +641,7 @@ function renderWeeklyView() {
                 if (activeFilters.group && session.groups) {
                     const groupInfo = session.groups.find(g => g.group === activeFilters.group);
                     if (groupInfo) {
+                        console.log('groupInfo:', groupInfo); // Add this line
                         if (groupInfo.status === 'valikuline') borderColor = '#4dbed2';
                         else if (groupInfo.status === 'kohustuslik') borderColor = '#e4067e';
                     }
@@ -645,9 +658,13 @@ function renderWeeklyView() {
                     name: session.aine || '',
                     instructors: displayInstructors,
                     type: session.type,
+                    start: session.start,
+                    end: session.end,
+                    room: session.room,
                     mandatoryGroups,
                     electiveGroups,
-                    comment: session.comment
+                    comment: session.comment,
+                    showTimeAndRoom: true // calendar session, show time/room
                 });
                 gridHTML += `<div class="session-card" data-tooltip="${encodeURIComponent(tooltipHTML)}" style="top: ${top}px; height: ${height}px; left: ${left}; width: ${width}; border-left-color: ${borderColor}"><div class='session-card-content'><div class='course-name truncate'>${session.aine || ''}</div><div class='session-details truncate'>${displayInstructors}</div><div class='session-details'>${session.start || ''} - ${session.end || ''}</div><div class='session-details truncate'><i class='fas fa-map-marker-alt fa-fw text-gray-400'></i> ${session.room || 'N/A'}</div></div></div>`;
                 // Add weeks and comment to session card
