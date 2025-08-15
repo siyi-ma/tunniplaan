@@ -499,21 +499,12 @@ function renderWeeklyView() {
         let hasAnySessionThisWeek = false;
 
         // --- Online sessions (is_veebiope) ---
-        // Collect all sessions for the week
-        let weekDates = [];
-        for (let i = 0; i < 7; i++) {
-            const dayDate = new Date(startDate); dayDate.setDate(dayDate.getDate() + i);
-            weekDates.push(dayDate.toISOString().split('T')[0]);
-        }
-        let veebiopeSessions = [];
-        weekDates.forEach(dateKey => {
-            const daySessions = sessionsByDate.get(dateKey) || [];
-            daySessions.forEach(session => {
-                if (session.is_veebiope === true) {
-                    veebiopeSessions.push(session);
-                }
-            });
-        });
+        // Collect all online sessions BEFORE date filtering
+        let allSessions = filteredCourses.flatMap(c => (c.sessions || []).map(s => ({
+            ...s,
+            aine: `${c.id} - ${currentLanguage === 'et' ? c.name_et : (c.name_en || c.name_et)}`
+        })));
+        let veebiopeSessions = allSessions.filter(session => session.is_veebiope === true);
         console.log('Online sessions found for calendar view:', veebiopeSessions);
 
         // Remove is_veebiope sessions from the main calendar grid
@@ -531,8 +522,8 @@ function renderWeeklyView() {
                 const weeksText = session.weeks ? `<div style='font-size:0.95em; color:#444;'>Weeks: ${session.weeks}</div>` : '';
                 const commentText = session.comment ? `<div style='font-size:0.95em; color:#888;'>${session.comment}</div>` : '';
                 // Mandatory/Elective groups
-                let mandatoryGroups = (session.groups || []).filter(g => g.status === 'kohustuslik').map(g => g.group);
-                let electiveGroups = (session.groups || []).filter(g => g.status === 'valikuline').map(g => g.group);
+                let mandatoryGroups = (session.groups || []).filter(g => g.status === 'kohustuslik' || g.ainekv === 'kohustuslik').map(g => g.group);
+                let electiveGroups = (session.groups || []).filter(g => g.status === 'valikuline' || g.ainekv === 'valikuline').map(g => g.group);
                 let groupHTML = '';
                 if (mandatoryGroups.length > 0) {
                     groupHTML += `<div style='font-size:0.95em; color:#e4067e;'>Mandatory: ${mandatoryGroups.join(', ')}</div>`;
