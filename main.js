@@ -554,7 +554,10 @@ function renderWeeklyView() {
 
         // Render online (is_veebiope) section
         if (veebiopeSessions.length > 0) {
-            let veebiopeHTML = `<div class="veebiope-header" style="font-weight:bold; font-size:1.1em; margin-bottom:8px;">Online Sessions</div><div class="veebiope-list" style="display:flex; flex-wrap:wrap; gap:16px;">`;
+            // Use flex row: header left, cards right
+            let veebiopeHTML = `<div class="veebiope-row" style="display:flex; align-items:flex-start; gap:16px;">`;
+            veebiopeHTML += `<div class="veebiope-header" style="font-weight:bold; font-size:1.1em; margin-right:16px; min-width:120px;">Online Sessions</div>`;
+            veebiopeHTML += `<div class="veebiope-list" style="display:flex; flex-wrap:wrap; gap:16px;">`;
             veebiopeSessions.forEach(session => {
                 const name = session.aine || '';
                 const instructors = Array.isArray(session.instructor) ? session.instructor.map(i => i.name).filter(Boolean).join(' | ') : (session.instructor?.name || '');
@@ -576,7 +579,7 @@ function renderWeeklyView() {
                     ${commentText}
                 </div>`;
             });
-            veebiopeHTML += `</div>`;
+            veebiopeHTML += `</div></div>`;
             veebiopeSection.innerHTML = veebiopeHTML;
 
             // Tooltip hover logic for .veebiope-card
