@@ -642,8 +642,8 @@ function renderWeeklyView() {
                     const groupInfo = session.groups.find(g => g.group === activeFilters.group);
                     if (groupInfo) {
                         console.log('groupInfo:', groupInfo); // Add this line
-                        if (groupInfo.status === 'valikuline') borderColor = '#4dbed2';
-                        else if (groupInfo.status === 'kohustuslik') borderColor = '#e4067e';
+                        if (groupInfo.ainekv === 'valikuline') borderColor = '#4dbed2';
+                        else if (groupInfo.ainekv === 'kohustuslik') borderColor = '#e4067e';
                     }
                 }
                 const getInstructorDisplayName = (instr) => {
