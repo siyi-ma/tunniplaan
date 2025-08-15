@@ -572,6 +572,10 @@ function renderWeeklyView() {
                     electiveGroups,
                     comment: session.comment
                 });
+                tooltipHTML += `<div style='margin-top:0.5em;'>`;
+                tooltipHTML += `<div><strong>Time:</strong> ${session.start || ''} - ${session.end || ''}</div>`;
+                tooltipHTML += `<div><strong>Room:</strong> ${session.room || 'N/A'}</div>`;
+                tooltipHTML += `</div>`;
                 veebiopeHTML += `<div class="veebiope-card" data-tooltip="${encodeURIComponent(tooltipHTML)}" style="background:#fff; border-left:4px solid #4dbed2; box-shadow:0 1px 4px #eee; padding:12px 16px; min-width:220px; max-width:320px; margin-bottom:8px;">
                     <div style="font-weight:bold;">${name}</div>
                     <div style="font-size:0.95em; color:#444;">${session.type || ''}</div>
@@ -625,8 +629,8 @@ function renderWeeklyView() {
                 if (activeFilters.group && session.groups) {
                     const groupInfo = session.groups.find(g => g.group === activeFilters.group);
                     if (groupInfo) {
-                        if (groupInfo.status === 'kohustuslik') borderColor = '#e4067e';
-                        else if (groupInfo.status === 'valikuline') borderColor = '#4dbed2';
+                        if (groupInfo.status === 'valikuline') borderColor = '#4dbed2';
+                        else if (groupInfo.status === 'kohustuslik') borderColor = '#e4067e';
                     }
                 }
                 const getInstructorDisplayName = (instr) => {

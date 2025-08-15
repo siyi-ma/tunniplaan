@@ -60,12 +60,12 @@ body { font-family: 'Proxima Nova', system-ui, -apple-system, BlinkMacSystemFont
 .filter-drawer-open { transform: translateX(0) !important; }
 .filter-pill { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; margin-right: 0.5rem; margin-bottom: 0.5rem; background-color: #e9ecef; color: #495057; border-radius: 9999px; font-size: 0.875rem; border: 1px solid #ced4da; }
 .filter-pill-remove { margin-left: 0.5rem; background: none; border: none; color: #6c757d; cursor: pointer; padding: 0; line-height: 1; }
-.calendar-grid-wrapper { overflow-x: auto; border: 1px solid #dee2e6; border-radius: 0.25rem; background-color: #fff; }
+.calendar-grid-wrapper { /*overflow-x: auto;*/ overflow-y: hidden; border: 1px solid #dee2e6; border-radius: 0.25rem; background-color: #fff; }
 .calendar-grid { display: grid; grid-template-columns: 60px repeat(7, minmax(140px, 1fr)); }
 .grid-header-cell, .time-ruler-header { padding: 0.3rem 0.3rem; text-align:remem 0.5rem; text-align: center; font-weight: 600; color: white; background-color: #342b60; border-right: 1px solid #4a3f7a; border-bottom: 1px solid #4a3f7a; font-size: 0.875rem; line-height: 1.25; }
 .time-ruler-header { border-right: 1px solid #4a3f7a; }
-.grid-body-cell, .time-ruler-body { position: relative; border-right: 1px solid #e9ecef; background-image: linear-gradient(to bottom, #f1f3f5 1px, transparent 1px); background-size: 100% 60px; }
- .time-ruler-body { background-color: #f8f9fa; margin-top: 24px; }
+.grid-body-cell, .time-ruler-body { position: relative; border-right: 1px solid #e9ecef; margin-top: 16px; background-image: linear-gradient(to bottom, #f1f3f5 1px, transparent 1px); background-size: 100% 60px; }
+ .time-ruler-body { background-color: #f8f9fa; margin-top: 16px; }
 .time-grid-ruler-hour { position: absolute; right: 0.5rem; transform: translateY(-50%); font-size: 0.75rem; color: #6c757d; }
 .session-card { position: absolute; border-left: 4px solid #e4067e; transition: all 0.2s ease-in-out; z-index: 10; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-radius: 0 2px 2px 0; padding: 0.25rem 0.5rem; overflow: hidden; display: flex; flex-direction: column; cursor: default; }
 .session-card:hover { z-index: 11; transform: scale(1.02); box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
@@ -84,3 +84,4 @@ body { font-family: 'Proxima Nova', system-ui, -apple-system, BlinkMacSystemFont
 .searchable-dropdown-list-item:hover { background-color: #f3f4f6; }
 #scrollTopBtn { position: fixed; bottom: 20px; right: 20px; width: 40px; height: 40px; background-color: #342b60; color: white; border-radius: 50%; display: none; align-items: center; justify-content: center; cursor: pointer; opacity: 0.8; transition: opacity 0.3s; z-index: 50; }
 #scrollTopBtn:hover { opacity: 1; }
+#courseCardLegend { display: none !important; }
