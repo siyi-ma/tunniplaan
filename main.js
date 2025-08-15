@@ -514,6 +514,7 @@ function renderWeeklyView() {
                 }
             });
         });
+        console.log('Online sessions found for calendar view:', veebiopeSessions);
 
         // Remove is_veebiope sessions from the main calendar grid
         weekDates.forEach(dateKey => {
@@ -529,12 +530,23 @@ function renderWeeklyView() {
                 const instructors = Array.isArray(session.instructor) ? session.instructor.map(i => i.name).filter(Boolean).join(' | ') : (session.instructor?.name || '');
                 const weeksText = session.weeks ? `<div style='font-size:0.95em; color:#444;'>Weeks: ${session.weeks}</div>` : '';
                 const commentText = session.comment ? `<div style='font-size:0.95em; color:#888;'>${session.comment}</div>` : '';
+                // Mandatory/Elective groups
+                let mandatoryGroups = (session.groups || []).filter(g => g.status === 'kohustuslik').map(g => g.group);
+                let electiveGroups = (session.groups || []).filter(g => g.status === 'valikuline').map(g => g.group);
+                let groupHTML = '';
+                if (mandatoryGroups.length > 0) {
+                    groupHTML += `<div style='font-size:0.95em; color:#e4067e;'>Mandatory: ${mandatoryGroups.join(', ')}</div>`;
+                }
+                if (electiveGroups.length > 0) {
+                    groupHTML += `<div style='font-size:0.95em; color:#4dbed2;'>Elective: ${electiveGroups.join(', ')}</div>`;
+                }
                 veebiopeHTML += `<div class="veebope-card" style="background:#fff; border-left:4px solid #4dbed2; box-shadow:0 1px 4px #eee; padding:12px 16px; min-width:220px; max-width:320px; margin-bottom:8px;">
                     <div style="font-weight:bold;">${name}</div>
                     <div style="font-size:0.95em; color:#444;">${session.type || ''}</div>
                     <div style="font-size:0.95em; color:#444;">${instructors}</div>
                     ${weeksText}
                     ${commentText}
+                    ${groupHTML}
                 </div>`;
             });
             veebiopeHTML += `</div>`;
@@ -578,15 +590,20 @@ function renderWeeklyView() {
                 const electiveGroups = (session.groups || []).filter(g => g.status === 'valikuline').map(g => g.group);
                 const displayInstructors = getInstructorDisplayName(session.instructor);
                 let tooltipHTML = `<div class="tooltip-title">${session.aine}</div><div>${displayInstructors}</div><div class="text-gray-300">${session.type}</div><div class="text-gray-300">${session.start} - ${session.end} @ ${session.room || 'N/A'}</div>`;
-                if (mandatoryGroups.length > 0) {
-                    tooltipHTML += `<div class="tooltip-section-title">Mandatory for groups:</div><ul class="tooltip-group-list">`;
-                    mandatoryGroups.forEach(g => { tooltipHTML += `<li>${g}</li>`; });
-                    tooltipHTML += `</ul>`;
-                }
-                if (electiveGroups.length > 0) {
-                    tooltipHTML += `<div class="tooltip-section-title">Elective for groups:</div><ul class="tooltip-group-list">`;
-                    electiveGroups.forEach(g => { tooltipHTML += `<li>${g}</li>`; });
-                    tooltipHTML += `</ul>`;
+                // Mandatory/Elective groups
+                if (session.groups && session.groups.length > 0) {
+                    const mandatoryGroups = session.groups.filter(g => g.status === 'kohustuslik').map(g => g.group);
+                    const electiveGroups = session.groups.filter(g => g.status === 'valikuline').map(g => g.group);
+                    if (mandatoryGroups.length > 0) {
+                        tooltipHTML += `<div class="tooltip-section-title">Mandatory for groups:</div><ul class="tooltip-group-list">`;
+                        mandatoryGroups.forEach(g => { tooltipHTML += `<li>${g}</li>`; });
+                        tooltipHTML += `</ul>`;
+                    }
+                    if (electiveGroups.length > 0) {
+                        tooltipHTML += `<div class="tooltip-section-title">Elective for groups:</div><ul class="tooltip-group-list">`;
+                        electiveGroups.forEach(g => { tooltipHTML += `<li>${g}</li>`; });
+                        tooltipHTML += `</ul>`;
+                    }
                 }
                 gridHTML += `<div class="session-card" data-tooltip="${encodeURIComponent(tooltipHTML)}" style="top: ${top}px; height: ${height}px; left: ${left}; width: ${width}; border-left-color: ${borderColor}"><div class='session-card-content'><div class='course-name truncate'>${session.aine || ''}</div><div class='session-details truncate'>${displayInstructors}</div><div class='session-details'>${session.start || ''} - ${session.end || ''}</div><div class='session-details truncate'><i class='fas fa-map-marker-alt fa-fw text-gray-400'></i> ${session.room || 'N/A'}</div></div></div>`;
                 // Add weeks and comment to session card
