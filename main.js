@@ -530,10 +530,23 @@ function renderWeeklyView() {
             ...s,
             aine: `${c.id} - ${currentLanguage === 'et' ? c.name_et : (c.name_en || c.name_et)}`
         })));
-        let veebiopeSessions = allSessions.filter(session =>
-            session.is_veebiope === true &&
-            (!activeFilters.group || (session.groups || []).some(g => g.group && g.group.toLowerCase() === activeFilters.group.toLowerCase()))
-        );
+        console.log('[Online filter] activeFilters.group:', activeFilters.group);
+        let veebiopeSessions = allSessions.filter(session => {
+            if (session.is_veebiope !== true) return false;
+            if (!activeFilters.group) return true;
+            const groupMatch = (session.groups || []).some(g => {
+                const match = g.group && g.group.toLowerCase() === activeFilters.group.toLowerCase();
+                if (match) {
+                    console.log('[Online filter] MATCH:', g.group, 'in', session.groups.map(x => x.group));
+                }
+                return match;
+            });
+            if (!groupMatch) {
+                console.log('[Online filter] NO MATCH for', activeFilters.group, 'in', session.groups ? session.groups.map(x => x.group) : []);
+            }
+            return groupMatch;
+        });
+        console.log('[Online filter] veebiopeSessions after filter:', veebiopeSessions.map(s => ({aine: s.aine, groups: s.groups ? s.groups.map(g => g.group) : []})));
         console.log('Online sessions found for calendar view:', veebiopeSessions);
 
         // Remove is_veebiope sessions from the main calendar grid
