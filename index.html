@@ -19,7 +19,7 @@
 </head>
 <body class="bg-white text-black body-text">
     <div id="syncInfo" class="container mx-auto text-right text-xs text-tt-grey-1 mt-2 mb-2]">
-        This site was synced with <a href="https://tunniplaan.taltech.ee/#/public" target="_blank" rel="noopener noreferrer" class="underline text-tt-magenta">TalTech Timetable</a> on <span id="syncDate">...</span>
+        This site was synced with <a href="https://tunniplaan.taltech.ee/#/public" target="_blank" rel="noopener noreferrer" class="underline, text-tt-magenta">TalTech Timetable</a> on <span id="syncDate">...</span>
     </div>
 
     <header class="sticky top-0 z-50 bg-tt-dark-blue text-white p-2 shadow-md">
@@ -108,15 +108,11 @@
 
     <script src="main.js" defer></script>
     <script>
-fetch('./unified_courses.json', { method: 'HEAD' })
-  .then(response => {
-    const lastModified = response.headers.get('Last-Modified');
-    if (lastModified) {
-      const d = new Date(lastModified);
-      const day = String(d.getDate()).padStart(2, '0');
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const year = d.getFullYear();
-      document.getElementById('syncDate').textContent = `${day}.${month}.${year}`;
+fetch('./unified_courses.json')
+  .then(response => response.json())
+  .then(data => {
+    if (data.scraping_datetime) {
+      document.getElementById('syncDate').textContent = data.scraping_datetime;
     }
   });
 </script>

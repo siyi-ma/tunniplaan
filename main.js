@@ -104,28 +104,14 @@ const getStudyWeek = (currentDate) => {
     return weekNumber <= 16 ? weekNumber : null;
 };
 
-// --- NEW HELPER FUNCTION ---
-/**
- * Reliably checks if a course is online-only.
- * A course is considered online-only if it has at least one session, and ALL of its sessions
- * have the `is_veebiope` flag set to true.
- * @param {object} course The course object to check.
- * @returns {boolean} True if the course is exclusively online.
- */
-function isCourseOnlineOnly(course) {
-    if (Array.isArray(course.sessions) && course.sessions.length > 0) {
-        return course.sessions.every(s => s.is_veebiope === true);
-    }
-    return false;
-}
-
 // --- Data Processing Functions ---
-function postProcessUnifiedData() {
+function postProcessUnifiedData(groupToFacultyLookup = {}) {
     allSchoolNames.clear();
     schoolToInstitutes.clear();
     facultyToGroupsMap.clear();
     const uniqueGroups = new Set();
 
+    // Build facultyToGroupsMap ONLY from groupToFacultyMap
     const groupToFacultyMap = window.groupToFacultyMap || {};
     Object.values(groupToFacultyMap).forEach(facultyCode => {
         if (!facultyToGroupsMap.has(facultyCode)) {
@@ -138,6 +124,7 @@ function postProcessUnifiedData() {
         }
     });
 
+    // Build other maps as before
     allCourses.forEach(course => {
         if (course.groups && course.groups.length > 0) {
             course.groups.forEach(group => uniqueGroups.add(group));
@@ -156,6 +143,7 @@ function postProcessUnifiedData() {
 }
 
 function mergeTimetableData(filteredTimetableData) {
+    allCourses.forEach(course => course.sessions = []);
     const sessionsByCourse = new Map();
     filteredTimetableData.forEach(session => {
         if (!sessionsByCourse.has(session.course_id)) {
@@ -163,12 +151,9 @@ function mergeTimetableData(filteredTimetableData) {
         }
         sessionsByCourse.get(session.course_id).push(session);
     });
-    
     allCourses.forEach(course => {
         const courseSessions = sessionsByCourse.get(course.id);
-        if (courseSessions) {
-            course.sessions = courseSessions;
-        }
+        if (courseSessions) course.sessions = courseSessions;
     });
 }
 
@@ -176,20 +161,19 @@ function mergeTimetableData(filteredTimetableData) {
 function applyAllFiltersAndRender(resetView = true) {
     if (resetView) { isCalendarViewVisible = false; calendarDate = new Date(SEMESTER_START); }
     
-    let veebiopeCourses = [];
-    let regularCourses = [];
-    
-    const currentlyPassingCourses = allCourses.filter(course => {
+    filteredCourses = allCourses.filter(course => {
         if (activeFilters.school === 'DOKTOR') {
             if (!course.groups || !course.groups.includes('DOKTOR')) return false;
         } else if (activeFilters.school && course.school_code !== activeFilters.school) {
             return false;
         }
+
         if (activeFilters.institute && course.institute_name !== activeFilters.institute) return false;
         if (activeFilters.eap && course.eap != activeFilters.eap) return false;
         if (activeFilters.assessmentForm && (course.assessment_form_et !== activeFilters.assessmentForm)) return false;
         if (activeFilters.teachingLanguage && course[`keel_${activeFilters.teachingLanguage}`] !== "1") return false;
         if (activeFilters.group && !(course.groups || []).includes(activeFilters.group)) return false;
+        
         const rawSearchTerm = (activeFilters.searchTerm || '').toLowerCase();
         if (rawSearchTerm) {
             const searchTerms = rawSearchTerm.split(',').map(t => t.trim()).filter(Boolean);
@@ -219,23 +203,14 @@ function applyAllFiltersAndRender(resetView = true) {
         }
         return true;
     });
-
-    currentlyPassingCourses.forEach(course => {
-        if (isCourseOnlineOnly(course)) {
-            veebiopeCourses.push(course);
-        } else {
-            regularCourses.push(course);
-        }
+    // Reorder: online first, then hybrid, then offline, then others
+    filteredCourses.sort((a, b) => {
+        const statusOrder = { online: 0, hybrid: 1, offline: 2 };
+        const aOrder = statusOrder[a.session_status] !== undefined ? statusOrder[a.session_status] : 3;
+        const bOrder = statusOrder[b.session_status] !== undefined ? statusOrder[b.session_status] : 3;
+        return aOrder - bOrder;
     });
-
-    // --- ENHANCED DEBUGGING LOG ---
-    console.log(`[Filter Applied] Courses passing filters: ${currentlyPassingCourses.length}. Identified as online: ${veebiopeCourses.length}.`, {
-        onlineCourseIds: veebiopeCourses.map(c => c.id),
-        regularCourseIds: regularCourses.map(c => c.id)
-    });
-
-    filteredCourses = [...veebiopeCourses, ...regularCourses];
-    totalFilteredSessions = 0;
+    totalFilteredSessions = 0; 
     render();
 }
 
@@ -268,7 +243,7 @@ function render() {
     }
 }
 
-function createCourseCardHTML(course, isOnlineCourse = false) {
+function createCourseCardHTML(course) {
     const name = currentLanguage === 'et' ? course.name_et : (course.name_en || course.name_et);
     const nameOtherLang = currentLanguage === 'et' ? course.name_en : course.name_et;
     const description = currentLanguage === 'et' ? course.description_short_et : (course.description_short_en || course.description_short_et);
@@ -301,11 +276,11 @@ function createCourseCardHTML(course, isOnlineCourse = false) {
     else if (course.keel_et === "1") langTag = 'ET'; else if (course.keel_en === "1") langTag = 'EN';
     const timetableLinkHTML = course.timetable_link ? `<a href="${course.timetable_link}" target="_blank" rel="noopener noreferrer" class="text-tt-magenta hover:underline text-sm font-normal"><i class="fas fa-calendar-alt fa-fw"></i> Tunniplaan</a>` : '';
     
-    const borderClasses = isOnlineCourse 
-        ? 'border-2 border-tt-dark-blue'
-        : 'border border-tt-grey-1';
-    
-    return `<div class="bg-white rounded-lg shadow-md ${borderClasses} overflow-hidden flex flex-col h-full">
+    let borderClass = 'border-tt-grey-1';
+    if (course.session_status === 'online') borderClass = 'border-tt-magenta session-card-online';
+    else if (course.session_status === 'hybrid') borderClass = 'border-tt-light-blue session-card-hybrid';
+    else if (course.session_status === 'offline') borderClass = 'border-tt-grey-1 session-card-offline';
+    return `<div class="bg-white rounded-lg shadow-md border ${borderClass} overflow-hidden flex flex-col h-full">
                 <div class="p-4 flex-grow">
                     <div class="flex justify-between items-start mb-1">
                         <h2 class="text-lg proxima-nova-bold uppercase flex-grow pr-2"><a href="${course.course_card_link || '#'}" target="_blank" class="text-tt-magenta hover:underline">${course.id || ''} - ${name}</a></h2>
@@ -330,33 +305,34 @@ function createCourseCardHTML(course, isOnlineCourse = false) {
                     <ul class="list-disc list-inside body-text">${currentLanguage === 'et' ? (course.learning_outcomes_et || '').split('\n').map(li => `<li>${li.replace(/^- /, '')}</li>`).join('') : (course.learning_outcomes_en || '').split('\n').map(li => `<li>${li.replace(/^- /, '')}</li>`).join('')}</ul>
                     <p><strong>${currentLanguage === 'et' ? 'Hindamismeetod' : 'Assessment Method'}:</strong> ${currentLanguage === 'et' ? course.assessment_method_et || '' : course.assessment_method_en || course.assessment_method_et || ''}</p>
                     <p><strong>${uiTexts.assessment[currentLanguage]}:</strong> ${currentLanguage === 'et' ? course.assessment_form_et : (course.assessment_form_en || 'N/A')}</p>
+                    ${course.session_status ? `
+                        <div class="mt-3 mb-2">
+                            <strong>${currentLanguage === 'et' ? 'Sessiooni staatus' : 'Session Status'}:</strong>
+                            <span class="session-status-tag session-status-${course.session_status}">
+                                ${course.session_status === 'online' ? (currentLanguage === 'et' ? 'Veebipõhine' : 'Online') :
+                                  course.session_status === 'offline' ? (currentLanguage === 'et' ? 'Kohapeal' : 'Offline') :
+                                  (currentLanguage === 'et' ? 'Hübriid' : 'Hybrid')}
+                            </span>
+                            ${course.session_details ? `
+                                <div class="session-details-list mt-1">
+                                    ${course.session_details.online_weeks ? `<div><strong>${currentLanguage === 'et' ? 'Veebiõpe nädalad' : 'Online weeks'}:</strong> ${course.session_details.online_weeks}</div>` : ''}
+                                    ${course.session_details.offline_weeks ? `<div><strong>${currentLanguage === 'et' ? 'Kontaktõpe nädalad' : 'Offline weeks'}:</strong> ${course.session_details.offline_weeks}</div>` : ''}
+                                </div>
+                            ` : ''}
+                        </div>
+                    ` : ''}
                     ${studyProgramsHTML}
                 </div>
             </div>`;
 }
 
 function renderCardView(courses) {
-    const veebiopeCourses = courses.filter(isCourseOnlineOnly);
-    const regularCourses = courses.filter(course => !isCourseOnlineOnly(course));
-
-    // For debugging, as requested
-    console.log(`[renderCardView] Courses identified as online (${veebiopeCourses.length}):`, veebiopeCourses.map(c => c.id));
-
     resultsCounterDOM.textContent = uiTexts.resultsFound[currentLanguage](courses.length);
-    
-    const veebiopeHTML = veebiopeCourses.map(course => createCourseCardHTML(course, true)).join('');
-    const regularHTML = regularCourses.map(course => createCourseCardHTML(course, false)).join('');
-
-    const combinedHTML = veebiopeHTML + regularHTML;
-
-    courseListContainerDOM.innerHTML = courses.length === 0
-        ? `<p class="text-center text-tt-grey-1 col-span-full">${uiTexts.noCoursesFound[currentLanguage]}</p>`
-        : combinedHTML;
-
+    courseListContainerDOM.innerHTML = courses.length === 0 ? `<p class="text-center text-tt-grey-1 col-span-full">${uiTexts.noCoursesFound[currentLanguage]}</p>` : courses.map(createCourseCardHTML).join('');
     document.querySelectorAll('.expand-button').forEach(button => {
         if (button.dataset.listener) return;
         button.addEventListener('click', () => {
-            const cardRoot = button.closest('.flex-col') || button.closest('.bg-white'), content = cardRoot.querySelector('.expandable-content'), desc = cardRoot.querySelector('.course-description');
+            const cardRoot = button.closest('.flex-col'), content = cardRoot.querySelector('.expandable-content'), desc = cardRoot.querySelector('.course-description');
             if (!content || !desc) return;
             const icon = button.querySelector('i'), span = button.querySelector('span'), isHidden = content.classList.contains('hidden');
             content.classList.toggle('hidden');
@@ -382,14 +358,11 @@ async function toggleCalendarView() {
         if (!response.ok) throw new Error(`Server returned status ${response.status}`);
         const filteredTimetableData = await response.json();
         totalFilteredSessions = filteredTimetableData.length;
-        
-        mergeTimetableData(filteredTimetableData);
-
         if (totalFilteredSessions > CALENDAR_SESSION_LIMIT) {
             updateViewToggleButton(); 
             throw new Error("Calendar limit exceeded after fetching.");
         }
-
+        mergeTimetableData(filteredTimetableData);
     } catch(error) {
         console.error("Failed to load calendar data:", error);
     } finally {
@@ -451,21 +424,21 @@ function getSessionData() {
         const groupFilter = activeFilters.group.toLowerCase();
         allSessions = allSessions.filter(s => (s.groups || []).some(g => g.group && g.group.toLowerCase() === groupFilter));
     }
-    
-    let veebiopeSessions = allSessions.filter(s => s.is_veebiope === true);
-    let contactSessions = allSessions.filter(s => s.is_veebiope !== true);
-
+    // Deduplicate sessions by unique key: course_id, date, start, end, room
     const sessionKey = s => `${s.course_id || s.id}_${s.date}_${s.start}_${s.end}_${s.room}`;
     const uniqueSessionMap = new Map();
-    contactSessions.forEach(s => {
+    allSessions.forEach(s => {
         if (!s.date) return;
         const key = sessionKey(s);
         if (!uniqueSessionMap.has(key)) {
             uniqueSessionMap.set(key, {...s});
         } else {
+            // Merge groups for duplicate sessions
             const existing = uniqueSessionMap.get(key);
             if (Array.isArray(existing.groups) && Array.isArray(s.groups)) {
+                // Merge group objects by group name
                 const allGroups = [...existing.groups, ...s.groups];
+                // Remove duplicates by group name and status
                 const groupMap = new Map();
                 allGroups.forEach(g => {
                     if (g && g.group) {
@@ -476,7 +449,6 @@ function getSessionData() {
             }
         }
     });
-
     const sessionsByDate = new Map();
     uniqueSessionMap.forEach(s => {
         const sessionDate = parseDate(s.date);
@@ -486,14 +458,13 @@ function getSessionData() {
         sessionsByDate.get(dateKey).push({...s});
     });
     sessionsByDate.forEach(calculateOverlaps);
-    
-    sessionDataCache = { sessionsByDate, veebiopeSessions };
-    return sessionDataCache;
+    sessionDataCache = sessionsByDate;
+    return sessionsByDate;
 }
 
 function renderWeeklyView() {
     sessionDataCache = null;
-    const { sessionsByDate, veebiopeSessions } = getSessionData();
+    const sessionsByDate = getSessionData();
     let todayStatusHTML = '';
     const today = new Date();
     const todayDateString = today.toLocaleDateString(currentLanguage === 'et' ? 'et-EE' : 'en-GB', { day:'numeric', month:'long', year:'numeric'});
@@ -526,35 +497,38 @@ function renderWeeklyView() {
         const totalHours = END_HOUR - START_HOUR;
         let hasAnySessionThisWeek = false;
 
-        const veebiopeCourseMap = new Map();
-        filteredCourses.forEach(course => {
-            if (isCourseOnlineOnly(course)) {
-                veebiopeCourseMap.set(course.id, course);
-            }
-        });
-        veebiopeSessions.forEach(session => {
-            if (!veebiopeCourseMap.has(session.course_id || session.id)) {
-                const courseName = filteredCourses.find(c => c.id === session.course_id)?.name_et || '';
-                veebiopeCourseMap.set(session.course_id || session.id, {...session, aine: `${session.course_id} - ${courseName}`});
-            }
+        // --- Veebõpe sessions ---
+        // Collect all sessions for the week
+        let weekDates = [];
+        for (let i = 0; i < 7; i++) {
+            const dayDate = new Date(startDate); dayDate.setDate(dayDate.getDate() + i);
+            weekDates.push(dayDate.toISOString().split('T')[0]);
+        }
+        let veebopeSessions = [];
+        weekDates.forEach(dateKey => {
+            const daySessions = sessionsByDate.get(dateKey) || [];
+            daySessions.forEach(session => {
+                if ((session.type && session.type.toLowerCase() === 'veebõpe') || (session.room && session.room.toLowerCase() === 'veebõpe') || (session.room && session.room.toLowerCase() === 'online')) {
+                    veebopeSessions.push(session);
+                }
+            });
         });
 
-        if (veebiopeCourseMap.size > 0) {
-            let veebopeHTML = `<div class="veebope-header" style="font-weight:bold; font-size:1.1em; margin-bottom:8px;">Veebõpe</div><div class="veebope-list" style="display:flex; flex-direction:row; flex-wrap:nowrap; gap:24px; overflow-x:auto; background:#f5f6fa; padding:12px 0;">`;
-            veebiopeCourseMap.forEach(item => {
-                let name, type, instructors;
-                if (item.name_et || item.name_en) { // If it's a full course object
-                    name = `${item.id || ''} - ${currentLanguage === 'et' ? item.name_et : (item.name_en || item.name_et)}`;
-                    type = item.sessions && item.sessions[0] ? item.sessions[0].type || '' : '';
-                    instructors = Array.isArray(item.instructors) ? item.instructors.map(i => i.name).filter(Boolean).join(' | ') : (item.instructors?.name || '');
-                } else { // If it's a session object
-                    name = item.aine || '';
-                    type = item.type || '';
-                    instructors = Array.isArray(item.instructor) ? item.instructor.map(i => i.name).filter(Boolean).join(' | ') : (item.instructor?.name || '');
-                }
+        // Remove veebõpe sessions from the main calendar grid
+        weekDates.forEach(dateKey => {
+            let daySessions = sessionsByDate.get(dateKey) || [];
+            sessionsByDate.set(dateKey, daySessions.filter(session => !((session.type && session.type.toLowerCase() === 'veebõpe') || (session.room && session.room.toLowerCase() === 'veebõpe') || (session.room && session.room.toLowerCase() === 'online'))));
+        });
+
+        // Render veebõpe section
+        if (veebopeSessions.length > 0) {
+            let veebopeHTML = `<div class="veebope-header" style="font-weight:bold; font-size:1.1em; margin-bottom:8px;">Veebõpe</div><div class="veebope-list" style="display:flex; flex-wrap:wrap; gap:16px;">`;
+            veebopeSessions.forEach(session => {
+                const name = session.aine || '';
+                const instructors = Array.isArray(session.instructor) ? session.instructor.map(i => i.name).filter(Boolean).join(' | ') : (session.instructor?.name || '');
                 veebopeHTML += `<div class="veebope-card" style="background:#fff; border-left:4px solid #4dbed2; box-shadow:0 1px 4px #eee; padding:12px 16px; min-width:220px; max-width:320px; margin-bottom:8px;">
                     <div style="font-weight:bold;">${name}</div>
-                    <div style="font-size:0.95em; color:#444;">${type ? type : 'Veebõpe'}</div>
+                    <div style="font-size:0.95em; color:#444;">${session.type || ''}</div>
                     <div style="font-size:0.95em; color:#444;">${instructors}</div>
                 </div>`;
             });
@@ -564,6 +538,7 @@ function renderWeeklyView() {
             veebopeSection.innerHTML = '';
         }
 
+        // --- Main calendar grid ---
         let gridHTML = `<div class="calendar-grid"><div class="time-ruler-header"></div>`;
         for (let i = 0; i < 7; i++) {
             const dayDate = new Date(startDate); dayDate.setDate(dayDate.getDate() + i);
@@ -582,32 +557,30 @@ function renderWeeklyView() {
                 const top = ((session.startMin - START_HOUR*60) / 60) * HOUR_HEIGHT_PX, height = Math.max(20, (session.endMin - session.startMin)/60 * HOUR_HEIGHT_PX - 2);
                 const width = `calc(${100 / (session.maxCols || 1)}% - 4px)`, left = `${(100 / (session.maxCols || 1)) * (session.col || 0)}%`;
                 let borderColor = '#e4067e';
-                if (session.groups && session.groups.some(g => g.ainekv === 'valikuline')) {
-                    borderColor = '#4dbed2';
-                } else if (activeFilters.group && session.groups) {
+                if (activeFilters.group && session.groups) {
                     const groupInfo = session.groups.find(g => g.group === activeFilters.group);
-                    if (groupInfo && groupInfo.status === 'kohustuslik') borderColor = '#e4067e';
+                    if (groupInfo) {
+                        if (groupInfo.status === 'kohustuslik') borderColor = '#e4067e';
+                        else if (groupInfo.status === 'valikuline') borderColor = '#4dbed2';
+                    }
                 }
                 const getInstructorDisplayName = (instr) => {
                     if (!instr || !instr.name) return 'N/A';
                     if (Array.isArray(instr)) return instr.map(i => i.name).filter(Boolean).join(', ');
                     return instr.name;
                 };
+                const mandatoryGroups = (session.groups || []).filter(g => g.status === 'kohustuslik').map(g => g.group);
+                const electiveGroups = (session.groups || []).filter(g => g.status === 'valikuline').map(g => g.group);
                 const displayInstructors = getInstructorDisplayName(session.instructor);
                 let tooltipHTML = `<div class="tooltip-title">${session.aine}</div><div>${displayInstructors}</div><div class="text-gray-300">${session.type}</div><div class="text-gray-300">${session.start} - ${session.end} @ ${session.room || 'N/A'}</div>`;
-                if (session.comment) {
-                    tooltipHTML += `<div class='tooltip-comment' style='margin-top:4px;'>${session.comment}</div>`;
-                }
-                const allMandatoryGroups = (session.groups || []).filter(g => g.ainekv === 'kohustuslik').map(g => g.group);
-                const allElectiveGroups = (session.groups || []).filter(g => g.ainekv === 'valikuline').map(g => g.group);
-                if (allMandatoryGroups.length > 0) {
+                if (mandatoryGroups.length > 0) {
                     tooltipHTML += `<div class="tooltip-section-title">${uiTexts.mandatoryForGroups[currentLanguage]}:</div><ul class="tooltip-group-list">`;
-                    allMandatoryGroups.forEach(g => { tooltipHTML += `<li>${g}</li>`; });
+                    mandatoryGroups.forEach(g => { tooltipHTML += `<li>${g}</li>`; });
                     tooltipHTML += `</ul>`;
                 }
-                if (allElectiveGroups.length > 0) {
+                if (electiveGroups.length > 0) {
                     tooltipHTML += `<div class="tooltip-section-title">${uiTexts.electiveForGroups[currentLanguage]}:</div><ul class="tooltip-group-list">`;
-                    allElectiveGroups.forEach(g => { tooltipHTML += `<li>${g}</li>`; });
+                    electiveGroups.forEach(g => { tooltipHTML += `<li>${g}</li>`; });
                     tooltipHTML += `</ul>`;
                 }
                 gridHTML += `<div class="session-card" data-tooltip="${encodeURIComponent(tooltipHTML)}" style="top: ${top}px; height: ${height}px; left: ${left}; width: ${width}; border-left-color: ${borderColor}"><div class='session-card-content'><div class='course-name truncate'>${session.aine || ''}</div><div class='session-details truncate'>${displayInstructors}</div><div class='session-details'>${session.start || ''} - ${session.end || ''}</div><div class='session-details truncate'><i class='fas fa-map-marker-alt fa-fw text-gray-400'></i> ${session.room || 'N/A'}</div></div></div>`;
@@ -625,7 +598,7 @@ function renderWeeklyView() {
     document.getElementById('nextMonthBtn').addEventListener('click', () => { calendarDate.setMonth(calendarDate.getMonth() + 1); updateCalendar(); });
     updateCalendar();
 }
-
+        facultyToGroupsMap = new Map();
 function setupSearchableDropdown(inputId, listId, data, onSelect) {
     const input = document.getElementById(inputId), list = document.getElementById(listId);
     const populateList = (items) => { list.innerHTML = items.map(item => `<div class="searchable-dropdown-list-item" data-value="${item}">${item}</div>`).join(''); };
@@ -659,11 +632,13 @@ function updateDependentFilters() {
     let institutes = new Set();
     let relevantGroups = [];
     if (schoolCode) {
+        // Only include institutes whose code starts with the faculty code
         allCourses.forEach(course => {
             if (course.institute_code && course.institute_code.startsWith(schoolCode) && course.institute_name) {
                 institutes.add(course.institute_name);
             }
         });
+        // Only include groups that are mapped to the selected faculty and actually exist in courses of that faculty
         const validGroups = new Set();
         allCourses.forEach(course => {
             if (course.school_code === schoolCode && Array.isArray(course.groups)) {
@@ -676,6 +651,7 @@ function updateDependentFilters() {
         });
         relevantGroups = [...validGroups].sort();
     } else {
+        // If no faculty selected, show all institutes and all groups
         allCourses.forEach(course => {
             if (course.institute_name) {
                 institutes.add(course.institute_name);
@@ -827,9 +803,7 @@ async function initializeApp() {
         const responseData = await coursesRes.json();
         allCourses = responseData.courses || [];
         window.groupToFacultyMap = responseData.groupToFacultyMap || {};
-        
         postProcessUnifiedData();
-        
         const params = new URLSearchParams(window.location.search);
         activeFilters.school = params.get('faculty') || '';
         const instituteCodeFromURL = params.get('institutecode') || '';
@@ -839,13 +813,10 @@ async function initializeApp() {
             if (relevantCourse) activeFilters.institute = relevantCourse.institute_name;
         }
         if (activeFilters.school) schoolFilterDOM.value = activeFilters.school;
-        
         setupEventListeners();
         setLanguage('et');
-        
         if (activeFilters.institute) instituteFilterDOM.value = activeFilters.institute;
         if (activeFilters.group) groupFilterInput.value = activeFilters.group;
-        
         if (activeFilters.school || activeFilters.institute || activeFilters.group) {
             applyAllFiltersAndRender(false);
         }

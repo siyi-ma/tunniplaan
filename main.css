@@ -10,6 +10,8 @@ body { font-family: 'Proxima Nova', system-ui, -apple-system, BlinkMacSystemFont
 .bg-tt-light-blue { background-color: #4dbed2; }
 .tt-grey-1 { color: #9396b0; }
 .border-tt-grey-1 { border-color: #9396b0; }
+.border-tt-magenta { border-color: #e4067e; }
+.border-tt-light-blue { border-color: #4dbed2; }
 .tt-magenta { color: #e4067e; }
 .bg-tt-magenta { background-color: #e4067e; }
 .text-tt-magenta { color: #e4067e; }
@@ -17,6 +19,15 @@ body { font-family: 'Proxima Nova', system-ui, -apple-system, BlinkMacSystemFont
 .bg-tt-grey-2 { background-color: #f8f9fa; }
 .headline { font-family: 'Proxima Nova', sans-serif; font-weight: 700; text-transform: uppercase; }
 .body-text { font-family: 'Proxima Nova', sans-serif; font-weight: 400; text-transform: none; }
+.session-card-online { border-left-color: #e4067e !important; }
+.session-card-hybrid { border-left-color: #4dbed2 !important; }
+.session-card-offline { border-left-color: #9396b0 !important; }
+
+/*.session-card-online { border-color: #e4067e !important; }
+.session-card-hybrid { border-color: #4dbed2 !important; }
+.session-card-offline { border-color: #9396b0 !important; }
+*/
+
 #filterPanel { 
     transition: transform 0.3s ease-in-out; 
     background-color: rgba(249, 250, 251, 0.9);
