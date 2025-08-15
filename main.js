@@ -464,6 +464,27 @@ function getSessionData() {
 }
 
 function renderWeeklyView() {
+        // --- Tooltip HTML generator ---
+        function buildSessionTooltipHTML({ name, instructors, type, mandatoryGroups, electiveGroups, comment }) {
+            let tooltipHTML = `<div class="tooltip-title">${name}</div>`;
+            tooltipHTML += `<div>${instructors}</div>`;
+            tooltipHTML += `<div class="text-gray-300">${type || ''}</div>`;
+            if (mandatoryGroups && mandatoryGroups.length > 0) {
+                tooltipHTML += `<div class="tooltip-section-title">Mandatory for groups:</div><ul class="tooltip-group-list">`;
+                mandatoryGroups.forEach(g => { tooltipHTML += `<li>${g}</li>`; });
+                tooltipHTML += `</ul>`;
+            }
+            if (electiveGroups && electiveGroups.length > 0) {
+                tooltipHTML += `<div class="tooltip-section-title">Elective for groups:</div><ul class="tooltip-group-list">`;
+                electiveGroups.forEach(g => { tooltipHTML += `<li>${g}</li>`; });
+                tooltipHTML += `</ul>`;
+            }
+            if (comment) {
+                tooltipHTML += `<div class="text-gray-400">${comment}</div>`;
+            }
+            tooltipHTML += `</div>`;
+            return tooltipHTML;
+        }
     sessionDataCache = null;
     const sessionsByDate = getSessionData();
     let todayStatusHTML = '';
@@ -527,12 +548,17 @@ function renderWeeklyView() {
             veebiopeSessions.forEach(session => {
                 const name = session.aine || '';
                 const instructors = Array.isArray(session.instructor) ? session.instructor.map(i => i.name).filter(Boolean).join(' | ') : (session.instructor?.name || '');
-                const weeksText = session.weeks ? `<div style='font-size:0.95em; color:#444;'>Weeks: ${session.weeks}</div>` : '';
                 const commentText = session.comment ? `<div style='font-size:0.95em; color:#888;'>${session.comment}</div>` : '';
-                // Mandatory/Elective groups
                 let mandatoryGroups = (session.groups || []).filter(g => g.ainekv === 'kohustuslik').map(g => g.group);
                 let electiveGroups = (session.groups || []).filter(g => g.ainekv === 'valikuline').map(g => g.group);
-
+                let tooltipHTML = buildSessionTooltipHTML({
+                    name,
+                    instructors,
+                    type: session.type,
+                    mandatoryGroups,
+                    electiveGroups,
+                    comment: session.comment
+                });
                 veebiopeHTML += `<div class="veebiope-card" data-tooltip="${encodeURIComponent(tooltipHTML)}" style="background:#fff; border-left:4px solid #4dbed2; box-shadow:0 1px 4px #eee; padding:12px 16px; min-width:220px; max-width:320px; margin-bottom:8px;">
                     <div style="font-weight:bold;">${name}</div>
                     <div style="font-size:0.95em; color:#444;">${session.type || ''}</div>
@@ -580,23 +606,14 @@ function renderWeeklyView() {
                 const mandatoryGroups = (session.groups || []).filter(g => g.ainekv === 'kohustuslik').map(g => g.group);
                 const electiveGroups = (session.groups || []).filter(g => g.ainekv === 'valikuline').map(g => g.group);
                 const displayInstructors = getInstructorDisplayName(session.instructor);
-                let tooltipHTML = `<div class="tooltip-title">${name}</div>
-                <div>${instructors}</div>
-                <div class="text-gray-300">${session.type || ''}</div>`;
-                if (mandatoryGroups.length > 0) {
-                    tooltipHTML += `<div class="tooltip-section-title">Mandatory for groups:</div><ul class="tooltip-group-list">`;
-                    mandatoryGroups.forEach(g => { tooltipHTML += `<li>${g}</li>`; });
-                    tooltipHTML += `</ul>`;
-                }
-                if (electiveGroups.length > 0) {
-                    tooltipHTML += `<div class="tooltip-section-title">Elective for groups:</div><ul class="tooltip-group-list">`;
-                    electiveGroups.forEach(g => { tooltipHTML += `<li>${g}</li>`; });
-                    tooltipHTML += `</ul>`;
-                }
-                if (session.comment) {
-                    tooltipHTML += `<div class="text-gray-400">${session.comment}</div>`;
-                }
-                tooltipHTML += `</div>`;
+                let tooltipHTML = buildSessionTooltipHTML({
+                    name: session.aine || '',
+                    instructors: displayInstructors,
+                    type: session.type,
+                    mandatoryGroups,
+                    electiveGroups,
+                    comment: session.comment
+                });
                 gridHTML += `<div class="session-card" data-tooltip="${encodeURIComponent(tooltipHTML)}" style="top: ${top}px; height: ${height}px; left: ${left}; width: ${width}; border-left-color: ${borderColor}"><div class='session-card-content'><div class='course-name truncate'>${session.aine || ''}</div><div class='session-details truncate'>${displayInstructors}</div><div class='session-details'>${session.start || ''} - ${session.end || ''}</div><div class='session-details truncate'><i class='fas fa-map-marker-alt fa-fw text-gray-400'></i> ${session.room || 'N/A'}</div></div></div>`;
                 // Add weeks and comment to session card
                 let commentText = session.comment ? `<div class='session-details' style='color:#888;'>${session.comment}</div>` : '';
