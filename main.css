@@ -1,3 +1,27 @@
+/* Legend color box styles */
+.legend-color-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 70px;
+    height: 24px;
+    border-radius: 4px;
+    margin-right: 8px;
+    border-left: 1px solid #e4067e;
+    border-top: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+    vertical-align: middle;
+    background: #fff;
+    box-shadow: 0 1px 3px #eee;
+    font-size: 0.98em;
+    color: #222;
+    padding-left: 10px;
+    font-weight: 500;
+}
+.border-tt-magenta { border-color: #e4067e !important; }
+.border-tt-light-blue { border-left-color: #4dbed2 !important; }
+.border-tt-grey-1 { border-left-color: #bdbdbd !important; }
 /* main.css - extracted styles from index.html */
 
 html { scroll-behavior: smooth; }

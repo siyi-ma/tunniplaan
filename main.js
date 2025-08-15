@@ -498,43 +498,47 @@ function renderWeeklyView() {
         const totalHours = END_HOUR - START_HOUR;
         let hasAnySessionThisWeek = false;
 
-        // --- Veebõpe sessions ---
+        // --- Online sessions (is_veebiope) ---
         // Collect all sessions for the week
         let weekDates = [];
         for (let i = 0; i < 7; i++) {
             const dayDate = new Date(startDate); dayDate.setDate(dayDate.getDate() + i);
             weekDates.push(dayDate.toISOString().split('T')[0]);
         }
-        let veebopeSessions = [];
+        let veebiopeSessions = [];
         weekDates.forEach(dateKey => {
             const daySessions = sessionsByDate.get(dateKey) || [];
             daySessions.forEach(session => {
-                if ((session.type && session.type.toLowerCase() === 'veebõpe') || (session.room && session.room.toLowerCase() === 'veebõpe') || (session.room && session.room.toLowerCase() === 'online')) {
-                    veebopeSessions.push(session);
+                if (session.is_veebiope === true) {
+                    veebiopeSessions.push(session);
                 }
             });
         });
 
-        // Remove veebõpe sessions from the main calendar grid
+        // Remove is_veebiope sessions from the main calendar grid
         weekDates.forEach(dateKey => {
             let daySessions = sessionsByDate.get(dateKey) || [];
-            sessionsByDate.set(dateKey, daySessions.filter(session => !((session.type && session.type.toLowerCase() === 'veebõpe') || (session.room && session.room.toLowerCase() === 'veebõpe') || (session.room && session.room.toLowerCase() === 'online'))));
+            sessionsByDate.set(dateKey, daySessions.filter(session => session.is_veebiope !== true));
         });
 
-        // Render veebõpe section
-        if (veebopeSessions.length > 0) {
-            let veebopeHTML = `<div class="veebope-header" style="font-weight:bold; font-size:1.1em; margin-bottom:8px;">Veebõpe</div><div class="veebope-list" style="display:flex; flex-wrap:wrap; gap:16px;">`;
-            veebopeSessions.forEach(session => {
+        // Render online (is_veebiope) section
+        if (veebiopeSessions.length > 0) {
+            let veebiopeHTML = `<div class="veebope-header" style="font-weight:bold; font-size:1.1em; margin-bottom:8px;">Online Sessions</div><div class="veebope-list" style="display:flex; flex-wrap:wrap; gap:16px;">`;
+            veebiopeSessions.forEach(session => {
                 const name = session.aine || '';
                 const instructors = Array.isArray(session.instructor) ? session.instructor.map(i => i.name).filter(Boolean).join(' | ') : (session.instructor?.name || '');
-                veebopeHTML += `<div class="veebope-card" style="background:#fff; border-left:4px solid #4dbed2; box-shadow:0 1px 4px #eee; padding:12px 16px; min-width:220px; max-width:320px; margin-bottom:8px;">
+                const weeksText = session.weeks ? `<div style='font-size:0.95em; color:#444;'>Weeks: ${session.weeks}</div>` : '';
+                const commentText = session.comment ? `<div style='font-size:0.95em; color:#888;'>${session.comment}</div>` : '';
+                veebiopeHTML += `<div class="veebope-card" style="background:#fff; border-left:4px solid #4dbed2; box-shadow:0 1px 4px #eee; padding:12px 16px; min-width:220px; max-width:320px; margin-bottom:8px;">
                     <div style="font-weight:bold;">${name}</div>
                     <div style="font-size:0.95em; color:#444;">${session.type || ''}</div>
                     <div style="font-size:0.95em; color:#444;">${instructors}</div>
+                    ${weeksText}
+                    ${commentText}
                 </div>`;
             });
-            veebopeHTML += `</div>`;
-            veebopeSection.innerHTML = veebopeHTML;
+            veebiopeHTML += `</div>`;
+            veebopeSection.innerHTML = veebiopeHTML;
         } else {
             veebopeSection.innerHTML = '';
         }
@@ -575,16 +579,20 @@ function renderWeeklyView() {
                 const displayInstructors = getInstructorDisplayName(session.instructor);
                 let tooltipHTML = `<div class="tooltip-title">${session.aine}</div><div>${displayInstructors}</div><div class="text-gray-300">${session.type}</div><div class="text-gray-300">${session.start} - ${session.end} @ ${session.room || 'N/A'}</div>`;
                 if (mandatoryGroups.length > 0) {
-                    tooltipHTML += `<div class="tooltip-section-title">${uiTexts.mandatoryForGroups[currentLanguage]}:</div><ul class="tooltip-group-list">`;
+                    tooltipHTML += `<div class="tooltip-section-title">Mandatory for groups:</div><ul class="tooltip-group-list">`;
                     mandatoryGroups.forEach(g => { tooltipHTML += `<li>${g}</li>`; });
                     tooltipHTML += `</ul>`;
                 }
                 if (electiveGroups.length > 0) {
-                    tooltipHTML += `<div class="tooltip-section-title">${uiTexts.electiveForGroups[currentLanguage]}:</div><ul class="tooltip-group-list">`;
+                    tooltipHTML += `<div class="tooltip-section-title">Elective for groups:</div><ul class="tooltip-group-list">`;
                     electiveGroups.forEach(g => { tooltipHTML += `<li>${g}</li>`; });
                     tooltipHTML += `</ul>`;
                 }
                 gridHTML += `<div class="session-card" data-tooltip="${encodeURIComponent(tooltipHTML)}" style="top: ${top}px; height: ${height}px; left: ${left}; width: ${width}; border-left-color: ${borderColor}"><div class='session-card-content'><div class='course-name truncate'>${session.aine || ''}</div><div class='session-details truncate'>${displayInstructors}</div><div class='session-details'>${session.start || ''} - ${session.end || ''}</div><div class='session-details truncate'><i class='fas fa-map-marker-alt fa-fw text-gray-400'></i> ${session.room || 'N/A'}</div></div></div>`;
+                // Add weeks and comment to session card
+                let weeksText = session.weeks ? `<div class='session-details'>Weeks: ${session.weeks}</div>` : '';
+                let commentText = session.comment ? `<div class='session-details' style='color:#888;'>${session.comment}</div>` : '';
+                gridHTML += `<div class="session-card" data-tooltip="${encodeURIComponent(tooltipHTML)}" style="top: ${top}px; height: ${height}px; left: ${left}; width: ${width}; border-left-color: ${borderColor}"><div class='session-card-content'><div class='course-name truncate'>${session.aine || ''}</div><div class='session-details truncate'>${displayInstructors}</div><div class='session-details'>${session.start || ''} - ${session.end || ''}</div><div class='session-details truncate'><i class='fas fa-map-marker-alt fa-fw text-gray-400'></i> ${session.room || 'N/A'}</div>${weeksText}${commentText}</div></div>`;
             });
             gridHTML += `</div>`;
         }
