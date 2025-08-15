@@ -607,7 +607,7 @@ function renderWeeklyView() {
             gridHTML += `<div class="grid-header-cell">${dayNames[i]} ${dayDate.getDate()}.${String(dayDate.getMonth()+1).padStart(2,'0')}</div>`;
         }
         gridHTML += `<div class="time-ruler-body" style="height:${totalHours * HOUR_HEIGHT_PX}px">`;
-        for (let h = START_HOUR + 1; h <= END_HOUR; h++) gridHTML += `<div class="time-grid-ruler-hour" style="top:${(h-START_HOUR)*HOUR_HEIGHT_PX}px;">${String(h).padStart(2,'0')}:00</div>`;
+        for (let h = START_HOUR ; h <= END_HOUR; h++) gridHTML += `<div class="time-grid-ruler-hour" style="top:${(h-START_HOUR)*HOUR_HEIGHT_PX}px;">${String(h).padStart(2,'0')}:00</div>`;
         gridHTML += `</div>`;
         for (let i = 0; i < 7; i++) {
             gridHTML += `<div class="grid-body-cell" style="height:${totalHours*HOUR_HEIGHT_PX}px">`;
