@@ -321,6 +321,7 @@ function createCourseCardHTML(course) {
                             ` : ''}
                         </div>
                     ` : ''}
+                    ${course.comment ? `<div class="mt-2"><strong>${currentLanguage === 'et' ? 'Kommentaar' : 'Comment'}:</strong> ${course.comment}</div>` : ''}
                     ${studyProgramsHTML}
                 </div>
             </div>`;
