@@ -393,7 +393,30 @@ function renderCardView(courses) {
     if (resultsCounterEl) {
         resultsCounterEl.textContent = uiTexts.resultsFound[currentLanguage](courses.length);
     }
-    courseListContainerDOM.innerHTML = courses.length === 0 ? `<p class="text-center text-tt-grey-1 col-span-full">${uiTexts.noCoursesFound[currentLanguage]}</p>` : courses.map(createCourseCardHTML).join('');
+    if (courses.length === 0) {
+        courseListContainerDOM.innerHTML = `<p class="text-center text-tt-grey-1 col-span-full">${uiTexts.noCoursesFound[currentLanguage]}</p>`;
+        return;
+    }
+    // Group and sort courses by session_status and course code
+    const statusOrder = ['online', 'hybrid', 'offline'];
+    const grouped = { online: [], hybrid: [], offline: [] };
+    courses.forEach(course => {
+        const status = course.session_status || 'offline';
+        if (grouped[status]) grouped[status].push(course);
+        else grouped['offline'].push(course); // fallback
+    });
+    // Sort each group by course code
+    statusOrder.forEach(status => {
+        grouped[status].sort((a, b) => (a.id || '').localeCompare(b.id || ''));
+    });
+    // Render grouped cards without headings
+    let html = '';
+    statusOrder.forEach(status => {
+        if (grouped[status].length > 0) {
+            html += grouped[status].map(createCourseCardHTML).join('');
+        }
+    });
+    courseListContainerDOM.innerHTML = html;
     document.querySelectorAll('.expand-button').forEach(button => {
         if (button.dataset.listener) return;
         button.addEventListener('click', () => {

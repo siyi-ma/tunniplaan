@@ -22,6 +22,38 @@ Refactoring and debugging the filter pane dropdown border color in a timetable/c
 - Located filter pane definition in `index.html` within `<aside id="filterPanel">` and confirmed dropdowns use `border-tt-grey-1` class.
 - Advised checking for inline styles, Tailwind classes, or JS rendering logic that may override CSS.
 
+Improved course card rendering: Cards are now grouped by session status (online, hybrid, offline), sorted alphabetically by course code within each group, and rendered in the specified order. Category headings before cards were removed for a cleaner UI, relying on the legend for status indication.
+
+function renderCourseCards(courses) {
+  // Group and sort
+  const statusOrder = ['online', 'hybrid', 'offline'];
+  const grouped = { online: [], hybrid: [], offline: [] };
+
+  courses.forEach(course => {
+    const status = course.session_status || 'offline';
+    if (grouped[status]) grouped[status].push(course);
+    else grouped['offline'].push(course); // fallback
+  });
+
+  // Sort each group by course code
+  statusOrder.forEach(status => {
+    grouped[status].sort((a, b) => (a.id || '').localeCompare(b.id || ''));
+  });
+
+  // Render
+  let html = '';
+  statusOrder.forEach(status => {
+    if (grouped[status].length > 0) {
+      html += `<h2 class="course-category">${status.charAt(0).toUpperCase() + status.slice(1)} Courses</h2>`;
+      grouped[status].forEach(course => {
+        html += renderCourseCard(course); // Your existing card rendering function
+      });
+    }
+  });
+
+  document.getElementById('courseList').innerHTML = html;
+}
+
 ## Code Snippets
 **CSS Fix:**
 ```css
