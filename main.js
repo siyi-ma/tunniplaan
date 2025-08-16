@@ -1,7 +1,10 @@
 // main.js - FINAL VERSION
 // This script is fully optimized to work with the final data structure and includes all new features.
 
-document.addEventListener('DOMContentLoaded', initializeApp);
+document.addEventListener('DOMContentLoaded', () => {
+    initializeApp();
+    renderCourseCardLegend();
+});
 
 // --- DOM Elements ---
 const searchInputDOM = document.getElementById('searchInput');
@@ -85,7 +88,37 @@ const uiTexts = {
     electiveForGroups: { et: 'Aine on rühmale valikuline', en: 'Elective for groups' },
 };
 
+// --- Faculty Info Mapping for Frontend ---
+const FACULTY_INFO = {
+    M: { et: 'Majandusteaduskond', en: 'School of Business and Governance' },
+    L: { et: 'Loodusteaduskond', en: 'School of Science' },
+    E: { et: 'Inseneriteaduskond', en: 'School of Engineering' },
+    I: { et: 'Infotehnoloogia teaduskond', en: 'School of Information Technologies' },
+    V: { et: 'Eesti Mereakadeemia', en: 'Estonian Maritime Academy' },
+    DOK: { et: 'Doktoriope', en: 'Doctoral Studies' }
+};
+
 // --- Utility Functions ---
+// --- Course Card Legend Statistics ---
+function renderCourseCardLegend() {
+    const legendDOM = document.getElementById('courseCardLegend');
+    if (!legendDOM) return;
+    // Count statistics from allCourses
+    let online = 0, hybrid = 0, offline = 0;
+    allCourses.forEach(c => {
+        if (c.session_status === 'online') online++;
+        else if (c.session_status === 'hybrid') hybrid++;
+        else if (c.session_status === 'offline') offline++;
+    });
+    legendDOM.style.display = 'block';
+    legendDOM.innerHTML = `
+        <div class="legend-row" style="display:flex; gap:16px; align-items:center;">
+            <span class="legend-color-box border-tt-magenta">Online: <strong>${online}</strong></span>
+            <span class="legend-color-box border-tt-light-blue">Hybrid: <strong>${hybrid}</strong></span>
+            <span class="legend-color-box border-tt-grey-1">Offline: <strong>${offline}</strong></span>
+        </div>
+    `;
+}
 const debounce = (func, delay) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => func.apply(this, a), delay); }; };
 const timeToMinutes = (timeStr) => { if (!timeStr?.includes(':')) return 0; const [h, m] = timeStr.split(':').map(Number); return h * 60 + m; };
 const parseDate = (dateStr) => { const [d, m, y] = dateStr.split('.'); return new Date(y, m - 1, d); };
@@ -211,7 +244,35 @@ function applyAllFiltersAndRender(resetView = true) {
         return aOrder - bOrder;
     });
     totalFilteredSessions = 0; 
+    renderHeaderStatsBar();
     render();
+}
+
+function renderHeaderStatsBar() {
+    const headerBarDOM = document.getElementById('headerStatsBar');
+    if (!headerBarDOM) return;
+    // Count statistics from filteredCourses
+    let online = 0, hybrid = 0, offline = 0;
+    filteredCourses.forEach(c => {
+        if (c.session_status === 'online') online++;
+        else if (c.session_status === 'hybrid') hybrid++;
+        else if (c.session_status === 'offline') offline++;
+    });
+    headerBarDOM.innerHTML = `
+  <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-6 w-full mb-4">
+    <div class="flex flex-row gap-2 md:gap-4 items-center justify-start md:w-1/3">
+      <span class="legend-color-box border-tt-magenta px-2">Online: <span>${online}</span></span>
+      <span class="legend-color-box border-tt-light-blue px-2">Hybrid: <span>${hybrid}</span></span>
+      <span class="legend-color-box border-tt-grey-1 px-2">Offline: <span>${offline}</span></span>
+    </div>
+    <div class="flex flex-row items-center justify-center md:w-1/3 w-full">
+      <span id="resultsCounter" class="text-tt-dark-blue font-semibold text-center w-full">${uiTexts.resultsFound[currentLanguage](filteredCourses.length)}</span>
+    </div>
+    <div class="flex flex-row items-center justify-end md:w-1/3 w-full">
+      <div id="viewToggleButtonContainer" class="flex items-center"></div>
+    </div>
+  </div>
+`;
 }
 
 function updateURLParameters() {
@@ -248,15 +309,14 @@ function createCourseCardHTML(course) {
     const nameOtherLang = currentLanguage === 'et' ? course.name_en : course.name_et;
     const description = currentLanguage === 'et' ? course.description_short_et : (course.description_short_en || course.description_short_et);
     const instructors = (course.instructors || []).map(i => i.name).filter(Boolean).join(', ');
-    
-    const schoolName = currentLanguage === 'et' ? course.school_name : (course.school_name_en || course.school_name);
-    
+
+    // Use first character of institute_code to get school name from FACULTY_INFO
     let schoolInstituteHTML = '';
-    if (course.school_code) {
-        let displayString = schoolName;
-        if (course.institute_code) {
-            displayString += ` | ${course.institute_code}`;
-        }
+    if (course.institute_code && typeof course.institute_code === 'string') {
+        const schoolCode = course.institute_code[0];
+        const facultyObj = FACULTY_INFO[schoolCode];
+        const schoolName = facultyObj ? facultyObj[currentLanguage] : course.school_name || schoolCode;
+        const displayString = `${schoolName} | ${course.institute_code}`;
         schoolInstituteHTML = `<span class="bg-gray-200 text-gray-700 px-2 py-0.5 rounded">${displayString}</span>`;
     }
     
@@ -328,7 +388,11 @@ function createCourseCardHTML(course) {
 }
 
 function renderCardView(courses) {
-    resultsCounterDOM.textContent = uiTexts.resultsFound[currentLanguage](courses.length);
+    // Remove direct reference to resultsCounterDOM, as resultsCounter is now inside headerStatsBar
+    const resultsCounterEl = document.getElementById('resultsCounter');
+    if (resultsCounterEl) {
+        resultsCounterEl.textContent = uiTexts.resultsFound[currentLanguage](courses.length);
+    }
     courseListContainerDOM.innerHTML = courses.length === 0 ? `<p class="text-center text-tt-grey-1 col-span-full">${uiTexts.noCoursesFound[currentLanguage]}</p>` : courses.map(createCourseCardHTML).join('');
     document.querySelectorAll('.expand-button').forEach(button => {
         if (button.dataset.listener) return;
@@ -375,15 +439,25 @@ async function toggleCalendarView() {
 }
 
 function updateViewToggleButton() {
-    viewToggleButtonContainerDOM.innerHTML = '';
+    // Use headerStatsBar as the container for the button
+    const headerBarDOM = document.getElementById('headerStatsBar');
+    if (!headerBarDOM) return;
+    let buttonHTML = '';
     if (isCalendarViewVisible) {
-        viewToggleButtonContainerDOM.innerHTML = `<button id="toggleViewBtn" class="px-3 py-1 rounded text-sm font-medium bg-tt-magenta text-white hover:bg-opacity-80"><i class="fas fa-arrow-left mr-1"></i> ${uiTexts.backToCourses[currentLanguage]}</button>`;
-        viewToggleButtonContainerDOM.querySelector('#toggleViewBtn').addEventListener('click', () => { isCalendarViewVisible = false; render(); });
+        buttonHTML = `<button id="toggleViewBtn" class="px-3 py-1 rounded text-sm font-medium bg-tt-magenta text-white hover:bg-opacity-80"><i class="fas fa-arrow-left mr-1"></i> ${uiTexts.backToCourses[currentLanguage]}</button>`;
     } else if (totalFilteredSessions > CALENDAR_SESSION_LIMIT) {
-         viewToggleButtonContainerDOM.innerHTML = `<div class="flex flex-col items-end"><button class="px-3 py-1 rounded text-sm font-medium bg-gray-400 text-white cursor-not-allowed" disabled><i class="fas fa-calendar-week mr-1"></i> ${uiTexts.showCalendarView[currentLanguage]}</button><p class="text-xs text-red-600 mt-1 text-right">${uiTexts.calendarLimitExceeded[currentLanguage](totalFilteredSessions)}</p></div>`;
+        buttonHTML = `<div class="flex flex-col items-end"><button class="px-3 py-1 rounded text-sm font-medium bg-gray-400 text-white cursor-not-allowed" disabled><i class="fas fa-calendar-week mr-1"></i> ${uiTexts.showCalendarView[currentLanguage]}</button><p class="text-xs text-red-600 mt-1 text-right">${uiTexts.calendarLimitExceeded[currentLanguage](totalFilteredSessions)}</p></div>`;
     } else {
-        viewToggleButtonContainerDOM.innerHTML = `<button id="toggleViewBtn" class="px-3 py-1 rounded text-sm font-medium bg-tt-dark-blue text-white hover:bg-tt-dark-blue-hover"><i class="fas fa-calendar-week mr-1"></i> ${uiTexts.showCalendarView[currentLanguage]}</button>`;
-        viewToggleButtonContainerDOM.querySelector('#toggleViewBtn').addEventListener('click', toggleCalendarView);
+        buttonHTML = `<button id="toggleViewBtn" class="px-3 py-1 rounded text-sm font-medium bg-tt-dark-blue text-white hover:bg-tt-dark-blue-hover"><i class="fas fa-calendar-week mr-1"></i> ${uiTexts.showCalendarView[currentLanguage]}</button>`;
+    }
+    // Find the button container inside headerStatsBar and update it
+    const buttonContainer = headerBarDOM.querySelector('#viewToggleButtonContainer');
+    if (buttonContainer) {
+        buttonContainer.innerHTML = buttonHTML;
+        const toggleBtn = buttonContainer.querySelector('#toggleViewBtn');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', isCalendarViewVisible ? () => { isCalendarViewVisible = false; render(); } : toggleCalendarView);
+        }
     }
 }
 
@@ -810,7 +884,7 @@ function updateAllUITexts() {
         searchFieldSelectorDOM.options[3].textContent = uiTexts.searchField_keyword[currentLanguage];
         searchFieldSelectorDOM.options[4].textContent = uiTexts.searchField_instructor[currentLanguage];
     }
-    document.getElementById('langIndicator').textContent = currentLanguage === 'et' ? 'EN' : 'ET';
+    document.getElementById('langIndicator').textContent = currentLanguage === 'et' ? 'ET' : 'EN';
     applyAllFiltersAndRender(false);
 }
 

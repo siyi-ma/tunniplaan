@@ -1,3 +1,8 @@
+/* Ensure all dropdowns and search inputs in the filter pane use the same border color as RÜHM */
+#filterPanel select,
+#filterPanel input[type="search"] {
+  border-color: tt-magenta !important;
+}
 /* Legend color box styles */
 .legend-color-box {
     display: inline-flex;
@@ -84,4 +89,13 @@ body { font-family: 'Proxima Nova', system-ui, -apple-system, BlinkMacSystemFont
 .searchable-dropdown-list-item:hover { background-color: #f3f4f6; }
 #scrollTopBtn { position: fixed; bottom: 20px; right: 20px; width: 40px; height: 40px; background-color: #342b60; color: white; border-radius: 50%; display: none; align-items: center; justify-content: center; cursor: pointer; opacity: 0.8; transition: opacity 0.3s; z-index: 50; }
 #scrollTopBtn:hover { opacity: 1; }
-#courseCardLegend { display: none !important; }
+#courseCardLegend { display: block !important; margin-bottom: 1rem; }
+.legend-box {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 0.25rem;
+    height: 2rem;
+    font-size: 1rem;
+}
