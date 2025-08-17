@@ -744,7 +744,6 @@ function renderWeeklyView() {
                 if (activeFilters.group && session.groups) {
                     const groupInfo = session.groups.find(g => g.group === activeFilters.group);
                     if (groupInfo) {
-                        console.log('groupInfo:', groupInfo); // Add this line
                         if (groupInfo.ainekv === 'valikuline') borderColor = '#4dbed2';
                         else if (groupInfo.ainekv === 'kohustuslik') borderColor = '#e4067e';
                     }
