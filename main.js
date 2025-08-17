@@ -278,11 +278,12 @@ function renderHeaderStatsBar() {
     */
     // Only show results counter and view toggle button
     headerBarDOM.innerHTML = `
-  <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-6 w-full mb-4">
-    <div class="flex flex-row items-center justify-center md:w-1/3 w-full">
+  <div class="flex flex-row items-center gap-2 md:gap-6 w-full mb-4">
+    <div class="flex-1"></div>
+    <div class="flex flex-row items-center justify-center flex-1">
       <span id="resultsCounter" class="text-tt-dark-blue font-semibold text-center w-full">${uiTexts.resultsFound[currentLanguage](filteredCourses.length)}</span>
     </div>
-    <div class="flex flex-row items-center justify-end md:w-1/3 w-full">
+    <div class="flex flex-row items-center justify-end flex-1">
       <div id="viewToggleButtonContainer" class="flex items-center"></div>
     </div>
   </div>
@@ -350,10 +351,14 @@ function createCourseCardHTML(course) {
     else if (course.keel_et === "1") langTag = 'ET'; else if (course.keel_en === "1") langTag = 'EN';
     const timetableLinkHTML = course.timetable_link ? `<a href="${course.timetable_link}" target="_blank" rel="noopener noreferrer" class="text-tt-magenta hover:underline text-sm font-normal"><i class="fas fa-calendar-alt fa-fw"></i> Tunniplaan</a>` : '';
     
+    // Use first group for border color
     let borderClass = 'border-tt-grey-1';
-    if (course.session_status === 'online') borderClass = 'border-tt-magenta session-card-online';
-    else if (course.session_status === 'hybrid') borderClass = 'border-tt-light-blue session-card-hybrid';
-    else if (course.session_status === 'offline') borderClass = 'border-tt-grey-1 session-card-offline';
+    if (Array.isArray(course.groups) && course.groups.length > 0) {
+        const firstStatus = course.groups[0].session_status;
+        if (firstStatus === 'online') borderClass = 'border-tt-magenta session-card-online';
+        else if (firstStatus === 'hybrid') borderClass = 'border-tt-light-blue session-card-hybrid';
+        else if (firstStatus === 'offline') borderClass = 'border-tt-grey-1 session-card-offline';
+    }
     return `<div class="bg-white rounded-lg shadow-md border ${borderClass} overflow-hidden flex flex-col h-full">
                 <div class="p-4 flex-grow">
                     <div class="flex justify-between items-start mb-1">
@@ -379,23 +384,7 @@ function createCourseCardHTML(course) {
                     <ul class="list-disc list-inside body-text">${currentLanguage === 'et' ? (course.learning_outcomes_et || '').split('\n').map(li => `<li>${li.replace(/^- /, '')}</li>`).join('') : (course.learning_outcomes_en || '').split('\n').map(li => `<li>${li.replace(/^- /, '')}</li>`).join('')}</ul>
                     <p><strong>${currentLanguage === 'et' ? 'Hindamismeetod' : 'Assessment Method'}:</strong> ${currentLanguage === 'et' ? course.assessment_method_et || '' : course.assessment_method_en || course.assessment_method_et || ''}</p>
                     <p><strong>${uiTexts.assessment[currentLanguage]}:</strong> ${currentLanguage === 'et' ? course.assessment_form_et : (course.assessment_form_en || 'N/A')}</p>
-                    ${course.session_status ? `
-                        <div class="mt-3 mb-2">
-                            <strong>${currentLanguage === 'et' ? 'Sessiooni staatus' : 'Session Status'}:</strong>
-                            <span class="session-status-tag session-status-${course.session_status}">
-                                ${course.session_status === 'online' ? (currentLanguage === 'et' ? 'Veebipõhine' : 'Online') :
-                                  course.session_status === 'offline' ? (currentLanguage === 'et' ? 'Kohapeal' : 'Offline') :
-                                  (currentLanguage === 'et' ? 'Hübriid' : 'Hybrid')}
-                            </span>
-                            ${course.session_details ? `
-                                <div class="session-details-list mt-1">
-                                    ${course.session_details.online_weeks ? `<div><strong>${currentLanguage === 'et' ? 'Veebiõpe nädalad' : 'Online weeks'}:</strong> ${course.session_details.online_weeks}</div>` : ''}
-                                    ${course.session_details.offline_weeks ? `<div><strong>${currentLanguage === 'et' ? 'Kontaktõpe nädalad' : 'Offline weeks'}:</strong> ${course.session_details.offline_weeks}</div>` : ''}
-                                </div>
-                            ` : ''}
-                        </div>
-                    ` : ''}
-                    ${course.comment ? `<div class="mt-2"><strong>${currentLanguage === 'et' ? 'Kommentaar' : 'Comment'}:</strong> ${course.comment}</div>` : ''}
+                    
                     ${studyProgramsHTML}
                 </div>
             </div>`;
@@ -411,11 +400,14 @@ function renderCardView(courses) {
         courseListContainerDOM.innerHTML = `<p class="text-center text-tt-grey-1 col-span-full">${uiTexts.noCoursesFound[currentLanguage]}</p>`;
         return;
     }
-    // Group and sort courses by session_status and course code
+    // Group and sort courses by first group's session_status and course code
     const statusOrder = ['online', 'hybrid', 'offline'];
     const grouped = { online: [], hybrid: [], offline: [] };
     courses.forEach(course => {
-        const status = course.session_status || 'offline';
+        let status = 'offline';
+        if (Array.isArray(course.groups) && course.groups.length > 0) {
+            status = course.groups[0].session_status || 'offline';
+        }
         if (grouped[status]) grouped[status].push(course);
         else grouped['offline'].push(course); // fallback
     });
