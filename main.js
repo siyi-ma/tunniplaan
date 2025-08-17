@@ -674,8 +674,8 @@ function renderWeeklyView() {
         if (veebiopeSessions.length > 0) {
             // Use flex row: header left, cards right
             let onlineLabel = currentLanguage === 'et' ? 'Veebiõpe' : 'Online learning';
-            let veebiopeHTML = `<div class="veebiope-row" style="display:flex; align-items:flex-start; gap:16px;">`;
-            veebiopeHTML += `<div class="veebiope-header" style="font-weight:bold; font-size:1.1em; margin-right:16px; min-width:120px;">${onlineLabel}</div>`;
+            let veebiopeHTML = `<div class="veebiope-row" style="display:flex; align-items:center; gap:16px;">`;
+            veebiopeHTML += `<div class="veebiope-header" style="font-weight:bold; font-size:1.1em; margin-right:16px; min-width:120px; display:flex; align-items:center;">${onlineLabel}</div>`;
             veebiopeHTML += `<div class="veebiope-list" style="display:flex; flex-wrap:wrap; gap:16px;">`;
             veebiopeSessions.forEach(session => {
                 const name = session.aine || '';
