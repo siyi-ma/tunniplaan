@@ -646,13 +646,20 @@ function renderWeeklyView() {
             if (session.is_veebiope !== true) return false;
             if (!activeFilters.group) return true;
             const groupsArr = session.groups || [];
-            const onlyGroup = groupsArr.length === 1 && groupsArr[0].group && groupsArr[0].group.toLowerCase() === activeFilters.group.toLowerCase();
-            if (!onlyGroup) {
-                console.log('[Online filter] SKIP: not only group', activeFilters.group, 'in', groupsArr.map(x => x.group));
+            const hasGroup = groupsArr.some(g => g.group && g.group.toLowerCase() === activeFilters.group.toLowerCase());
+            if (!hasGroup) {
+                console.log('[Online filter] SKIP: group not found', activeFilters.group, 'in', groupsArr.map(x => x.group));
             } else {
-                console.log('[Online filter] ONLY GROUP MATCH:', activeFilters.group, 'in', groupsArr.map(x => x.group));
+                console.log('[Online filter] GROUP MATCH:', activeFilters.group, 'in', groupsArr.map(x => x.group));
             }
-            return onlyGroup;
+            return hasGroup;
+        });
+        // Deduplicate by course_id (show each course only once)
+        const seenCourseIds = new Set();
+        veebiopeSessions = veebiopeSessions.filter(session => {
+            if (seenCourseIds.has(session.course_id)) return false;
+            seenCourseIds.add(session.course_id);
+            return true;
         });
         console.log('[Online filter] veebiopeSessions after filter:', veebiopeSessions.map(s => ({aine: s.aine, groups: s.groups ? s.groups.map(g => g.group) : []})));
         console.log('Online sessions found for calendar view:', veebiopeSessions);
