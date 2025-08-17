@@ -673,8 +673,9 @@ function renderWeeklyView() {
         // Render online (is_veebiope) section
         if (veebiopeSessions.length > 0) {
             // Use flex row: header left, cards right
+            let onlineLabel = currentLanguage === 'et' ? 'Veebiõpe' : 'Online learning';
             let veebiopeHTML = `<div class="veebiope-row" style="display:flex; align-items:flex-start; gap:16px;">`;
-            veebiopeHTML += `<div class="veebiope-header" style="font-weight:bold; font-size:1.1em; margin-right:16px; min-width:120px;">Online Sessions</div>`;
+            veebiopeHTML += `<div class="veebiope-header" style="font-weight:bold; font-size:1.1em; margin-right:16px; min-width:120px;">${onlineLabel}</div>`;
             veebiopeHTML += `<div class="veebiope-list" style="display:flex; flex-wrap:wrap; gap:16px;">`;
             veebiopeSessions.forEach(session => {
                 const name = session.aine || '';
@@ -694,10 +695,6 @@ function renderWeeklyView() {
                     comment: session.comment,
                     showTimeAndRoom: false // online session, do not show time/room
                 });
-                tooltipHTML += `<div style='margin-top:0.5em;'>`;
-                tooltipHTML += `<div><strong>Time:</strong> ${session.start || ''} - ${session.end || ''}</div>`;
-                tooltipHTML += `<div><strong>Room:</strong> ${session.room || 'N/A'}</div>`;
-                tooltipHTML += `</div>`;
                 veebiopeHTML += `<div class="veebiope-card" data-tooltip="${encodeURIComponent(tooltipHTML)}" style="background:#fff; border-left:4px solid #4dbed2; box-shadow:0 1px 4px #eee; padding:12px 16px; min-width:220px; max-width:320px; margin-bottom:8px;">
                     <div style="font-weight:bold;">${name}</div>
                     <div style="font-size:0.95em; color:#444;">${session.type || ''}</div>
