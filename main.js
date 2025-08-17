@@ -258,6 +258,8 @@ function renderHeaderStatsBar() {
         else if (c.session_status === 'hybrid') hybrid++;
         else if (c.session_status === 'offline') offline++;
     });
+    // Legend rendering is commented out for now. Uncomment to restore.
+    /*
     headerBarDOM.innerHTML = `
   <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-6 w-full mb-4">
     <div class="flex flex-row gap-2 md:gap-4 items-center justify-start md:w-1/3">
@@ -265,6 +267,18 @@ function renderHeaderStatsBar() {
       <span class="legend-color-box border-tt-light-blue px-2">Hybrid: <span>${hybrid}</span></span>
       <span class="legend-color-box border-tt-grey-1 px-2">Offline: <span>${offline}</span></span>
     </div>
+    <div class="flex flex-row items-center justify-center md:w-1/3 w-full">
+      <span id="resultsCounter" class="text-tt-dark-blue font-semibold text-center w-full">${uiTexts.resultsFound[currentLanguage](filteredCourses.length)}</span>
+    </div>
+    <div class="flex flex-row items-center justify-end md:w-1/3 w-full">
+      <div id="viewToggleButtonContainer" class="flex items-center"></div>
+    </div>
+  </div>
+`;
+    */
+    // Only show results counter and view toggle button
+    headerBarDOM.innerHTML = `
+  <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-6 w-full mb-4">
     <div class="flex flex-row items-center justify-center md:w-1/3 w-full">
       <span id="resultsCounter" class="text-tt-dark-blue font-semibold text-center w-full">${uiTexts.resultsFound[currentLanguage](filteredCourses.length)}</span>
     </div>
