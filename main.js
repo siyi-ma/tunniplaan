@@ -8,9 +8,8 @@ function updateDynamicTitle() {
     if (groupParam) titleParts.push(currentLanguage === 'et' ? `Rühm ${groupParam}` : `Group ${groupParam}`);
     if (facultyParam) titleParts.push(currentLanguage === 'et' ? `Teaduskond ${facultyParam}` : `Faculty ${facultyParam}`);
     if (instituteParam) titleParts.push(currentLanguage === 'et' ? `Instituut ${instituteParam}` : `Department ${instituteParam}`);
-    const suffix = currentLanguage === 'et' ? 'TalTech kursused sügis 2025' : 'TalTech timetable 2025 autumn';
+    const suffix = currentLanguage === 'et' ? 'TalTech tunniplaan sügis 2025' : 'TalTech timetable 2025 autumn';
     const newTitle = titleParts.length > 0 ? `${titleParts.join(' | ')} | ${suffix}` : suffix;
-    console.log('[updateDynamicTitle]', { groupParam, facultyParam, instituteParam, currentLanguage, newTitle, url: window.location.href });
     document.title = newTitle;
 }
 // Initial call moved below currentLanguage initialization
@@ -668,19 +667,7 @@ function renderWeeklyView() {
             ...s,
             aine: `${c.id} - ${currentLanguage === 'et' ? c.name_et : (c.name_en || c.name_et)}`
         })));
-        console.log('[Online filter] activeFilters.group:', activeFilters.group);
-        let veebiopeSessions = allSessions.filter(session => {
-            if (session.is_veebiope !== true) return false;
-            if (!activeFilters.group) return true;
-            const groupsArr = session.groups || [];
-            const hasGroup = groupsArr.some(g => g.group && g.group.toLowerCase() === activeFilters.group.toLowerCase());
-            if (!hasGroup) {
-                console.log('[Online filter] SKIP: group not found', activeFilters.group, 'in', groupsArr.map(x => x.group));
-            } else {
-                console.log('[Online filter] GROUP MATCH:', activeFilters.group, 'in', groupsArr.map(x => x.group));
-            }
-            return hasGroup;
-        });
+
         // Deduplicate by course_id (show each course only once)
         const seenCourseIds = new Set();
         veebiopeSessions = veebiopeSessions.filter(session => {
@@ -688,9 +675,7 @@ function renderWeeklyView() {
             seenCourseIds.add(session.course_id);
             return true;
         });
-        console.log('[Online filter] veebiopeSessions after filter:', veebiopeSessions.map(s => ({aine: s.aine, groups: s.groups ? s.groups.map(g => g.group) : []})));
-        console.log('Online sessions found for calendar view:', veebiopeSessions);
-
+        
         // Remove is_veebiope sessions from the main calendar grid
         weekDates.forEach(dateKey => {
             let daySessions = sessionsByDate.get(dateKey) || [];
@@ -706,7 +691,10 @@ function renderWeeklyView() {
             veebiopeHTML += `<div class="veebiope-list" style="display:flex; flex-wrap:wrap; gap:16px;">`;
             veebiopeSessions.forEach(session => {
                 const name = session.aine || '';
-                const instructors = Array.isArray(session.instructor) ? session.instructor.map(i => i.name).filter(Boolean).join(' | ') : (session.instructor?.name || '');
+                const instructors = Array.isArray(session.instructor)
+                    ? session.instructor.map(i => i.name).filter(Boolean).join(' | ')
+                    : (session.instructor?.name || '');
+                console.log('[DEBUG] Extracted instructors:', instructors);
                 const commentText = session.comment ? `<div style='font-size:0.95em; color:#888;'>${session.comment}</div>` : '';
                 let mandatoryGroups = (session.groups || []).filter(g => g.ainekv === 'kohustuslik').map(g => g.group);
                 let electiveGroups = (session.groups || []).filter(g => g.ainekv === 'valikuline').map(g => g.group);
@@ -1059,4 +1047,30 @@ async function initializeApp() {
     } finally {
         loadingIndicatorDOM.classList.add('hidden');
     }
+}
+
+// --- Sync Info Update Function ---
+function updateSyncInfoText(syncDate) {
+    const syncInfoDOM = document.getElementById('syncInfo');
+    if (!syncInfoDOM) return;
+    const taltechUrl = 'https://tunniplaan.taltech.ee/#/public';
+    let textEt = `See leht on sünkroniseeritud <a href="${taltechUrl}" target="_blank" rel="noopener noreferrer" class="underline text-tt-magenta">TalTechi tunniplaaniga</a> kuupäeval <span id="syncDate">${syncDate || '...'}</span>`;
+    let textEn = `This site was synced with <a href="${taltechUrl}" target="_blank" rel="noopener noreferrer" class="underline text-tt-magenta">TalTech Timetable</a> on <span id="syncDate">${syncDate || '...'}</span>`;
+    syncInfoDOM.innerHTML = currentLanguage === 'et' ? textEt : textEn;
+}
+
+// Call this after loading data and on language change
+// Example usage after data load:
+updateSyncInfoText(syncDate);
+
+// Example usage on language toggle:
+const langToggle = document.getElementById('languageToggle');
+if (langToggle) {
+    langToggle.addEventListener('click', function() {
+        setTimeout(() => {
+            const syncDateSpan = document.getElementById('syncDate');
+            let syncDate = syncDateSpan ? syncDateSpan.textContent : '';
+            updateSyncInfoText(syncDate);
+        }, 10);
+    });
 }
