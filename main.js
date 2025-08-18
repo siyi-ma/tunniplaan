@@ -667,7 +667,8 @@ function renderWeeklyView() {
             ...s,
             aine: `${c.id} - ${currentLanguage === 'et' ? c.name_et : (c.name_en || c.name_et)}`
         })));
-
+        // Add missing declaration for veebiopeSessions
+        let veebiopeSessions = allSessions.filter(session => session.is_veebiope === true);
         // Deduplicate by course_id (show each course only once)
         const seenCourseIds = new Set();
         veebiopeSessions = veebiopeSessions.filter(session => {
