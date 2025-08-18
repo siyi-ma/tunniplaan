@@ -275,6 +275,7 @@ function applyAllFiltersAndRender(resetView = true) {
     totalFilteredSessions = 0; 
     renderHeaderStatsBar();
     render();
+    updateDynamicTitle();
 }
 
 function renderHeaderStatsBar() {
@@ -966,6 +967,7 @@ function setLanguage(lang) {
     document.documentElement.lang = lang;
     populateFilterOptions();
     updateAllUITexts();
+    updateDynamicTitle();
 }
 
 function setupEventListeners() {
