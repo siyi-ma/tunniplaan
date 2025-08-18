@@ -790,6 +790,13 @@ function renderWeeklyView() {
                 const mandatoryGroups = (session.groups || []).filter(g => g.ainekv === 'kohustuslik').map(g => g.group);
                 const electiveGroups = (session.groups || []).filter(g => g.ainekv === 'valikuline').map(g => g.group);
                 const displayInstructors = getInstructorDisplayName(session.instructor);
+                // Debug log for offline/hybrid sessions (not online)
+                if (session.is_veebiope !== true) {
+                    const name = session.aine || '';
+                    const instructors = displayInstructors;
+                    const courseCode = session.course_id || session.id || '';
+                    console.log(`[DEBUG] Course: ${courseCode}, Instructors: ${instructors}`);
+                }
                 let tooltipHTML = buildSessionTooltipHTML({
                     name: session.aine || '',
                     instructors: displayInstructors,
