@@ -238,7 +238,16 @@ function applyAllFiltersAndRender(resetView = true) {
             const searchTerms = rawSearchTerm.split(',').map(t => t.trim()).filter(Boolean);
             if (searchTerms.length > 0) {
                 const searchField = activeFilters.searchFieldType;
-                const instructorsStr = (course.instructors || []).map(i => i.name).filter(Boolean).join(' ').toLowerCase();
+                const instructorsArr = Array.isArray(course.group_sessions)
+                  ? Array.from(
+                      new Map(
+                        course.group_sessions
+                          .flatMap(gs => gs.instructors || [])
+                          .map(i => [i.name, i])
+                      ).values()
+                    )
+                  : [];
+                const instructorsStr = instructorsArr.map(i => i.name).filter(Boolean).join(' ').toLowerCase();
                 const keywordsStr = `${(course.keywords_et || []).join(' ')} ${course.description_short_et || ''} ${course.learning_outcomes_et || ''} ${course.assessment_form_et || ''}`.toLowerCase();
                 const titleStr = `${course.name_et||''} ${course.name_en||''}`.toLowerCase();
                 const courseIdStr = `${course.id||''}`.toLowerCase();
@@ -248,7 +257,7 @@ function applyAllFiltersAndRender(resetView = true) {
                     case 'course_id': matchFound = searchTerms.some(term => courseIdStr.includes(term)); break;
                     case 'keyword': matchFound = searchTerms.some(term => keywordsStr.includes(term)); break;
                     case 'instructor':
-                        const instructorArr = (course.instructors || []).map(i => i.name.toLowerCase());
+                        const instructorArr = instructorsArr.map(i => i.name.toLowerCase());
                         matchFound = searchTerms.some(term => instructorArr.some(instr => instr.includes(term) || term.split(' ').every(word => instr.includes(word))));
                         break;
                     case 'all':
@@ -350,7 +359,16 @@ function createCourseCardHTML(course) {
     const name = currentLanguage === 'et' ? course.name_et : (course.name_en || course.name_et);
     const nameOtherLang = currentLanguage === 'et' ? course.name_en : course.name_et;
     const description = currentLanguage === 'et' ? course.description_short_et : (course.description_short_en || course.description_short_et);
-    const instructors = (course.instructors || []).map(i => i.name).filter(Boolean).join(', ');
+    const instructorsArr = Array.isArray(course.group_sessions)
+      ? Array.from(
+          new Map(
+            course.group_sessions
+              .flatMap(gs => gs.instructors || [])
+              .map(i => [i.name, i])
+          ).values()
+        )
+      : [];
+    const instructors = instructorsArr.map(i => i.name).filter(Boolean).join(', ');
 
     // Use first character of institute_code to get school name from FACULTY_INFO
     let schoolInstituteHTML = '';
