@@ -597,15 +597,12 @@ function renderWeeklyView() {
         function buildSessionTooltipHTML({ name, instructors, type, start, end, room, mandatoryGroups, electiveGroups, comment, showTimeAndRoom }) {
             let tooltipHTML = `<div class="tooltip-title">${name}</div>`;
             tooltipHTML += `<div>${instructors}</div>`;
-            tooltipHTML += `<div class="text-gray-300">${type || ''}</div>`;
-            if (type) {
-                tooltipHTML += `<div><strong>Type:</strong> ${type}</div>`;
-            }
+            tooltipHTML += `<div>${type || ''}</div>`;
             if (showTimeAndRoom) {
                 // Format time as '12:00 - 13:00'
                 const timeStr = (start && end) ? `${start} - ${end}` : '';
-                if (timeStr) tooltipHTML += `<div><strong>Time:</strong> ${timeStr}</div>`;
-                if (room) tooltipHTML += `<div><strong>Room:</strong> ${room}</div>`;
+                if (timeStr) tooltipHTML += `<div> ${timeStr}</div>`;
+                if (room) tooltipHTML += `<div> ${room}</div>`;
             }
             if (comment) {
                 tooltipHTML += `<div class="text-gray-400">${comment}</div>`;
@@ -712,7 +709,7 @@ function renderWeeklyView() {
                     instructors = 'N/A';
                 }
                 const courseCode = session.course_id || session.id || '';
-                const courseName = name || '';
+                const courseName = session.aine || '';
                 const commentText = session.comment ? `<div style='font-size:0.95em; color:#888;'>${session.comment}</div>` : '';
                 let mandatoryGroups = (session.groups || []).filter(g => g.ainekv === 'kohustuslik').map(g => g.group);
                 let electiveGroups = (session.groups || []).filter(g => g.ainekv === 'valikuline').map(g => g.group);
@@ -734,7 +731,7 @@ function renderWeeklyView() {
                     borderStyle = 'border-left:4px solid #bbb;';
                 }
                 let tooltipHTML = buildSessionTooltipHTML({
-                    name,
+                    name: `${courseCode} - ${courseName}`,
                     instructors,
                     type: session.type,
                     start: session.start,
@@ -813,12 +810,12 @@ function renderWeeklyView() {
                 const electiveGroups = (session.groups || []).filter(g => g.ainekv === 'valikuline').map(g => g.group);
                 const displayInstructors = getInstructorDisplayName(session.instructor);
                 // Debug log for offline/hybrid sessions (not online)
-                if (session.is_veebiope !== true) {
+                /*if (session.is_veebiope !== true) {
                     const name = session.aine || '';
                     const instructors = displayInstructors;
                     const courseCode = session.course_id || session.id || '';
                     console.log(`[DEBUG] Course: ${courseCode}, Instructors: ${instructors}`);
-                }
+                }*/
                 let tooltipHTML = buildSessionTooltipHTML({
                     name: session.aine || '',
                     instructors: displayInstructors,
@@ -831,18 +828,17 @@ function renderWeeklyView() {
                     comment: session.comment,
                     showTimeAndRoom: true // calendar session, show time/room
                 });
+                let commentText = session.comment ? `<div class='session-details' style='color:#888;'>${session.comment}</div>` : '';
                 gridHTML += `<div class="session-card" data-tooltip="${encodeURIComponent(tooltipHTML)}" style="top: ${top}px; height: ${height}px; left: ${left}; width: ${width}; border-left-color: ${borderColor}">
                     <div class='session-card-content'>
                         <div class='course-name truncate'>${session.aine || ''}</div>
                         <div class='session-details truncate'>${displayInstructors}</div>
-                        <div class='session-details'>${session.type || ''}</div> <!-- Added session type -->
+                        <div class='session-details'>${session.type || ''}</div>
                         <div class='session-details'>${session.start || ''} - ${session.end || ''}</div>
                         <div class='session-details truncate'><i class='fas fa-map-marker-alt fa-fw text-gray-400'></i> ${session.room || 'N/A'}</div>
+                        ${commentText}
                     </div>
                 </div>`;
-                // Add weeks and comment to session card
-                let commentText = session.comment ? `<div class='session-details' style='color:#888;'>${session.comment}</div>` : '';
-                gridHTML += `<div class="session-card" data-tooltip="${encodeURIComponent(tooltipHTML)}" style="top: ${top}px; height: ${height}px; left: ${left}; width: ${width}; border-left-color: ${borderColor}"><div class='session-card-content'><div class='course-name truncate'>${session.aine || ''}</div><div class='session-details truncate'>${displayInstructors}</div><div class='session-details'>${session.start || ''} - ${session.end || ''}</div><div class='session-details truncate'><i class='fas fa-map-marker-alt fa-fw text-gray-400'></i> ${session.room || 'N/A'}</div>${commentText}</div></div>`;
             });
             gridHTML += `</div>`;
         }
