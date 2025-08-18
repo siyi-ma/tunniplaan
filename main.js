@@ -368,19 +368,10 @@ function createCourseCardHTML(course) {
     let groupsHTML = '';
     if (Array.isArray(course.group_sessions) && course.group_sessions.length > 0) {
         const groupTitle = currentLanguage === 'et' ? 'Rühmad' : 'Student groups';
-        const groupListItems = course.group_sessions.map(g => `<li>${g.group}</li>`).join('');
+        const groupListItems = course.group_sessions.map(g => `<li>${g.group} (${g.ainekv || ''})</li>`).join('');
         groupsHTML = `
             <h4 class="font-semibold tt-dark-blue mt-4 mb-1 headline">${groupTitle}</h4>
             <ul class="list-disc list-inside body-text">${groupListItems}</ul>
-        `;
-    }
-    let studyProgramsHTML = '';
-    if (studyPrograms && studyPrograms.length > 0) {
-        const title = currentLanguage === 'et' ? 'Õppekavad' : 'Study Programmes';
-        const programListItems = studyPrograms.map(p => `<li>${p.kavaversioonikood} (${p.ainekv})</li>`).join('');
-        studyProgramsHTML = `
-            <h4 class="font-semibold tt-dark-blue mt-4 mb-1 headline">${title}</h4>
-            <ul class="list-disc list-inside body-text">${programListItems}</ul>
         `;
     }
 
@@ -423,7 +414,6 @@ function createCourseCardHTML(course) {
                     <p><strong>${currentLanguage === 'et' ? 'Hindamismeetod' : 'Assessment Method'}:</strong> ${currentLanguage === 'et' ? course.assessment_method_et || '' : course.assessment_method_en || course.assessment_method_et || ''}</p>
                     <p><strong>${uiTexts.assessment[currentLanguage]}:</strong> ${currentLanguage === 'et' ? course.assessment_form_et : (course.assessment_form_en || 'N/A')}</p>
                     ${groupsHTML}
-                    ${studyProgramsHTML}
                 </div>
             </div>`;
 }
