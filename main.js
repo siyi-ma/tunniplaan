@@ -712,7 +712,7 @@ function renderWeeklyView() {
                     instructors = 'N/A';
                 }
                 const courseCode = session.course_id || session.id || '';
-                console.log(`[DEBUG] Course: ${courseCode}, Instructors: ${instructors}`);
+                const courseName = name || '';
                 const commentText = session.comment ? `<div style='font-size:0.95em; color:#888;'>${session.comment}</div>` : '';
                 let mandatoryGroups = (session.groups || []).filter(g => g.ainekv === 'kohustuslik').map(g => g.group);
                 let electiveGroups = (session.groups || []).filter(g => g.ainekv === 'valikuline').map(g => g.group);
@@ -747,7 +747,12 @@ function renderWeeklyView() {
                 });
                 // If both, use gradient border
                 // borderStyle is already set above
-                veebiopeHTML += `<div class=\"veebiope-card\" data-tooltip=\"${encodeURIComponent(tooltipHTML)}\" style=\"background:#fff; ${borderStyle} box-shadow:0 1px 4px #eee; padding:8px 10px; min-width:180px; max-width:260px; margin-bottom:8px; font-size:0.92em;\">\n                    <div style=\"font-weight:bold; font-size:1em;\">${name}</div>\n                    <div style=\"font-size:0.92em; color:#444;\">${session.type || ''}</div>\n                    <div style=\"font-size:0.92em; color:#444;\">${instructors}</div>\n                    ${commentText}\n                </div>`;
+                veebiopeHTML += `<div class="veebiope-card" data-tooltip="${encodeURIComponent(tooltipHTML)}" style="background:#fff; ${borderStyle} box-shadow:0 1px 4px #eee; padding:8px 10px; min-width:180px; max-width:260px; margin-bottom:8px; font-size:0.92em;">
+                    <div style="font-weight:bold; font-size:1em;">${courseCode} - ${courseName}</div>
+                    <div style="font-size:0.92em; color:#444;">${session.type || ''}</div>
+                    <div style="font-size:0.92em; color:#444;">${instructors}</div>
+                    ${commentText}
+                </div>`;
             });
             veebiopeHTML += `</div></div>`;
             veebiopeSection.innerHTML = veebiopeHTML;
@@ -826,7 +831,15 @@ function renderWeeklyView() {
                     comment: session.comment,
                     showTimeAndRoom: true // calendar session, show time/room
                 });
-                gridHTML += `<div class="session-card" data-tooltip="${encodeURIComponent(tooltipHTML)}" style="top: ${top}px; height: ${height}px; left: ${left}; width: ${width}; border-left-color: ${borderColor}"><div class='session-card-content'><div class='course-name truncate'>${session.aine || ''}</div><div class='session-details truncate'>${displayInstructors}</div><div class='session-details'>${session.start || ''} - ${session.end || ''}</div><div class='session-details truncate'><i class='fas fa-map-marker-alt fa-fw text-gray-400'></i> ${session.room || 'N/A'}</div></div></div>`;
+                gridHTML += `<div class="session-card" data-tooltip="${encodeURIComponent(tooltipHTML)}" style="top: ${top}px; height: ${height}px; left: ${left}; width: ${width}; border-left-color: ${borderColor}">
+                    <div class='session-card-content'>
+                        <div class='course-name truncate'>${session.aine || ''}</div>
+                        <div class='session-details truncate'>${displayInstructors}</div>
+                        <div class='session-details'>${session.type || ''}</div> <!-- Added session type -->
+                        <div class='session-details'>${session.start || ''} - ${session.end || ''}</div>
+                        <div class='session-details truncate'><i class='fas fa-map-marker-alt fa-fw text-gray-400'></i> ${session.room || 'N/A'}</div>
+                    </div>
+                </div>`;
                 // Add weeks and comment to session card
                 let commentText = session.comment ? `<div class='session-details' style='color:#888;'>${session.comment}</div>` : '';
                 gridHTML += `<div class="session-card" data-tooltip="${encodeURIComponent(tooltipHTML)}" style="top: ${top}px; height: ${height}px; left: ${left}; width: ${width}; border-left-color: ${borderColor}"><div class='session-card-content'><div class='course-name truncate'>${session.aine || ''}</div><div class='session-details truncate'>${displayInstructors}</div><div class='session-details'>${session.start || ''} - ${session.end || ''}</div><div class='session-details truncate'><i class='fas fa-map-marker-alt fa-fw text-gray-400'></i> ${session.room || 'N/A'}</div>${commentText}</div></div>`;
