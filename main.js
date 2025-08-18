@@ -9,11 +9,9 @@ function updateDynamicTitle() {
     if (facultyParam) titleParts.push(currentLanguage === 'et' ? `Teaduskond ${facultyParam}` : `Faculty ${facultyParam}`);
     if (instituteParam) titleParts.push(currentLanguage === 'et' ? `Instituut ${instituteParam}` : `Department ${instituteParam}`);
     const suffix = currentLanguage === 'et' ? 'TalTech kursused sügis 2025' : 'TalTech timetable 2025 autumn';
-    if (titleParts.length > 0) {
-        document.title = `${titleParts.join(' | ')} | ${suffix}`;
-    } else {
-        document.title = suffix;
-    }
+    const newTitle = titleParts.length > 0 ? `${titleParts.join(' | ')} | ${suffix}` : suffix;
+    console.log('[updateDynamicTitle]', { groupParam, facultyParam, instituteParam, currentLanguage, newTitle, url: window.location.href });
+    document.title = newTitle;
 }
 // Initial call moved below currentLanguage initialization
 
