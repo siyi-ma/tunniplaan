@@ -668,7 +668,15 @@ function renderWeeklyView() {
             aine: `${c.id} - ${currentLanguage === 'et' ? c.name_et : (c.name_en || c.name_et)}`
         })));
         // Add missing declaration for veebiopeSessions
-        let veebiopeSessions = allSessions.filter(session => session.is_veebiope === true);
+        let veebiopeSessions = allSessions.filter(session => {
+            if (session.is_veebiope !== true) return false;
+            // Strict group filtering: only show if session.groups contains the active group
+            if (activeFilters.group) {
+                if (!Array.isArray(session.groups)) return false;
+                return session.groups.some(g => g.group === activeFilters.group);
+            }
+            return true;
+        });
         // Deduplicate by course_id (show each course only once)
         const seenCourseIds = new Set();
         veebiopeSessions = veebiopeSessions.filter(session => {
