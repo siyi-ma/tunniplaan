@@ -1,3 +1,31 @@
+// Dynamically update page title based on URL parameter (e.g., group, faculty, institute)
+function updateDynamicTitle() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const groupParam = urlParams.get('group');
+    const facultyParam = urlParams.get('faculty');
+    const instituteParam = urlParams.get('institutecode');
+    let titleParts = [];
+    if (groupParam) titleParts.push(currentLanguage === 'et' ? `Rühm ${groupParam}` : `Group ${groupParam}`);
+    if (facultyParam) titleParts.push(currentLanguage === 'et' ? `Teaduskond ${facultyParam}` : `Faculty ${facultyParam}`);
+    if (instituteParam) titleParts.push(currentLanguage === 'et' ? `Instituut ${instituteParam}` : `Department ${instituteParam}`);
+    const suffix = currentLanguage === 'et' ? 'TalTech kursused sügis 2025' : 'TalTech timetable 2025 autumn';
+    if (titleParts.length > 0) {
+        document.title = `${titleParts.join(' | ')} | ${suffix}`;
+    } else {
+        document.title = suffix;
+    }
+}
+// Initial call moved below currentLanguage initialization
+
+// Update title on language toggle
+document.addEventListener('DOMContentLoaded', function() {
+    const langToggle = document.getElementById('languageToggle');
+    if (langToggle) {
+        langToggle.addEventListener('click', function() {
+            setTimeout(updateDynamicTitle, 10); // Wait for currentLanguage to update
+        });
+    }
+});
 // main.js - FINAL VERSION
 // This script is fully optimized to work with the final data structure and includes all new features.
 
@@ -28,6 +56,7 @@ const languageFilterRadiosDOM = document.querySelectorAll('input[name="languageF
 
 // --- State & Constants ---
 let allCourses = [], filteredCourses = [], currentLanguage = 'et', isCalendarViewVisible = false, totalFilteredSessions = 0;
+updateDynamicTitle();
 const SEMESTER_START = new Date('2025-09-01T00:00:00'), SEMESTER_END = new Date('2026-01-31T23:59:59');
 const STUDY_WEEK_CUTOFF = new Date('2025-12-21T23:59:59');
 const CALENDAR_SESSION_LIMIT = 3000;
@@ -336,6 +365,15 @@ function createCourseCardHTML(course) {
     }
     
     const studyPrograms = currentLanguage === 'et' ? course.study_programmes_et : course.study_programmes_en;
+    let groupsHTML = '';
+    if (Array.isArray(course.group_sessions) && course.group_sessions.length > 0) {
+        const groupTitle = currentLanguage === 'et' ? 'Rühmad' : 'Student groups';
+        const groupListItems = course.group_sessions.map(g => `<li>${g.group}</li>`).join('');
+        groupsHTML = `
+            <h4 class="font-semibold tt-dark-blue mt-4 mb-1 headline">${groupTitle}</h4>
+            <ul class="list-disc list-inside body-text">${groupListItems}</ul>
+        `;
+    }
     let studyProgramsHTML = '';
     if (studyPrograms && studyPrograms.length > 0) {
         const title = currentLanguage === 'et' ? 'Õppekavad' : 'Study Programmes';
@@ -384,7 +422,7 @@ function createCourseCardHTML(course) {
                     <ul class="list-disc list-inside body-text">${currentLanguage === 'et' ? (course.learning_outcomes_et || '').split('\n').map(li => `<li>${li.replace(/^- /, '')}</li>`).join('') : (course.learning_outcomes_en || '').split('\n').map(li => `<li>${li.replace(/^- /, '')}</li>`).join('')}</ul>
                     <p><strong>${currentLanguage === 'et' ? 'Hindamismeetod' : 'Assessment Method'}:</strong> ${currentLanguage === 'et' ? course.assessment_method_et || '' : course.assessment_method_en || course.assessment_method_et || ''}</p>
                     <p><strong>${uiTexts.assessment[currentLanguage]}:</strong> ${currentLanguage === 'et' ? course.assessment_form_et : (course.assessment_form_en || 'N/A')}</p>
-                    
+                    ${groupsHTML}
                     ${studyProgramsHTML}
                 </div>
             </div>`;
@@ -683,6 +721,15 @@ function renderWeeklyView() {
                 const commentText = session.comment ? `<div style='font-size:0.95em; color:#888;'>${session.comment}</div>` : '';
                 let mandatoryGroups = (session.groups || []).filter(g => g.ainekv === 'kohustuslik').map(g => g.group);
                 let electiveGroups = (session.groups || []).filter(g => g.ainekv === 'valikuline').map(g => g.group);
+                let borderColor = '#e4067e'; // default compulsory
+                if (mandatoryGroups.length > 0 && electiveGroups.length === 0) {
+                    borderColor = '#e4067e'; // compulsory only
+                } else if (electiveGroups.length > 0 && mandatoryGroups.length === 0) {
+                    borderColor = '#4dbed2'; // elective only
+                } else if (mandatoryGroups.length > 0 && electiveGroups.length > 0) {
+                    // Both compulsory and elective: use a gradient border
+                    borderColor = 'linear-gradient(to bottom, #e4067e 50%, #4dbed2 50%)';
+                }
                 let tooltipHTML = buildSessionTooltipHTML({
                     name,
                     instructors,
@@ -695,7 +742,11 @@ function renderWeeklyView() {
                     comment: session.comment,
                     showTimeAndRoom: false // online session, do not show time/room
                 });
-                veebiopeHTML += `<div class="veebiope-card" data-tooltip="${encodeURIComponent(tooltipHTML)}" style="background:#fff; border-left:4px solid #4dbed2; box-shadow:0 1px 4px #eee; padding:12px 16px; min-width:220px; max-width:320px; margin-bottom:8px;">
+                // If both, use gradient border
+                let borderStyle = (mandatoryGroups.length > 0 && electiveGroups.length > 0)
+                    ? 'border-image: linear-gradient(to bottom, #e4067e 50%, #4dbed2 50%) 1;' // border-image for gradient
+                    : `border-left:4px solid ${borderColor};`;
+                veebiopeHTML += `<div class="veebiope-card" data-tooltip="${encodeURIComponent(tooltipHTML)}" style="background:#fff; ${borderStyle} box-shadow:0 1px 4px #eee; padding:12px 16px; min-width:220px; max-width:320px; margin-bottom:8px;">
                     <div style="font-weight:bold;">${name}</div>
                     <div style="font-size:0.95em; color:#444;">${session.type || ''}</div>
                     <div style="font-size:0.95em; color:#444;">${instructors}</div>
