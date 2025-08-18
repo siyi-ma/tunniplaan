@@ -731,7 +731,7 @@ function renderWeeklyView() {
                     borderStyle = 'border-left:4px solid #bbb;';
                 }
                 let tooltipHTML = buildSessionTooltipHTML({
-                    name: `${courseCode} - ${courseName}`,
+                    name: `${courseName}`,
                     instructors,
                     type: session.type,
                     start: session.start,
