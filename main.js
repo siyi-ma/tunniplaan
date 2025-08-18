@@ -745,7 +745,7 @@ function renderWeeklyView() {
                 // If both, use gradient border
                 // borderStyle is already set above
                 veebiopeHTML += `<div class="veebiope-card" data-tooltip="${encodeURIComponent(tooltipHTML)}" style="background:#fff; ${borderStyle} box-shadow:0 1px 4px #eee; padding:8px 10px; min-width:180px; max-width:260px; margin-bottom:8px; font-size:0.92em;">
-                    <div style="font-weight:bold; font-size:1em;">${courseCode} - ${courseName}</div>
+                    <div style="font-weight:bold; font-size:0.95em;">${courseName}</div>
                     <div style="font-size:0.92em; color:#444;">${session.type || ''}</div>
                     <div style="font-size:0.92em; color:#444;">${instructors}</div>
                     ${commentText}
