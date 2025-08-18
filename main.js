@@ -695,6 +695,7 @@ function renderWeeklyView() {
                 const instructors = Array.isArray(session.instructor)
                     ? session.instructor.map(i => i.name).filter(Boolean).join(' | ')
                     : (session.instructor?.name || '');
+                const courseCode = session.course_id || session.id || '';
                 console.log(`[DEBUG] Course: ${courseCode}, Instructors: ${instructors}`);
                 const commentText = session.comment ? `<div style='font-size:0.95em; color:#888;'>${session.comment}</div>` : '';
                 let mandatoryGroups = (session.groups || []).filter(g => g.ainekv === 'kohustuslik').map(g => g.group);
