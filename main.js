@@ -359,15 +359,22 @@ function createCourseCardHTML(course) {
     const name = currentLanguage === 'et' ? course.name_et : (course.name_en || course.name_et);
     const nameOtherLang = currentLanguage === 'et' ? course.name_en : course.name_et;
     const description = currentLanguage === 'et' ? course.description_short_et : (course.description_short_en || course.description_short_et);
-    const instructorsArr = Array.isArray(course.group_sessions)
-      ? Array.from(
+    let instructorsArr = [];
+    if (Array.isArray(course.group_sessions)) {
+      if (activeFilters.group) {
+        instructorsArr = course.group_sessions
+          .filter(gs => gs.group === activeFilters.group)
+          .flatMap(gs => gs.instructors || []);
+      } else {
+        instructorsArr = Array.from(
           new Map(
             course.group_sessions
               .flatMap(gs => gs.instructors || [])
               .map(i => [i.name, i])
           ).values()
-        )
-      : [];
+        );
+      }
+    }
     const instructors = instructorsArr.map(i => i.name).filter(Boolean).join(', ');
 
     // Use first character of institute_code to get school name from FACULTY_INFO
@@ -1115,7 +1122,7 @@ function updateSyncInfoText(syncDate) {
     const syncInfoDOM = document.getElementById('syncInfo');
     if (!syncInfoDOM) return;
     const taltechUrl = 'https://tunniplaan.taltech.ee/#/public';
-    let textEt = `See leht on sünkroniseeritud <a href="${taltechUrl}" target="_blank" rel="noopener noreferrer" class="underline text-tt-magenta">TalTechi tunniplaaniga</a> kuupäeval <span id="syncDate">${syncDate || '...'}</span>`;
+    let textEt = `See leht on sünkroniseeritud <a href="${taltechUrl}" target="_blank" rel="noopener noreferrer" class="underline text-tt-magenta">TalTechi tunniplaaniga</a> <span id="syncDate">${syncDate || '...'}</span>`;
     let textEn = `This site was synced with <a href="${taltechUrl}" target="_blank" rel="noopener noreferrer" class="underline text-tt-magenta">TalTech Timetable</a> on <span id="syncDate">${syncDate || '...'}</span>`;
     syncInfoDOM.innerHTML = currentLanguage === 'et' ? textEt : textEn;
 }
