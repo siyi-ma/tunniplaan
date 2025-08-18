@@ -718,6 +718,7 @@ function renderWeeklyView() {
                 let electiveGroups = (session.groups || []).filter(g => g.ainekv === 'valikuline').map(g => g.group);
                 // Always show border color legend for mandatory/elective
                 let borderColor = '';
+                let borderStyle = '';
                 if (mandatoryGroups.length > 0 && electiveGroups.length === 0) {
                     borderColor = '#e4067e';
                     borderStyle = 'border-left:4px solid #e4067e;';
@@ -745,9 +746,7 @@ function renderWeeklyView() {
                     showTimeAndRoom: false // online session, do not show time/room
                 });
                 // If both, use gradient border
-                let borderStyle = (mandatoryGroups.length > 0 && electiveGroups.length > 0)
-                    ? 'border-image: linear-gradient(to bottom, #e4067e 50%, #4dbed2 50%) 1;' // border-image for gradient
-                    : `border-left:4px solid ${borderColor};`;
+                // borderStyle is already set above
                 veebiopeHTML += `<div class=\"veebiope-card\" data-tooltip=\"${encodeURIComponent(tooltipHTML)}\" style=\"background:#fff; ${borderStyle} box-shadow:0 1px 4px #eee; padding:8px 10px; min-width:180px; max-width:260px; margin-bottom:8px; font-size:0.92em;\">\n                    <div style=\"font-weight:bold; font-size:1em;\">${name}</div>\n                    <div style=\"font-size:0.92em; color:#444;\">${session.type || ''}</div>\n                    <div style=\"font-size:0.92em; color:#444;\">${instructors}</div>\n                    ${commentText}\n                </div>`;
             });
             veebiopeHTML += `</div></div>`;
