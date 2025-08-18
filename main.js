@@ -783,9 +783,9 @@ function renderWeeklyView() {
                     }
                 }
                 const getInstructorDisplayName = (instr) => {
-                    if (!instr || !instr.name) return 'N/A';
                     if (Array.isArray(instr)) return instr.map(i => i.name).filter(Boolean).join(', ');
-                    return instr.name;
+                    if (instr && instr.name) return instr.name;
+                    return 'N/A';
                 };
                 const mandatoryGroups = (session.groups || []).filter(g => g.ainekv === 'kohustuslik').map(g => g.group);
                 const electiveGroups = (session.groups || []).filter(g => g.ainekv === 'valikuline').map(g => g.group);
