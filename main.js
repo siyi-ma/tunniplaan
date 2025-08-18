@@ -598,6 +598,9 @@ function renderWeeklyView() {
             let tooltipHTML = `<div class="tooltip-title">${name}</div>`;
             tooltipHTML += `<div>${instructors}</div>`;
             tooltipHTML += `<div class="text-gray-300">${type || ''}</div>`;
+            if (type) {
+                tooltipHTML += `<div><strong>Type:</strong> ${type}</div>`;
+            }
             if (showTimeAndRoom) {
                 // Format time as '12:00 - 13:00'
                 const timeStr = (start && end) ? `${start} - ${end}` : '';
@@ -687,27 +690,47 @@ function renderWeeklyView() {
         if (veebiopeSessions.length > 0) {
             // Use flex row: header left, cards right
             let onlineLabel = currentLanguage === 'et' ? 'Veebiõpe' : 'Online learning';
-            let veebiopeHTML = `<div class="veebiope-row" style="display:flex; align-items:center; gap:16px;">`;
-            veebiopeHTML += `<div class="veebiope-header" style="font-weight:bold; font-size:1.1em; margin-right:16px; min-width:120px; display:flex; align-items:center;">${onlineLabel}</div>`;
-            veebiopeHTML += `<div class="veebiope-list" style="display:flex; flex-wrap:wrap; gap:16px;">`;
+            let veebiopeHTML = `<div class="veebiope-row" style="display:flex; align-items:center; gap:16px; overflow-x:auto; white-space:nowrap; padding-bottom:8px;">
+                <div class="veebiope-header" style="font-weight:bold; font-size:1.1em; margin-right:16px; min-width:120px; display:flex; align-items:center;">${onlineLabel}</div>
+                <div class="veebiope-list" style="display:flex; flex-wrap:nowrap; gap:16px;">`;
             veebiopeSessions.forEach(session => {
-                const name = session.aine || '';
-                const instructors = Array.isArray(session.instructor)
-                    ? session.instructor.map(i => i.name).filter(Boolean).join(' | ')
-                    : (session.instructor?.name || '');
+                // Extract correct instructor for the group/date
+                let instructors = '';
+                if (activeFilters.group && Array.isArray(session.groups)) {
+                    // Find instructor for the selected group
+                    const groupObj = session.groups.find(g => g.group === activeFilters.group);
+                    if (groupObj && Array.isArray(session.instructor)) {
+                        instructors = session.instructor.map(i => i.name).filter(Boolean).join(' | ');
+                    } else if (groupObj && session.instructor?.name) {
+                        instructors = session.instructor.name;
+                    }
+                } else if (Array.isArray(session.instructor)) {
+                    instructors = session.instructor.map(i => i.name).filter(Boolean).join(' | ');
+                } else if (session.instructor?.name) {
+                    instructors = session.instructor.name;
+                } else {
+                    instructors = 'N/A';
+                }
                 const courseCode = session.course_id || session.id || '';
                 console.log(`[DEBUG] Course: ${courseCode}, Instructors: ${instructors}`);
                 const commentText = session.comment ? `<div style='font-size:0.95em; color:#888;'>${session.comment}</div>` : '';
                 let mandatoryGroups = (session.groups || []).filter(g => g.ainekv === 'kohustuslik').map(g => g.group);
                 let electiveGroups = (session.groups || []).filter(g => g.ainekv === 'valikuline').map(g => g.group);
-                let borderColor = '#e4067e'; // default compulsory
+                // Always show border color legend for mandatory/elective
+                let borderColor = '';
                 if (mandatoryGroups.length > 0 && electiveGroups.length === 0) {
-                    borderColor = '#e4067e'; // compulsory only
+                    borderColor = '#e4067e';
+                    borderStyle = 'border-left:4px solid #e4067e;';
                 } else if (electiveGroups.length > 0 && mandatoryGroups.length === 0) {
-                    borderColor = '#4dbed2'; // elective only
+                    borderColor = '#4dbed2';
+                    borderStyle = 'border-left:4px solid #4dbed2;';
                 } else if (mandatoryGroups.length > 0 && electiveGroups.length > 0) {
-                    // Both compulsory and elective: use a gradient border
                     borderColor = 'linear-gradient(to bottom, #e4067e 50%, #4dbed2 50%)';
+                    borderStyle = 'border-image: linear-gradient(to bottom, #e4067e 50%, #4dbed2 50%) 1;';
+                } else {
+                    // If neither, show a neutral border
+                    borderColor = '#bbb';
+                    borderStyle = 'border-left:4px solid #bbb;';
                 }
                 let tooltipHTML = buildSessionTooltipHTML({
                     name,
@@ -725,12 +748,7 @@ function renderWeeklyView() {
                 let borderStyle = (mandatoryGroups.length > 0 && electiveGroups.length > 0)
                     ? 'border-image: linear-gradient(to bottom, #e4067e 50%, #4dbed2 50%) 1;' // border-image for gradient
                     : `border-left:4px solid ${borderColor};`;
-                veebiopeHTML += `<div class="veebiope-card" data-tooltip="${encodeURIComponent(tooltipHTML)}" style="background:#fff; ${borderStyle} box-shadow:0 1px 4px #eee; padding:12px 16px; min-width:220px; max-width:320px; margin-bottom:8px;">
-                    <div style="font-weight:bold;">${name}</div>
-                    <div style="font-size:0.95em; color:#444;">${session.type || ''}</div>
-                    <div style="font-size:0.95em; color:#444;">${instructors}</div>
-                    ${commentText}
-                </div>`;
+                veebiopeHTML += `<div class=\"veebiope-card\" data-tooltip=\"${encodeURIComponent(tooltipHTML)}\" style=\"background:#fff; ${borderStyle} box-shadow:0 1px 4px #eee; padding:8px 10px; min-width:180px; max-width:260px; margin-bottom:8px; font-size:0.92em;\">\n                    <div style=\"font-weight:bold; font-size:1em;\">${name}</div>\n                    <div style=\"font-size:0.92em; color:#444;\">${session.type || ''}</div>\n                    <div style=\"font-size:0.92em; color:#444;\">${instructors}</div>\n                    ${commentText}\n                </div>`;
             });
             veebiopeHTML += `</div></div>`;
             veebiopeSection.innerHTML = veebiopeHTML;
