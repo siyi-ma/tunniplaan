@@ -290,40 +290,38 @@ function renderHeaderStatsBar() {
     // Count statistics from filteredCourses
     let online = 0, hybrid = 0, offline = 0;
     filteredCourses.forEach(c => {
-        if (c.session_status === 'online') online++;
-        else if (c.session_status === 'hybrid') hybrid++;
-        else if (c.session_status === 'offline') offline++;
+        // Use group_sessions if available, otherwise fallback to course.session_status
+        let statuses = [];
+        if (Array.isArray(c.group_sessions) && c.group_sessions.length > 0) {
+            statuses = c.group_sessions.map(gs => gs.session_status).filter(Boolean);
+        } else if (c.session_status) {
+            statuses = [c.session_status];
+        }
+        statuses.forEach(status => {
+            if (status === 'online') online++;
+            else if (status === 'hybrid') hybrid++;
+            else if (status === 'offline') offline++;
+        });
     });
-    // Legend rendering is commented out for now. Uncomment to restore.
-    /*
+        // Localized labels for online, hybrid, offline
+        const onlineLabel = currentLanguage === 'et' ? 'Veebiõpe' : 'Online';
+        const hybridLabel = currentLanguage === 'et' ? 'Hübriid' : 'Hybrid';
+        const offlineLabel = currentLanguage === 'et' ? 'Kontaktõpe' : 'Offline';
     headerBarDOM.innerHTML = `
-  <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-6 w-full mb-4">
-    <div class="flex flex-row gap-2 md:gap-4 items-center justify-start md:w-1/3">
-      <span class="legend-color-box border-tt-magenta px-2">Online: <span>${online}</span></span>
-      <span class="legend-color-box border-tt-light-blue px-2">Hybrid: <span>${hybrid}</span></span>
-      <span class="legend-color-box border-tt-grey-1 px-2">Offline: <span>${offline}</span></span>
+    <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-6 w-full mb-4">
+        <div class="flex flex-row gap-2 md:gap-4 items-center justify-start md:w-1/3">
+            <span class="legend-color-box border-tt-magenta px-2">${onlineLabel}: <span>${online}</span></span>
+            <span class="legend-color-box border-tt-light-blue px-2">${hybridLabel}: <span>${hybrid}</span></span>
+            <span class="legend-color-box border-tt-grey-1 px-2">${offlineLabel}: <span>${offline}</span></span>
+        </div>
+        <div class="flex flex-row items-center justify-center md:w-1/3 w-full">
+            <span id="resultsCounter" class="text-tt-dark-blue font-semibold text-center w-full">${uiTexts.resultsFound[currentLanguage](filteredCourses.length)}</span>
+        </div>
+        <div class="flex flex-row items-center justify-end md:w-1/3 w-full">
+            <div id="viewToggleButtonContainer" class="flex items-center"></div>
+        </div>
     </div>
-    <div class="flex flex-row items-center justify-center md:w-1/3 w-full">
-      <span id="resultsCounter" class="text-tt-dark-blue font-semibold text-center w-full">${uiTexts.resultsFound[currentLanguage](filteredCourses.length)}</span>
-    </div>
-    <div class="flex flex-row items-center justify-end md:w-1/3 w-full">
-      <div id="viewToggleButtonContainer" class="flex items-center"></div>
-    </div>
-  </div>
-`;
-    */
-    // Only show results counter and view toggle button
-    headerBarDOM.innerHTML = `
-  <div class="flex flex-row items-center gap-2 md:gap-6 w-full mb-4">
-    <div class="flex-1"></div>
-    <div class="flex flex-row items-center justify-center flex-1">
-      <span id="resultsCounter" class="text-tt-dark-blue font-semibold text-center w-full">${uiTexts.resultsFound[currentLanguage](filteredCourses.length)}</span>
-    </div>
-    <div class="flex flex-row items-center justify-end flex-1">
-      <div id="viewToggleButtonContainer" class="flex items-center"></div>
-    </div>
-  </div>
-`;
+    `;
 }
 
 function updateURLParameters() {
@@ -391,7 +389,19 @@ function createCourseCardHTML(course) {
     let groupsHTML = '';
     if (Array.isArray(course.group_sessions) && course.group_sessions.length > 0) {
         const groupTitle = currentLanguage === 'et' ? 'Rühmad' : 'Student groups';
-        const groupListItems = course.group_sessions.map(g => `<li>${g.group} (${g.ainekv || ''})</li>`).join('');
+        const groupListItems = course.group_sessions.map(g => {
+            let langInfo = '';
+            if (Array.isArray(g.keel) && g.keel.length > 0) {
+                langInfo = g.keel.map(l => l.toUpperCase()).join('+');
+            }
+            let details = g.ainekv || '';
+            if (currentLanguage === 'en') {
+                if (details === 'kohustuslik') details = 'compulsory';
+                else if (details === 'valikuline') details = 'elective';
+            }
+            if (langInfo) details += (details ? ', ' : '') + langInfo;
+            return `<li>${g.group}: ${details}</li>`;
+        }).join('');
         groupsHTML = `
             <h4 class="font-semibold tt-dark-blue mt-4 mb-1 headline">${groupTitle}</h4>
             <ul class="list-disc list-inside body-text">${groupListItems}</ul>
@@ -399,17 +409,40 @@ function createCourseCardHTML(course) {
     }
 
     let langTag = '';
-    if (course.keel_et === "1" && course.keel_en === "1") langTag = 'ET+EN';
-    else if (course.keel_et === "1") langTag = 'ET'; else if (course.keel_en === "1") langTag = 'EN';
+        // New logic: use keel field from group_sessions for the active group only
+        let groupLangs = [];
+        if (Array.isArray(course.group_sessions) && course.group_sessions.length > 0 && activeFilters.group) {
+            const session = course.group_sessions.find(gs => gs.group === activeFilters.group);
+            if (session && Array.isArray(session.keel) && session.keel.length > 0) {
+                groupLangs = session.keel;
+            }
+        }
+        if (groupLangs.length > 0) {
+            const hasEst = groupLangs.includes('est');
+            const hasEng = groupLangs.includes('eng');
+            if (hasEst && hasEng) langTag = 'ET+EN';
+            else if (hasEst) langTag = 'ET';
+            else if (hasEng) langTag = 'EN';
+            else langTag = groupLangs.map(l => l.toUpperCase()).join('+');
+        }
+        // Fallback to old logic if no group-specific language found
+        if (!langTag) {
+            if (course.keel_et === "1" && course.keel_en === "1") langTag = 'ET+EN';
+            else if (course.keel_et === "1") langTag = 'ET';
+            else if (course.keel_en === "1") langTag = 'EN';
+        }
     const timetableLinkHTML = course.timetable_link ? `<a href="${course.timetable_link}" target="_blank" rel="noopener noreferrer" class="text-tt-magenta hover:underline text-sm font-normal"><i class="fas fa-calendar-alt fa-fw"></i> Tunniplaan</a>` : '';
     
     // Use first group for border color
     let borderClass = 'border-tt-grey-1';
-    if (Array.isArray(course.groups) && course.groups.length > 0) {
-        const firstStatus = course.groups[0].session_status;
-        if (firstStatus === 'online') borderClass = 'border-tt-magenta session-card-online';
-        else if (firstStatus === 'hybrid') borderClass = 'border-tt-light-blue session-card-hybrid';
-        else if (firstStatus === 'offline') borderClass = 'border-tt-grey-1 session-card-offline';
+    // Use session_status of the active group from group_sessions
+    if (Array.isArray(course.group_sessions) && course.group_sessions.length > 0 && activeFilters.group) {
+        const session = course.group_sessions.find(gs => gs.group === activeFilters.group);
+        if (session && session.session_status) {
+            if (session.session_status === 'online') borderClass = 'border-tt-magenta session-card-online';
+            else if (session.session_status === 'hybrid') borderClass = 'border-tt-light-blue session-card-hybrid';
+            else if (session.session_status === 'offline') borderClass = 'border-tt-grey-1 session-card-offline';
+        }
     }
     return `<div class="bg-white rounded-lg shadow-md border ${borderClass} overflow-hidden flex flex-col h-full">
                 <div class="p-4 flex-grow">
@@ -436,6 +469,45 @@ function createCourseCardHTML(course) {
                     <ul class="list-disc list-inside body-text">${currentLanguage === 'et' ? (course.learning_outcomes_et || '').split('\n').map(li => `<li>${li.replace(/^- /, '')}</li>`).join('') : (course.learning_outcomes_en || '').split('\n').map(li => `<li>${li.replace(/^- /, '')}</li>`).join('')}</ul>
                     <p><strong>${currentLanguage === 'et' ? 'Hindamismeetod' : 'Assessment Method'}:</strong> ${currentLanguage === 'et' ? course.assessment_method_et || '' : course.assessment_method_en || course.assessment_method_et || ''}</p>
                     <p><strong>${uiTexts.assessment[currentLanguage]}:</strong> ${currentLanguage === 'et' ? course.assessment_form_et : (course.assessment_form_en || 'N/A')}</p>
+                    <!-- Add group comment, session_status, and session_details if available -->
+                    ${(function() {
+                        if (Array.isArray(course.group_sessions) && activeFilters.group) {
+                            const session = course.group_sessions.find(gs => gs.group === activeFilters.group);
+                            let html = '';
+                            if (session) {
+                                if (Array.isArray(session.comments) && session.comments.length > 0) {
+                                    html += `<div class="mt-2 mb-2"><strong>${currentLanguage === 'et' ? 'Kommentaar' : 'Comment'}:</strong> ${session.comments.join(' ')}</div>`;
+                                }
+                                if (session.session_status) {
+                                    let statusText = session.session_status;
+                                    if (currentLanguage === 'et') {
+                                        if (statusText === 'online') statusText = 'veebiõpe';
+                                        else if (statusText === 'offline') statusText = 'kontaktõpe';
+                                        else if (statusText === 'hybrid') statusText = 'hübriid';
+                                    }
+                                    html += `<div class="mb-2"><strong>${currentLanguage === 'et' ? 'Õppetöö vorm' : 'Session status'}:</strong> ${statusText}</div>`;
+                                }
+                                if (Array.isArray(session.session_details) && session.session_details.length > 0) {
+                                    // Custom rendering for hybrid: separate online/offline weeks, localize labels, remove label
+                                    let onlineWeeks = '', offlineWeeks = '';
+                                    session.session_details.forEach(d => {
+                                        if (d.online_weeks) onlineWeeks = d.online_weeks;
+                                        if (d.offline_weeks) offlineWeeks = d.offline_weeks;
+                                    });
+                                    if (onlineWeeks || offlineWeeks) {
+                                        let onlineLabel = currentLanguage === 'et' ? 'Veebiõpe nädalad' : 'Online weeks';
+                                        let offlineLabel = currentLanguage === 'et' ? 'Kontaktõpe nädalad' : 'Offline weeks';
+                                        let detailsArr = [];
+                                        if (onlineWeeks) detailsArr.push(`${onlineLabel}: ${onlineWeeks}`);
+                                        if (offlineWeeks) detailsArr.push(`${offlineLabel}: ${offlineWeeks}`);
+                                        html += `<div class="mb-2">${detailsArr.join(' | ')}</div>`;
+                                    }
+                                }
+                            }
+                            return html;
+                        }
+                        return '';
+                    })()}
                     ${groupsHTML}
                 </div>
             </div>`;
@@ -1012,7 +1084,7 @@ function updateAllUITexts() {
         searchFieldSelectorDOM.options[3].textContent = uiTexts.searchField_keyword[currentLanguage];
         searchFieldSelectorDOM.options[4].textContent = uiTexts.searchField_instructor[currentLanguage];
     }
-    document.getElementById('langIndicator').textContent = currentLanguage === 'et' ? 'ET' : 'EN';
+    document.getElementById('langIndicator').textContent = currentLanguage === 'et' ? 'EST' : 'ENG';
     applyAllFiltersAndRender(false);
 }
 
@@ -1113,6 +1185,7 @@ async function initializeApp() {
         console.error("Initialization failed:", error);
         courseListContainerDOM.innerHTML = `<div class="p-4 bg-red-100 text-red-800 rounded-md col-span-full"><strong>Error: Could not load initial data.</strong><br>${error.message}</div>`;
     } finally {
+       
         loadingIndicatorDOM.classList.add('hidden');
     }
 }
