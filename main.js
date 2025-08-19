@@ -287,22 +287,37 @@ function applyAllFiltersAndRender(resetView = true) {
 function renderHeaderStatsBar() {
     const headerBarDOM = document.getElementById('headerStatsBar');
     if (!headerBarDOM) return;
-    // Count statistics from filteredCourses
+    // Count session_status using the same logic as results counting: one per filtered course
     let online = 0, hybrid = 0, offline = 0;
-    filteredCourses.forEach(c => {
-        // Use group_sessions if available, otherwise fallback to course.session_status
-        let statuses = [];
-        if (Array.isArray(c.group_sessions) && c.group_sessions.length > 0) {
-            statuses = c.group_sessions.map(gs => gs.session_status).filter(Boolean);
-        } else if (c.session_status) {
-            statuses = [c.session_status];
+    const onlineCodes = [], hybridCodes = [], offlineCodes = [];
+    const debugCourseStatus = [];
+    filteredCourses.forEach(course => {
+        let status = null;
+        if (Array.isArray(course.group_sessions) && course.group_sessions.length > 0) {
+            if (activeFilters.group) {
+                const session = course.group_sessions.find(gs => gs.group === activeFilters.group && gs.session_status);
+                if (session) status = session.session_status;
+            }
+            if (!status) {
+                // Find first group_sessions entry with a valid session_status
+                const firstValid = course.group_sessions.find(gs => gs.session_status);
+                if (firstValid) status = firstValid.session_status;
+            }
         }
-        statuses.forEach(status => {
-            if (status === 'online') online++;
-            else if (status === 'hybrid') hybrid++;
-            else if (status === 'offline') offline++;
-        });
+        if (!status && course.session_status) {
+            status = course.session_status;
+        }
+    // Treat null status as online
+    if (!status) status = 'online';
+        debugCourseStatus.push({id: course.id, status});
+        if (status === 'online') { online++; onlineCodes.push(course.id); }
+        else if (status === 'hybrid') { hybrid++; hybridCodes.push(course.id); }
+        else if (status === 'offline') { offline++; offlineCodes.push(course.id); }
     });
+    console.log('Filtered course codes and session_status:', debugCourseStatus);
+    console.log('Online course codes:', onlineCodes);
+    console.log('Hybrid course codes:', hybridCodes);
+    console.log('Offline course codes:', offlineCodes);
         // Localized labels for online, hybrid, offline
         const onlineLabel = currentLanguage === 'et' ? 'Veebiõpe' : 'Online';
         const hybridLabel = currentLanguage === 'et' ? 'Hübriid' : 'Hybrid';
@@ -409,41 +424,58 @@ function createCourseCardHTML(course) {
     }
 
     let langTag = '';
-        // New logic: use keel field from group_sessions for the active group only
-        let groupLangs = [];
-        if (Array.isArray(course.group_sessions) && course.group_sessions.length > 0 && activeFilters.group) {
+    let groupLangs = [];
+    if (Array.isArray(course.group_sessions) && course.group_sessions.length > 0) {
+        if (activeFilters.group) {
             const session = course.group_sessions.find(gs => gs.group === activeFilters.group);
             if (session && Array.isArray(session.keel) && session.keel.length > 0) {
                 groupLangs = session.keel;
             }
-        }
-        if (groupLangs.length > 0) {
-            const hasEst = groupLangs.includes('est');
-            const hasEng = groupLangs.includes('eng');
-            if (hasEst && hasEng) langTag = 'ET+EN';
-            else if (hasEst) langTag = 'ET';
-            else if (hasEng) langTag = 'EN';
-            else langTag = groupLangs.map(l => l.toUpperCase()).join('+');
-        }
-        // Fallback to old logic if no group-specific language found
-        if (!langTag) {
-            if (course.keel_et === "1" && course.keel_en === "1") langTag = 'ET+EN';
-            else if (course.keel_et === "1") langTag = 'ET';
-            else if (course.keel_en === "1") langTag = 'EN';
-        }
-    const timetableLinkHTML = course.timetable_link ? `<a href="${course.timetable_link}" target="_blank" rel="noopener noreferrer" class="text-tt-magenta hover:underline text-sm font-normal"><i class="fas fa-calendar-alt fa-fw"></i> Tunniplaan</a>` : '';
-    
-    // Use first group for border color
-    let borderClass = 'border-tt-grey-1';
-    // Use session_status of the active group from group_sessions
-    if (Array.isArray(course.group_sessions) && course.group_sessions.length > 0 && activeFilters.group) {
-        const session = course.group_sessions.find(gs => gs.group === activeFilters.group);
-        if (session && session.session_status) {
-            if (session.session_status === 'online') borderClass = 'border-tt-magenta session-card-online';
-            else if (session.session_status === 'hybrid') borderClass = 'border-tt-light-blue session-card-hybrid';
-            else if (session.session_status === 'offline') borderClass = 'border-tt-grey-1 session-card-offline';
+        } else {
+            // Union of all group languages
+            const langsSet = new Set();
+            course.group_sessions.forEach(gs => {
+                if (Array.isArray(gs.keel)) {
+                    gs.keel.forEach(l => langsSet.add(l));
+                }
+            });
+            groupLangs = Array.from(langsSet);
         }
     }
+    if (groupLangs.length > 0) {
+        const hasEst = groupLangs.includes('est');
+        const hasEng = groupLangs.includes('eng');
+        if (hasEst && hasEng) langTag = 'ET+EN';
+        else if (hasEst) langTag = 'ET';
+        else if (hasEng) langTag = 'EN';
+        else langTag = groupLangs.map(l => l.toUpperCase()).join('+');
+    }
+    // Fallback to old logic if no group-specific language found
+    if (!langTag) {
+        if (course.keel_et === "1" && course.keel_en === "1") langTag = 'ET+EN';
+        else if (course.keel_et === "1") langTag = 'ET';
+        else if (course.keel_en === "1") langTag = 'EN';
+    }
+    const timetableLinkHTML = course.timetable_link ? `<a href="${course.timetable_link}" target="_blank" rel="noopener noreferrer" class="text-tt-magenta hover:underline text-sm font-normal"><i class="fas fa-calendar-alt fa-fw"></i> Tunniplaan</a>` : '';
+    
+    // Use session_status for border color, matching header stats logic
+    let borderClass = 'border-tt-grey-1';
+    let status = null;
+    if (Array.isArray(course.group_sessions) && course.group_sessions.length > 0) {
+        if (activeFilters.group) {
+            const session = course.group_sessions.find(gs => gs.group === activeFilters.group);
+            status = session && session.session_status ? session.session_status : null;
+        } else {
+            status = course.group_sessions[0].session_status || null;
+        }
+    } else if (course.session_status) {
+        status = course.session_status;
+    }
+    // Treat null status as online for border color
+    if (!status) status = 'online';
+    if (status === 'online') borderClass = 'border-tt-magenta session-card-online';
+    else if (status === 'hybrid') borderClass = 'border-tt-light-blue session-card-hybrid';
+    else if (status === 'offline') borderClass = 'border-tt-grey-1 session-card-offline';
     return `<div class="bg-white rounded-lg shadow-md border ${borderClass} overflow-hidden flex flex-col h-full">
                 <div class="p-4 flex-grow">
                     <div class="flex justify-between items-start mb-1">
@@ -523,16 +555,26 @@ function renderCardView(courses) {
         courseListContainerDOM.innerHTML = `<p class="text-center text-tt-grey-1 col-span-full">${uiTexts.noCoursesFound[currentLanguage]}</p>`;
         return;
     }
-    // Group and sort courses by first group's session_status and course code
+    // Reorder: online first, then hybrid, then offline, treating null session_status as online
     const statusOrder = ['online', 'hybrid', 'offline'];
     const grouped = { online: [], hybrid: [], offline: [] };
     courses.forEach(course => {
-        let status = 'offline';
-        if (Array.isArray(course.groups) && course.groups.length > 0) {
-            status = course.groups[0].session_status || 'offline';
+        let status = null;
+        if (Array.isArray(course.group_sessions) && course.group_sessions.length > 0) {
+            if (activeFilters.group) {
+                const session = course.group_sessions.find(gs => gs.group === activeFilters.group);
+                status = session && session.session_status ? session.session_status : null;
+            } else {
+                status = course.group_sessions[0].session_status || null;
+            }
+        } else if (course.session_status) {
+            status = course.session_status;
         }
-        if (grouped[status]) grouped[status].push(course);
-        else grouped['offline'].push(course); // fallback
+        // Treat null status as online
+        if (!status) status = 'online';
+        if (status === 'online') grouped.online.push(course);
+        else if (status === 'hybrid') grouped.hybrid.push(course);
+        else grouped.offline.push(course);
     });
     // Sort each group by course code
     statusOrder.forEach(status => {
