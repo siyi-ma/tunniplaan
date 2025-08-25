@@ -604,39 +604,56 @@ function renderCardView(courses) {
     });
 }
 
+// --- Updated and Final toggleCalendarView Function ---
+
 async function toggleCalendarView() {
     document.getElementById('loadingText').textContent = uiTexts.loadingCalendarText[currentLanguage];
     loadingIndicatorDOM.classList.remove('hidden');
+
     try {
         const courseIds = filteredCourses.map(course => course.id).join(',');
-        // --- DEBUG LOG 1 ---
-        console.log('[DEBUG 1] Requesting timetable for these Course IDs:', courseIds);
-
         if (!courseIds) {
-            totalFilteredSessions = 0;
             throw new Error("No courses selected.");
         }
-        const response = await fetch(`/.netlify/functions/getTimetable?courses=${courseIds}`);
-        if (!response.ok) throw new Error(`Server returned status ${response.status}`);
-        const filteredTimetableData = await response.json();
-        // --- DEBUG LOG 2 ---
-        console.log('[DEBUG 2] Received timetable data from server:', JSON.parse(JSON.stringify(filteredTimetableData)));
 
-        totalFilteredSessions = filteredTimetableData.length;
-        if (totalFilteredSessions > CALENDAR_SESSION_LIMIT) {
-            updateViewToggleButton(); // This will now correctly show the error message.
-            loadingIndicatorDOM.classList.add('hidden'); // Also hide the loading indicator.
-            return; // <-- Add this line to stop execution here.
+        const response = await fetch(`/.netlify/functions/getTimetable?courses=${courseIds}`);
+        if (!response.ok) {
+            throw new Error(`Server returned status ${response.status}`);
         }
+
+        const filteredTimetableData = await response.json();
+        totalFilteredSessions = filteredTimetableData.length;
+
+        // This handles the session limit error.
+        if (totalFilteredSessions > CALENDAR_SESSION_LIMIT) {
+            updateViewToggleButton(); // Renders the "session limit exceeded" message
+            loadingIndicatorDOM.classList.add('hidden');
+            return; // Stops the function to ensure the message stays visible.
+        }
+
         mergeTimetableData(filteredTimetableData);
-    } catch(error) {
+
+        // This code now only runs if all the above checks pass.
+        isCalendarViewVisible = true;
+        calendarDate = new Date(SEMESTER_START);
+        applyAllFiltersAndRender(false);
+
+    } catch (error) {
         console.error("Failed to load calendar data:", error);
+        
+        // This new part handles server errors (like a 502 timeout).
+        const buttonContainer = document.getElementById('viewToggleButtonContainer');
+        if (buttonContainer) {
+            const errorText = currentLanguage === 'et' 
+            ? `Valitud ainete hulk on liiga suur, et kalendri andmeid laadida. Palun kitsenda valikut ja proovi uuesti.`
+            : `The number of selected courses is too large to load calendar data. Please narrow your selection and try again.`;
+            
+            buttonContainer.innerHTML = `<p class="text-xs text-red-600 text-right font-semibold">${errorText}</p>`;
+        }
+
     } finally {
         loadingIndicatorDOM.classList.add('hidden');
     }
-    isCalendarViewVisible = true;
-    calendarDate = new Date(SEMESTER_START);
-    applyAllFiltersAndRender(false);
 }
 
 function updateViewToggleButton() {
