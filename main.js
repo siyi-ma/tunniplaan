@@ -231,18 +231,8 @@ function applyAllFiltersAndRender(resetView = true) {
         if (activeFilters.eap && course.eap != activeFilters.eap) return false;
         if (activeFilters.assessmentForm && (course.assessment_form_et !== activeFilters.assessmentForm)) return false;
         if (activeFilters.teachingLanguage && course[`keel_${activeFilters.teachingLanguage}`] !== "1") return false;
-        //replace old logic (activeFilters.group && !(course.groups || []).includes(activeFilters.group)) return false;
-        // WITH THIS MORE ROBUST LOGIC:
-        if (activeFilters.group) {
-            const groupInGroupsArray = (course.groups || []).includes(activeFilters.group);
-            const groupInGroupSessions = (course.group_sessions || []).some(session => session.group === activeFilters.group);
-            
-            // If the group is not found in either place, filter out the course.
-            if (!groupInGroupsArray && !groupInGroupSessions) {
-                return false;
-            }
-        }
-        
+        if (activeFilters.group && !(course.groups || []).includes(activeFilters.group)) return false;
+                
         const rawSearchTerm = (activeFilters.searchTerm || '').toLowerCase();
         if (rawSearchTerm) {
             const searchTerms = rawSearchTerm.split(',').map(t => t.trim()).filter(Boolean);
