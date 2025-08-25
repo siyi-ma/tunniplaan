@@ -609,6 +609,9 @@ async function toggleCalendarView() {
     loadingIndicatorDOM.classList.remove('hidden');
     try {
         const courseIds = filteredCourses.map(course => course.id).join(',');
+        // --- DEBUG LOG 1 ---
+        console.log('[DEBUG 1] Requesting timetable for these Course IDs:', courseIds);
+
         if (!courseIds) {
             totalFilteredSessions = 0;
             throw new Error("No courses selected.");
@@ -616,6 +619,9 @@ async function toggleCalendarView() {
         const response = await fetch(`/.netlify/functions/getTimetable?courses=${courseIds}`);
         if (!response.ok) throw new Error(`Server returned status ${response.status}`);
         const filteredTimetableData = await response.json();
+        // --- DEBUG LOG 2 ---
+        console.log('[DEBUG 2] Received timetable data from server:', JSON.parse(JSON.stringify(filteredTimetableData)));
+
         totalFilteredSessions = filteredTimetableData.length;
         if (totalFilteredSessions > CALENDAR_SESSION_LIMIT) {
             updateViewToggleButton(); 
@@ -689,9 +695,15 @@ function calculateOverlaps(daySessions) {
 function getSessionData() {
     if (sessionDataCache) return sessionDataCache;
     let allSessions = filteredCourses.flatMap(c => (c.sessions || []).map(s => ({...s, aine: `${c.id} - ${currentLanguage === 'et' ? c.name_et : (c.name_en || c.name_et)}`})));
+    // --- DEBUG LOG 3 ---
+    console.log('[DEBUG 3] All sessions before group filtering:', JSON.parse(JSON.stringify(allSessions)));
+
     if (activeFilters.group) {
         const groupFilter = activeFilters.group.toLowerCase();
         allSessions = allSessions.filter(s => (s.groups || []).some(g => g.group && g.group.toLowerCase() === groupFilter));
+    // --- DEBUG LOG 4 ---
+        console.log(`[DEBUG 4] All sessions AFTER filtering for group "${activeFilters.group}":`, JSON.parse(JSON.stringify(allSessions)));
+        
     }
     // Deduplicate sessions by unique key: course_id, date, start, end, room
     const sessionKey = s => `${s.course_id || s.id}_${s.date}_${s.start}_${s.end}_${s.room}`;
