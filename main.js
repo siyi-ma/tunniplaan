@@ -1211,12 +1211,17 @@ async function initializeApp() {
         activeFilters.school = params.get('faculty') || '';
         const instituteCodeFromURL = params.get('institutecode') || '';
         activeFilters.group = params.get('group') || '';
-        // FIX: If a group is provided without a faculty, find and set the faculty.
+        // ROBUST FIX: If a group is provided without a faculty, find the faculty
+        // from the definitive course data, not just the lookup map.
         if (activeFilters.group && !activeFilters.school) {
-            const groupToFacultyMap = window.groupToFacultyMap || {};
-            const facultyCode = groupToFacultyMap[activeFilters.group];
-            if (facultyCode) {
-                activeFilters.school = facultyCode;
+            // Find the first course that this group belongs to
+            const courseForGroup = allCourses.find(course => 
+                Array.isArray(course.groups) && course.groups.includes(activeFilters.group)
+            );
+            
+            // If we found such a course, use its faculty code
+            if (courseForGroup && courseForGroup.school_code) {
+                activeFilters.school = courseForGroup.school_code;
             }
         }
 
