@@ -56,7 +56,7 @@ let allCourses = [], filteredCourses = [], currentLanguage = 'et', isCalendarVie
 updateDynamicTitle();
 const SEMESTER_START = new Date('2025-09-01T00:00:00'), SEMESTER_END = new Date('2026-01-31T23:59:59');
 const STUDY_WEEK_CUTOFF = new Date('2025-12-21T23:59:59');
-const CALENDAR_SESSION_LIMIT = 3000;
+const CALENDAR_SESSION_LIMIT = 4000;
 let calendarDate = new Date(SEMESTER_START);
 let sessionDataCache = null, activeFilters = { searchTerm: '', searchFieldType: 'all', school: '', institute: '', eap: '', assessmentForm: '', teachingLanguage: '', group: '' };
 const DATA_URL_UNIFIED_COURSES = './unified_courses.json';
@@ -624,8 +624,9 @@ async function toggleCalendarView() {
 
         totalFilteredSessions = filteredTimetableData.length;
         if (totalFilteredSessions > CALENDAR_SESSION_LIMIT) {
-            updateViewToggleButton(); 
-            throw new Error("Calendar limit exceeded after fetching.");
+            updateViewToggleButton(); // This will now correctly show the error message.
+            loadingIndicatorDOM.classList.add('hidden'); // Also hide the loading indicator.
+            return; // <-- Add this line to stop execution here.
         }
         mergeTimetableData(filteredTimetableData);
     } catch(error) {
@@ -703,7 +704,7 @@ function getSessionData() {
         allSessions = allSessions.filter(s => (s.groups || []).some(g => g.group && g.group.toLowerCase() === groupFilter));
     // --- DEBUG LOG 4 ---
         console.log(`[DEBUG 4] All sessions AFTER filtering for group "${activeFilters.group}":`, JSON.parse(JSON.stringify(allSessions)));
-        
+
     }
     // Deduplicate sessions by unique key: course_id, date, start, end, room
     const sessionKey = s => `${s.course_id || s.id}_${s.date}_${s.start}_${s.end}_${s.room}`;
