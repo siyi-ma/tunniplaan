@@ -56,7 +56,7 @@ let allCourses = [], filteredCourses = [], currentLanguage = 'et', isCalendarVie
 updateDynamicTitle();
 const SEMESTER_START = new Date('2025-09-01T00:00:00'), SEMESTER_END = new Date('2026-01-31T23:59:59');
 const STUDY_WEEK_CUTOFF = new Date('2025-12-21T23:59:59');
-const CALENDAR_SESSION_LIMIT = 3000;
+const CALENDAR_SESSION_LIMIT = 4000;
 let calendarDate = new Date(SEMESTER_START);
 let sessionDataCache = null, activeFilters = { searchTerm: '', searchFieldType: 'all', school: '', institute: '', eap: '', assessmentForm: '', teachingLanguage: '', group: '' };
 const DATA_URL_UNIFIED_COURSES = './unified_courses.json';
@@ -232,7 +232,7 @@ function applyAllFiltersAndRender(resetView = true) {
         if (activeFilters.assessmentForm && (course.assessment_form_et !== activeFilters.assessmentForm)) return false;
         if (activeFilters.teachingLanguage && course[`keel_${activeFilters.teachingLanguage}`] !== "1") return false;
         if (activeFilters.group && !(course.groups || []).includes(activeFilters.group)) return false;
-        
+                
         const rawSearchTerm = (activeFilters.searchTerm || '').toLowerCase();
         if (rawSearchTerm) {
             const searchTerms = rawSearchTerm.split(',').map(t => t.trim()).filter(Boolean);
@@ -609,6 +609,9 @@ async function toggleCalendarView() {
     loadingIndicatorDOM.classList.remove('hidden');
     try {
         const courseIds = filteredCourses.map(course => course.id).join(',');
+        // --- DEBUG LOG 1 ---
+        console.log('[DEBUG 1] Requesting timetable for these Course IDs:', courseIds);
+
         if (!courseIds) {
             totalFilteredSessions = 0;
             throw new Error("No courses selected.");
@@ -616,10 +619,14 @@ async function toggleCalendarView() {
         const response = await fetch(`/.netlify/functions/getTimetable?courses=${courseIds}`);
         if (!response.ok) throw new Error(`Server returned status ${response.status}`);
         const filteredTimetableData = await response.json();
+        // --- DEBUG LOG 2 ---
+        console.log('[DEBUG 2] Received timetable data from server:', JSON.parse(JSON.stringify(filteredTimetableData)));
+
         totalFilteredSessions = filteredTimetableData.length;
         if (totalFilteredSessions > CALENDAR_SESSION_LIMIT) {
-            updateViewToggleButton(); 
-            throw new Error("Calendar limit exceeded after fetching.");
+            updateViewToggleButton(); // This will now correctly show the error message.
+            loadingIndicatorDOM.classList.add('hidden'); // Also hide the loading indicator.
+            return; // <-- Add this line to stop execution here.
         }
         mergeTimetableData(filteredTimetableData);
     } catch(error) {
@@ -689,9 +696,15 @@ function calculateOverlaps(daySessions) {
 function getSessionData() {
     if (sessionDataCache) return sessionDataCache;
     let allSessions = filteredCourses.flatMap(c => (c.sessions || []).map(s => ({...s, aine: `${c.id} - ${currentLanguage === 'et' ? c.name_et : (c.name_en || c.name_et)}`})));
+    // --- DEBUG LOG 3 ---
+    console.log('[DEBUG 3] All sessions before group filtering:', JSON.parse(JSON.stringify(allSessions)));
+
     if (activeFilters.group) {
         const groupFilter = activeFilters.group.toLowerCase();
         allSessions = allSessions.filter(s => (s.groups || []).some(g => g.group && g.group.toLowerCase() === groupFilter));
+    // --- DEBUG LOG 4 ---
+        console.log(`[DEBUG 4] All sessions AFTER filtering for group "${activeFilters.group}":`, JSON.parse(JSON.stringify(allSessions)));
+
     }
     // Deduplicate sessions by unique key: course_id, date, start, end, room
     const sessionKey = s => `${s.course_id || s.id}_${s.date}_${s.start}_${s.end}_${s.room}`;
@@ -1211,6 +1224,34 @@ async function initializeApp() {
         activeFilters.school = params.get('faculty') || '';
         const instituteCodeFromURL = params.get('institutecode') || '';
         activeFilters.group = params.get('group') || '';
+        // ROBUST FIX: If a group is provided without a faculty, find the faculty
+        if (activeFilters.group && !activeFilters.school) {
+            
+            // 1. Try lookup from the dedicated map (Quickest)
+            const mapLookup = window.groupToFacultyMap[activeFilters.group];
+            if (mapLookup) {
+                 activeFilters.school = mapLookup;
+            } else {
+                // 2. Fallback: Search the full course data for the faculty code (Most accurate)
+                const courseForGroup = allCourses.find(course => 
+                    Array.isArray(course.groups) && course.groups.includes(activeFilters.group)
+                );
+                
+                if (courseForGroup && courseForGroup.school_code) {
+                    activeFilters.school = courseForGroup.school_code;
+                }
+                
+                // 3. Last resort: Infer faculty from the first letter of the group code (Defensive)
+                if (!activeFilters.school && activeFilters.group.length > 0) {
+                    const inferredFaculty = activeFilters.group[0].toUpperCase();
+                    // Check if the inferred letter is a known faculty code (e.g., 'I', 'E', 'M', 'L', 'V')
+                    if (FACULTY_INFO[inferredFaculty]) { 
+                         activeFilters.school = inferredFaculty;
+                    }
+                }
+            }
+        }
+
         if (instituteCodeFromURL) {
             const relevantCourse = allCourses.find(c => c.institute_code === instituteCodeFromURL);
             if (relevantCourse) activeFilters.institute = relevantCourse.institute_name;
