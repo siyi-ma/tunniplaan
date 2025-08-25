@@ -1212,16 +1212,30 @@ async function initializeApp() {
         const instituteCodeFromURL = params.get('institutecode') || '';
         activeFilters.group = params.get('group') || '';
         // ROBUST FIX: If a group is provided without a faculty, find the faculty
-        // from the definitive course data, not just the lookup map.
         if (activeFilters.group && !activeFilters.school) {
-            // Find the first course that this group belongs to
-            const courseForGroup = allCourses.find(course => 
-                Array.isArray(course.groups) && course.groups.includes(activeFilters.group)
-            );
             
-            // If we found such a course, use its faculty code
-            if (courseForGroup && courseForGroup.school_code) {
-                activeFilters.school = courseForGroup.school_code;
+            // 1. Try lookup from the dedicated map (Quickest)
+            const mapLookup = window.groupToFacultyMap[activeFilters.group];
+            if (mapLookup) {
+                 activeFilters.school = mapLookup;
+            } else {
+                // 2. Fallback: Search the full course data for the faculty code (Most accurate)
+                const courseForGroup = allCourses.find(course => 
+                    Array.isArray(course.groups) && course.groups.includes(activeFilters.group)
+                );
+                
+                if (courseForGroup && courseForGroup.school_code) {
+                    activeFilters.school = courseForGroup.school_code;
+                }
+                
+                // 3. Last resort: Infer faculty from the first letter of the group code (Defensive)
+                if (!activeFilters.school && activeFilters.group.length > 0) {
+                    const inferredFaculty = activeFilters.group[0].toUpperCase();
+                    // Check if the inferred letter is a known faculty code (e.g., 'I', 'E', 'M', 'L', 'V')
+                    if (FACULTY_INFO[inferredFaculty]) { 
+                         activeFilters.school = inferredFaculty;
+                    }
+                }
             }
         }
 
