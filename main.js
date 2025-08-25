@@ -1220,55 +1220,60 @@ async function initializeApp() {
         allCourses = responseData.courses || [];
         window.groupToFacultyMap = responseData.groupToFacultyMap || {};
         postProcessUnifiedData();
-        const params = new URLSearchParams(window.location.search);
-        activeFilters.school = params.get('faculty') || '';
-        const instituteCodeFromURL = params.get('institutecode') || '';
-        activeFilters.group = params.get('group') || '';
-        // ROBUST FIX: If a group is provided without a faculty, find the faculty
-        if (activeFilters.group && !activeFilters.school) {
-            
-            // 1. Try lookup from the dedicated map (Quickest)
-            const mapLookup = window.groupToFacultyMap[activeFilters.group];
-            if (mapLookup) {
-                 activeFilters.school = mapLookup;
-            } else {
-                // 2. Fallback: Search the full course data for the faculty code (Most accurate)
-                const courseForGroup = allCourses.find(course => 
-                    Array.isArray(course.groups) && course.groups.includes(activeFilters.group)
-                );
-                
-                if (courseForGroup && courseForGroup.school_code) {
-                    activeFilters.school = courseForGroup.school_code;
-                }
-                
-                // 3. Last resort: Infer faculty from the first letter of the group code (Defensive)
-                if (!activeFilters.school && activeFilters.group.length > 0) {
-                    const inferredFaculty = activeFilters.group[0].toUpperCase();
-                    // Check if the inferred letter is a known faculty code (e.g., 'I', 'E', 'M', 'L', 'V')
-                    if (FACULTY_INFO[inferredFaculty]) { 
-                         activeFilters.school = inferredFaculty;
-                    }
-                }
-            }
-        }
 
+        // --- CORRECTED LOGIC STARTS HERE ---
+        const params = new URLSearchParams(window.location.search);
+        const groupFromUrl = params.get('group') || '';
+        const facultyFromUrl = params.get('faculty') || '';
+        const instituteCodeFromURL = params.get('institutecode') || '';
+
+        // Step 1: Set active filters based ONLY on what the URL provides.
+        activeFilters.group = groupFromUrl;
+        activeFilters.school = facultyFromUrl;
+
+        // Step 2: Handle the UI for the faculty filter.
+        // If a group is in the URL WITHOUT a faculty, we find its home faculty
+        // just to update the UI dropdown for context. We DO NOT apply it as a filter.
+        if (groupFromUrl && !facultyFromUrl) {
+            const courseForGroup = allCourses.find(course => 
+                (Array.isArray(course.groups) && course.groups.includes(groupFromUrl)) ||
+                (Array.isArray(course.group_sessions) && course.group_sessions.some(session => session.group === groupFromUrl))
+            );
+
+            // This is the key: We only set the dropdown's value, NOT activeFilters.school.
+            if (courseForGroup && courseForGroup.school_code) {
+                schoolFilterDOM.value = courseForGroup.school_code;
+            }
+        } else if (facultyFromUrl) {
+            // If faculty IS in the URL, make sure the dropdown reflects that.
+            schoolFilterDOM.value = facultyFromUrl;
+        }
+        
+        // Step 3: Handle institute code from URL.
         if (instituteCodeFromURL) {
             const relevantCourse = allCourses.find(c => c.institute_code === instituteCodeFromURL);
-            if (relevantCourse) activeFilters.institute = relevantCourse.institute_name;
+            if (relevantCourse) {
+                activeFilters.institute = relevantCourse.institute_name;
+            }
         }
-        if (activeFilters.school) schoolFilterDOM.value = activeFilters.school;
+        // --- CORRECTED LOGIC ENDS HERE ---
+        
+        // Step 4: Continue with standard app setup.
         setupEventListeners();
         setLanguage('et');
+
+        // Step 5: Update UI elements to reflect the initial state.
         if (activeFilters.institute) instituteFilterDOM.value = activeFilters.institute;
         if (activeFilters.group) groupFilterInput.value = activeFilters.group;
-        if (activeFilters.school || activeFilters.institute || activeFilters.group) {
-            applyAllFiltersAndRender(false);
-        }
+        
+        // Step 6: Perform the initial render. 
+        // This will now correctly show all courses because activeFilters.school is empty.
+        applyAllFiltersAndRender(false);
+
     } catch (error) {
         console.error("Initialization failed:", error);
         courseListContainerDOM.innerHTML = `<div class="p-4 bg-red-100 text-red-800 rounded-md col-span-full"><strong>Error: Could not load initial data.</strong><br>${error.message}</div>`;
     } finally {
-       
         loadingIndicatorDOM.classList.add('hidden');
     }
 }
