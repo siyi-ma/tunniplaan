@@ -1211,6 +1211,15 @@ async function initializeApp() {
         activeFilters.school = params.get('faculty') || '';
         const instituteCodeFromURL = params.get('institutecode') || '';
         activeFilters.group = params.get('group') || '';
+        // FIX: If a group is provided without a faculty, find and set the faculty.
+        if (activeFilters.group && !activeFilters.school) {
+            const groupToFacultyMap = window.groupToFacultyMap || {};
+            const facultyCode = groupToFacultyMap[activeFilters.group];
+            if (facultyCode) {
+                activeFilters.school = facultyCode;
+            }
+        }
+
         if (instituteCodeFromURL) {
             const relevantCourse = allCourses.find(c => c.institute_code === instituteCodeFromURL);
             if (relevantCourse) activeFilters.institute = relevantCourse.institute_name;
