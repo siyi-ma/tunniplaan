@@ -8,7 +8,7 @@ function updateDynamicTitle() {
     if (groupParam) titleParts.push(currentLanguage === 'et' ? `Rühm ${groupParam}` : `Group ${groupParam}`);
     if (facultyParam) titleParts.push(currentLanguage === 'et' ? `Teaduskond ${facultyParam}` : `Faculty ${facultyParam}`);
     if (instituteParam) titleParts.push(currentLanguage === 'et' ? `Instituut ${instituteParam}` : `Department ${instituteParam}`);
-    const suffix = currentLanguage === 'et' ? 'TalTech tunniplaan sügis 2025' : 'TalTech timetable 2025 autumn';
+    const suffix = currentLanguage === 'et' ? 'TalTech tunniplaan kevad 2026' : 'TalTech timetable spring 2026';
     const newTitle = titleParts.length > 0 ? `${titleParts.join(' | ')} | ${suffix}` : suffix;
     document.title = newTitle;
 }
@@ -54,10 +54,10 @@ const languageFilterRadiosDOM = document.querySelectorAll('input[name="languageF
 // --- State & Constants ---
 let allCourses = [], filteredCourses = [], currentLanguage = 'et', isCalendarViewVisible = false, totalFilteredSessions = 0;
 updateDynamicTitle();
-const SEMESTER_START = new Date('2025-09-01T00:00:00'), SEMESTER_END = new Date('2026-01-31T23:59:59');
-const STUDY_WEEK_CUTOFF = new Date('2025-12-21T23:59:59');
+const SEMESTER_START = new Date('2026-02-02T00:00:00'), SEMESTER_END = new Date('2026-06-30T23:59:59');
+const STUDY_WEEK_CUTOFF = new Date('2026-05-20T23:59:59');
 const CALENDAR_SESSION_LIMIT = 4000;
-let calendarDate = new Date(SEMESTER_START);
+let calendarDate = new Date();
 let sessionDataCache = null, activeFilters = { searchTerm: '', searchFieldType: 'all', school: '', institute: '', eap: '', assessmentForm: '', teachingLanguage: '', group: '' };
 const DATA_URL_UNIFIED_COURSES = './unified_courses.json';
 let schoolToInstitutes = new Map(), facultyToGroupsMap = new Map();
@@ -65,7 +65,7 @@ let allUniqueGroups = [], allSchoolNames = new Map();
 const HOUR_HEIGHT_PX = 60, START_HOUR = 8, END_HOUR = 22;
 
 const uiTexts = {
-    pageTitle: { et: 'TalTech kursused sügis 2025', en: 'TalTech Courses Autumn 2025' },
+    pageTitle: { et: 'TalTech kursused kevad 2026', en: 'TalTech Courses Spring 2026' },
     searchInputLabel: { et: 'Otsisõna (eralda komaga)', en: 'Search term (separate by comma)' },
     searchPlaceholder: { et: 'Sisesta otsisõna või -sõnad...', en: 'Enter search term(s)...' },
     searchFieldSelectorLabel: { et: 'Otsi väljal', en: 'Search in field' },
@@ -218,7 +218,7 @@ function mergeTimetableData(filteredTimetableData) {
 
 // --- Filtering and Rendering Logic ---
 function applyAllFiltersAndRender(resetView = true) {
-    if (resetView) { isCalendarViewVisible = false; calendarDate = new Date(SEMESTER_START); }
+    if (resetView) { isCalendarViewVisible = false; calendarDate = new Date(); }
     
     filteredCourses = allCourses.filter(course => {
         if (activeFilters.school === 'DOKTOR') {
@@ -230,7 +230,13 @@ function applyAllFiltersAndRender(resetView = true) {
         if (activeFilters.institute && course.institute_name !== activeFilters.institute) return false;
         if (activeFilters.eap && course.eap != activeFilters.eap) return false;
         if (activeFilters.assessmentForm && (course.assessment_form_et !== activeFilters.assessmentForm)) return false;
-        if (activeFilters.teachingLanguage && course[`keel_${activeFilters.teachingLanguage}`] !== "1") return false;
+        if (activeFilters.teachingLanguage) {
+            const langCode = activeFilters.teachingLanguage === 'et' ? 'est' : 'eng';
+            const hasMatchingLang = course.group_sessions.some(gs =>
+                Array.isArray(gs.keel) && gs.keel.includes(langCode)
+            );
+            if (!hasMatchingLang) return false;
+        }
         if (activeFilters.group && !(course.groups || []).includes(activeFilters.group)) return false;
                 
         const rawSearchTerm = (activeFilters.searchTerm || '').toLowerCase();
@@ -588,55 +594,58 @@ function renderCardView(courses) {
         }
     });
     courseListContainerDOM.innerHTML = html;
-    document.querySelectorAll('.expand-button').forEach(button => {
-        if (button.dataset.listener) return;
-        button.addEventListener('click', () => {
-            const cardRoot = button.closest('.flex-col'), content = cardRoot.querySelector('.expandable-content'), desc = cardRoot.querySelector('.course-description');
-            if (!content || !desc) return;
-            const icon = button.querySelector('i'), span = button.querySelector('span'), isHidden = content.classList.contains('hidden');
-            content.classList.toggle('hidden');
-            desc.classList.toggle('max-h-20', !isHidden);
-            button.setAttribute('aria-expanded', isHidden);
-            icon.className = isHidden ? 'fas fa-minus' : 'fas fa-plus';
-            span.textContent = isHidden ? ` ${uiTexts.showLess[currentLanguage]}` : ` ${uiTexts.showMore[currentLanguage]}`;
-        });
-        button.dataset.listener = 'true';
-    });
 }
+
+// --- Updated and Final toggleCalendarView Function ---
 
 async function toggleCalendarView() {
     document.getElementById('loadingText').textContent = uiTexts.loadingCalendarText[currentLanguage];
     loadingIndicatorDOM.classList.remove('hidden');
+
     try {
         const courseIds = filteredCourses.map(course => course.id).join(',');
-        // --- DEBUG LOG 1 ---
-        console.log('[DEBUG 1] Requesting timetable for these Course IDs:', courseIds);
-
         if (!courseIds) {
-            totalFilteredSessions = 0;
             throw new Error("No courses selected.");
         }
-        const response = await fetch(`/.netlify/functions/getTimetable?courses=${courseIds}`);
-        if (!response.ok) throw new Error(`Server returned status ${response.status}`);
-        const filteredTimetableData = await response.json();
-        // --- DEBUG LOG 2 ---
-        console.log('[DEBUG 2] Received timetable data from server:', JSON.parse(JSON.stringify(filteredTimetableData)));
 
-        totalFilteredSessions = filteredTimetableData.length;
-        if (totalFilteredSessions > CALENDAR_SESSION_LIMIT) {
-            updateViewToggleButton(); // This will now correctly show the error message.
-            loadingIndicatorDOM.classList.add('hidden'); // Also hide the loading indicator.
-            return; // <-- Add this line to stop execution here.
+        const response = await fetch(`/.netlify/functions/getTimetable?courses=${courseIds}`);
+        if (!response.ok) {
+            throw new Error(`Server returned status ${response.status}`);
         }
+
+        const filteredTimetableData = await response.json();
+        totalFilteredSessions = filteredTimetableData.length;
+
+        // This handles the session limit error.
+        if (totalFilteredSessions > CALENDAR_SESSION_LIMIT) {
+            updateViewToggleButton(); // Renders the "session limit exceeded" message
+            loadingIndicatorDOM.classList.add('hidden');
+            return; // Stops the function to ensure the message stays visible.
+        }
+
         mergeTimetableData(filteredTimetableData);
-    } catch(error) {
+
+        // This code now only runs if all the above checks pass.
+        isCalendarViewVisible = true;
+        calendarDate = new Date();
+        applyAllFiltersAndRender(false);
+
+    } catch (error) {
         console.error("Failed to load calendar data:", error);
+        
+        // This new part handles server errors (like a 502 timeout).
+        const buttonContainer = document.getElementById('viewToggleButtonContainer');
+        if (buttonContainer) {
+            const errorText = currentLanguage === 'et' 
+            ? `Valitud ainete hulk on liiga suur, et kalendri andmeid laadida. Palun kitsenda valikut ja proovi uuesti.`
+            : `The number of selected courses is too large to load calendar data. Please narrow your selection and try again.`;
+            
+            buttonContainer.innerHTML = `<p class="text-xs text-red-600 text-right font-semibold">${errorText}</p>`;
+        }
+
     } finally {
         loadingIndicatorDOM.classList.add('hidden');
     }
-    isCalendarViewVisible = true;
-    calendarDate = new Date(SEMESTER_START);
-    applyAllFiltersAndRender(false);
 }
 
 function updateViewToggleButton() {
@@ -1179,6 +1188,24 @@ function setupEventListeners() {
     eapFilterRadiosDOM.forEach(r => r.addEventListener('change', e => { activeFilters.eap = e.target.value; applyAllFiltersAndRender(); }));
     languageFilterRadiosDOM.forEach(r => r.addEventListener('change', e => { activeFilters.teachingLanguage = e.target.value; applyAllFiltersAndRender(); }));
     
+    // Event Delegation for course card "Show more/less" buttons
+    courseListContainerDOM.addEventListener('click', (event) => {
+        const button = event.target.closest('.expand-button');
+        if (!button) return;
+
+        const cardRoot = button.closest('.flex-col');
+        const content = cardRoot.querySelector('.expandable-content');
+        const desc = cardRoot.querySelector('.course-description');
+        if (!content || !desc) return;
+
+        const icon = button.querySelector('i'), span = button.querySelector('span'), isHidden = content.classList.contains('hidden');
+        content.classList.toggle('hidden');
+        desc.classList.toggle('max-h-20', !isHidden);
+        button.setAttribute('aria-expanded', isHidden);
+        icon.className = isHidden ? 'fas fa-minus' : 'fas fa-plus';
+        span.textContent = isHidden ? ` ${uiTexts.showLess[currentLanguage]}` : ` ${uiTexts.showMore[currentLanguage]}`;
+    });
+
     filterToggleButton.addEventListener('click', () => filterPanelDOM.classList.toggle('filter-drawer-open'));
     document.getElementById('closeFilterButton').addEventListener('click', () => filterPanelDOM.classList.remove('filter-drawer-open'));
     
@@ -1220,55 +1247,60 @@ async function initializeApp() {
         allCourses = responseData.courses || [];
         window.groupToFacultyMap = responseData.groupToFacultyMap || {};
         postProcessUnifiedData();
-        const params = new URLSearchParams(window.location.search);
-        activeFilters.school = params.get('faculty') || '';
-        const instituteCodeFromURL = params.get('institutecode') || '';
-        activeFilters.group = params.get('group') || '';
-        // ROBUST FIX: If a group is provided without a faculty, find the faculty
-        if (activeFilters.group && !activeFilters.school) {
-            
-            // 1. Try lookup from the dedicated map (Quickest)
-            const mapLookup = window.groupToFacultyMap[activeFilters.group];
-            if (mapLookup) {
-                 activeFilters.school = mapLookup;
-            } else {
-                // 2. Fallback: Search the full course data for the faculty code (Most accurate)
-                const courseForGroup = allCourses.find(course => 
-                    Array.isArray(course.groups) && course.groups.includes(activeFilters.group)
-                );
-                
-                if (courseForGroup && courseForGroup.school_code) {
-                    activeFilters.school = courseForGroup.school_code;
-                }
-                
-                // 3. Last resort: Infer faculty from the first letter of the group code (Defensive)
-                if (!activeFilters.school && activeFilters.group.length > 0) {
-                    const inferredFaculty = activeFilters.group[0].toUpperCase();
-                    // Check if the inferred letter is a known faculty code (e.g., 'I', 'E', 'M', 'L', 'V')
-                    if (FACULTY_INFO[inferredFaculty]) { 
-                         activeFilters.school = inferredFaculty;
-                    }
-                }
-            }
-        }
 
+        // --- CORRECTED LOGIC STARTS HERE ---
+        const params = new URLSearchParams(window.location.search);
+        const groupFromUrl = params.get('group') || '';
+        const facultyFromUrl = params.get('faculty') || '';
+        const instituteCodeFromURL = params.get('institutecode') || '';
+
+        // Step 1: Set active filters based ONLY on what the URL provides.
+        activeFilters.group = groupFromUrl;
+        activeFilters.school = facultyFromUrl;
+
+        // Step 2: Handle the UI for the faculty filter.
+        // If a group is in the URL WITHOUT a faculty, we find its home faculty
+        // just to update the UI dropdown for context. We DO NOT apply it as a filter.
+        if (groupFromUrl && !facultyFromUrl) {
+            const courseForGroup = allCourses.find(course => 
+                (Array.isArray(course.groups) && course.groups.includes(groupFromUrl)) ||
+                (Array.isArray(course.group_sessions) && course.group_sessions.some(session => session.group === groupFromUrl))
+            );
+
+            // This is the key: We only set the dropdown's value, NOT activeFilters.school.
+            if (courseForGroup && courseForGroup.school_code) {
+                schoolFilterDOM.value = courseForGroup.school_code;
+            }
+        } else if (facultyFromUrl) {
+            // If faculty IS in the URL, make sure the dropdown reflects that.
+            schoolFilterDOM.value = facultyFromUrl;
+        }
+        
+        // Step 3: Handle institute code from URL.
         if (instituteCodeFromURL) {
             const relevantCourse = allCourses.find(c => c.institute_code === instituteCodeFromURL);
-            if (relevantCourse) activeFilters.institute = relevantCourse.institute_name;
+            if (relevantCourse) {
+                activeFilters.institute = relevantCourse.institute_name;
+            }
         }
-        if (activeFilters.school) schoolFilterDOM.value = activeFilters.school;
+        // --- CORRECTED LOGIC ENDS HERE ---
+        
+        // Step 4: Continue with standard app setup.
         setupEventListeners();
         setLanguage('et');
+
+        // Step 5: Update UI elements to reflect the initial state.
         if (activeFilters.institute) instituteFilterDOM.value = activeFilters.institute;
         if (activeFilters.group) groupFilterInput.value = activeFilters.group;
-        if (activeFilters.school || activeFilters.institute || activeFilters.group) {
-            applyAllFiltersAndRender(false);
-        }
+        
+        // Step 6: Perform the initial render. 
+        // This will now correctly show all courses because activeFilters.school is empty.
+        applyAllFiltersAndRender(false);
+
     } catch (error) {
         console.error("Initialization failed:", error);
         courseListContainerDOM.innerHTML = `<div class="p-4 bg-red-100 text-red-800 rounded-md col-span-full"><strong>Error: Could not load initial data.</strong><br>${error.message}</div>`;
     } finally {
-       
         loadingIndicatorDOM.classList.add('hidden');
     }
 }
