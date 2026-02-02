@@ -8,7 +8,7 @@ function updateDynamicTitle() {
     if (groupParam) titleParts.push(currentLanguage === 'et' ? `Rühm ${groupParam}` : `Group ${groupParam}`);
     if (facultyParam) titleParts.push(currentLanguage === 'et' ? `Teaduskond ${facultyParam}` : `Faculty ${facultyParam}`);
     if (instituteParam) titleParts.push(currentLanguage === 'et' ? `Instituut ${instituteParam}` : `Department ${instituteParam}`);
-    const suffix = currentLanguage === 'et' ? 'TalTech tunniplaan sügis 2025' : 'TalTech timetable 2025 autumn';
+    const suffix = currentLanguage === 'et' ? 'TalTech tunniplaan kevad 2026' : 'TalTech timetable spring 2026';
     const newTitle = titleParts.length > 0 ? `${titleParts.join(' | ')} | ${suffix}` : suffix;
     document.title = newTitle;
 }
@@ -54,8 +54,8 @@ const languageFilterRadiosDOM = document.querySelectorAll('input[name="languageF
 // --- State & Constants ---
 let allCourses = [], filteredCourses = [], currentLanguage = 'et', isCalendarViewVisible = false, totalFilteredSessions = 0;
 updateDynamicTitle();
-const SEMESTER_START = new Date('2025-09-01T00:00:00'), SEMESTER_END = new Date('2026-01-31T23:59:59');
-const STUDY_WEEK_CUTOFF = new Date('2025-12-21T23:59:59');
+const SEMESTER_START = new Date('2026-02-01T00:00:00'), SEMESTER_END = new Date('2026-06-30T23:59:59');
+const STUDY_WEEK_CUTOFF = new Date('2026-05-20T23:59:59');
 const CALENDAR_SESSION_LIMIT = 4000;
 let calendarDate = new Date(SEMESTER_START);
 let sessionDataCache = null, activeFilters = { searchTerm: '', searchFieldType: 'all', school: '', institute: '', eap: '', assessmentForm: '', teachingLanguage: '', group: '' };
@@ -65,7 +65,7 @@ let allUniqueGroups = [], allSchoolNames = new Map();
 const HOUR_HEIGHT_PX = 60, START_HOUR = 8, END_HOUR = 22;
 
 const uiTexts = {
-    pageTitle: { et: 'TalTech kursused sügis 2025', en: 'TalTech Courses Autumn 2025' },
+    pageTitle: { et: 'TalTech kursused kevad 2026', en: 'TalTech Courses Spring 2026' },
     searchInputLabel: { et: 'Otsisõna (eralda komaga)', en: 'Search term (separate by comma)' },
     searchPlaceholder: { et: 'Sisesta otsisõna või -sõnad...', en: 'Enter search term(s)...' },
     searchFieldSelectorLabel: { et: 'Otsi väljal', en: 'Search in field' },
@@ -230,7 +230,13 @@ function applyAllFiltersAndRender(resetView = true) {
         if (activeFilters.institute && course.institute_name !== activeFilters.institute) return false;
         if (activeFilters.eap && course.eap != activeFilters.eap) return false;
         if (activeFilters.assessmentForm && (course.assessment_form_et !== activeFilters.assessmentForm)) return false;
-        if (activeFilters.teachingLanguage && course[`keel_${activeFilters.teachingLanguage}`] !== "1") return false;
+        if (activeFilters.teachingLanguage) {
+            const langCode = activeFilters.teachingLanguage === 'et' ? 'est' : 'eng';
+            const hasMatchingLang = course.group_sessions.some(gs =>
+                Array.isArray(gs.keel) && gs.keel.includes(langCode)
+            );
+            if (!hasMatchingLang) return false;
+        }
         if (activeFilters.group && !(course.groups || []).includes(activeFilters.group)) return false;
                 
         const rawSearchTerm = (activeFilters.searchTerm || '').toLowerCase();
