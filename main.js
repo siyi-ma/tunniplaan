@@ -54,10 +54,10 @@ const languageFilterRadiosDOM = document.querySelectorAll('input[name="languageF
 // --- State & Constants ---
 let allCourses = [], filteredCourses = [], currentLanguage = 'et', isCalendarViewVisible = false, totalFilteredSessions = 0;
 updateDynamicTitle();
-const SEMESTER_START = new Date('2026-02-01T00:00:00'), SEMESTER_END = new Date('2026-06-30T23:59:59');
+const SEMESTER_START = new Date('2026-02-02T00:00:00'), SEMESTER_END = new Date('2026-06-30T23:59:59');
 const STUDY_WEEK_CUTOFF = new Date('2026-05-20T23:59:59');
 const CALENDAR_SESSION_LIMIT = 4000;
-let calendarDate = new Date(SEMESTER_START);
+let calendarDate = new Date();
 let sessionDataCache = null, activeFilters = { searchTerm: '', searchFieldType: 'all', school: '', institute: '', eap: '', assessmentForm: '', teachingLanguage: '', group: '' };
 const DATA_URL_UNIFIED_COURSES = './unified_courses.json';
 let schoolToInstitutes = new Map(), facultyToGroupsMap = new Map();
@@ -218,7 +218,7 @@ function mergeTimetableData(filteredTimetableData) {
 
 // --- Filtering and Rendering Logic ---
 function applyAllFiltersAndRender(resetView = true) {
-    if (resetView) { isCalendarViewVisible = false; calendarDate = new Date(SEMESTER_START); }
+    if (resetView) { isCalendarViewVisible = false; calendarDate = new Date(); }
     
     filteredCourses = allCourses.filter(course => {
         if (activeFilters.school === 'DOKTOR') {
@@ -641,7 +641,7 @@ async function toggleCalendarView() {
 
         // This code now only runs if all the above checks pass.
         isCalendarViewVisible = true;
-        calendarDate = new Date(SEMESTER_START);
+        calendarDate = new Date();
         applyAllFiltersAndRender(false);
 
     } catch (error) {
