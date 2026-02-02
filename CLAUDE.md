@@ -19,12 +19,39 @@ TalTech Tunniplaan is a course timetable viewer for Tallinn University of Techno
 
 ## Development Commands
 
-### Local Development
+### VS Code Tasks (Recommended)
+
+The project includes configured VS Code tasks in [.vscode/tasks.json](.vscode/tasks.json):
+
+**Keyboard Shortcuts**:
+- **`Ctrl+Shift+B`** - Start localhost server (default build task)
+- **`Ctrl+Shift+P`** → "Run Task" - Access all tasks
+
+**Available Tasks**:
+1. **Run Localhost Server** - Starts Python HTTP server on `http://localhost:8000`
+2. **Netlify: Deploy Main Branch** - Triggers production deployment via build hook
+3. **Netlify: Deploy Dev Branch** - Triggers dev deployment via build hook
+
+### Local Development (Manual)
 
 ```bash
-# Start local development server (VS Code Live Server on port 5501)
-# Or use any static file server
+# Start local development server
 python -m http.server 8000
+# Then open http://localhost:8000 in your browser
+```
+
+### Netlify Deployments
+
+**Via VS Code Tasks** (Recommended):
+- Press `Ctrl+Shift+P` → Type "Run Task" → Select deployment task
+
+**Via Command Line**:
+```bash
+# Deploy to production (main branch)
+curl -X POST -d {} https://api.netlify.com/build_hooks/6980b6f3e6f1a66c892e33ab
+
+# Deploy to development (dev branch)
+curl -X POST -d {} https://api.netlify.com/build_hooks/6980b7cb2f57c96b40fd08ab
 ```
 
 ### Data Files
