@@ -148,6 +148,7 @@ function renderCourseCardLegend() {
 const debounce = (func, delay) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => func.apply(this, a), delay); }; };
 const timeToMinutes = (timeStr) => { if (!timeStr?.includes(':')) return 0; const [h, m] = timeStr.split(':').map(Number); return h * 60 + m; };
 const parseDate = (dateStr) => { const [d, m, y] = dateStr.split('.'); return new Date(y, m - 1, d); };
+const toLocalISODate = (date) => { const y = date.getFullYear(); const m = String(date.getMonth() + 1).padStart(2, '0'); const d = String(date.getDate()).padStart(2, '0'); return `${y}-${m}-${d}`; };
 const getStudyWeek = (currentDate) => {
     if (currentDate > STUDY_WEEK_CUTOFF) return null;
     const semesterStartMonday = new Date(SEMESTER_START);
@@ -744,7 +745,7 @@ function getSessionData() {
     uniqueSessionMap.forEach(s => {
         const sessionDate = parseDate(s.date);
         if (isNaN(sessionDate.getTime())) return;
-        const dateKey = sessionDate.toISOString().split('T')[0];
+        const dateKey = toLocalISODate(sessionDate);
         if (!sessionsByDate.has(dateKey)) sessionsByDate.set(dateKey, []);
         sessionsByDate.get(dateKey).push({...s});
     });
@@ -821,7 +822,7 @@ function renderWeeklyView() {
         for (let i = 0; i < 7; i++) {
             const d = new Date(startDate);
             d.setDate(d.getDate() + i);
-            weekDates.push(d.toISOString().split('T')[0]);
+            weekDates.push(toLocalISODate(d));
         }
         // Collect all online sessions (is_veebiope ===True) BEFORE date filtering
         let allSessions = filteredCourses.flatMap(c => (c.sessions || []).map(s => ({
@@ -956,7 +957,7 @@ function renderWeeklyView() {
         for (let i = 0; i < 7; i++) {
             gridHTML += `<div class="grid-body-cell" style="height:${totalHours*HOUR_HEIGHT_PX}px">`;
             const dayDate = new Date(startDate); dayDate.setDate(dayDate.getDate() + i);
-            const dateKey = dayDate.toISOString().split('T')[0];
+            const dateKey = toLocalISODate(dayDate);
             const daySessions = sessionsByDate.get(dateKey) || [];
             if (daySessions.length > 0) hasAnySessionThisWeek = true;
             daySessions.forEach(session => {

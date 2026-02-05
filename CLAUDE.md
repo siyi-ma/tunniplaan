@@ -38,9 +38,6 @@ The project includes configured VS Code tasks in [.vscode/tasks.json](.vscode/ta
 # Start local development server
 python -m http.server 8000
 # Then open http://localhost:8000 in your browser
-
-# Alternative: Use npm script (requires http-server package)
-npm start
 ```
 
 ### Netlify Deployments
@@ -94,7 +91,7 @@ The application is a single-page application (SPA) built with vanilla JavaScript
    - Client-side filtering and search
    - Two view modes: Card view (default) and Calendar view
 
-3. **Key State Variables** ([main.js](main.js):55-61)
+3. **Key State Variables** ([main.js](main.js):~47-59)
    - `allCourses` - All course data
    - `filteredCourses` - Currently filtered courses
    - `currentLanguage` - UI language ('et' or 'en')
@@ -149,7 +146,7 @@ Array of individual session events with timestamps, locations, and course refere
 
 ## Bilingual UI System
 
-The application uses a `uiTexts` object ([main.js](main.js):67-115) containing all UI strings in both languages:
+The application uses a `uiTexts` object ([main.js](main.js):~60-90) containing all UI strings in both languages:
 ```javascript
 const uiTexts = {
   searchButtonText: { et: 'Otsi', en: 'Search' },
@@ -167,7 +164,7 @@ Language switching updates:
 ### Data Updates
 
 - Course data is updated weekly via external scraping process
-- Commit messages follow pattern: "Update YYYYMMDD sessions and unified courses: X groups and Y courses"
+- Commit messages follow pattern: "Update YYYYMMDD session and unified courses: X groups and Y courses"
 - Always verify data file integrity after updates
 
 ### Git LFS Considerations
@@ -206,7 +203,7 @@ Development logs and session summaries are stored in [docs/](docs/) directory fo
 
 ### Modifying Course Card Display
 
-Course cards are dynamically generated. Search for the `createCourseCardHTML` function in [main.js](main.js):377 that creates the HTML structure with Tailwind classes.
+Course cards are dynamically generated. Search for the card rendering function in [main.js](main.js) that creates the HTML structure with Tailwind classes.
 
 ### Updating Styles
 
