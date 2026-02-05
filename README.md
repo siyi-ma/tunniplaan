@@ -48,6 +48,13 @@ A web application for viewing and searching TalTech (Tallinn University of Techn
    ```
    - Open `http://localhost:8000` in your browser
 
+   **Option 3: Node.js Custom Server (Supports Calendar View)**
+   If you cannot use Netlify CLI or need full Calendar View functionality locally:
+   ```bash
+   node server.js
+   ```
+   - Open `http://localhost:8888` in your browser
+
 ## Development
 
 ### VS Code Tasks
@@ -73,6 +80,7 @@ We've configured convenient keyboard shortcuts in [.vscode/tasks.json](.vscode/t
 tunniplaan/
 ├── index.html              # Main HTML file
 ├── main.js                 # Application logic
+├── server.js               # Local Node.js server (mocks Netlify functions)
 ├── main.css                # Custom styles
 ├── unified_courses.json    # Course metadata (~6MB, Git LFS)
 ├── sessions.json           # Session data (~42MB, Git LFS)
