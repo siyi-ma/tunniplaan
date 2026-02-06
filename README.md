@@ -74,6 +74,38 @@ We've configured convenient keyboard shortcuts in [.vscode/tasks.json](.vscode/t
    - Type "Run Task"
    - Select deployment task
 
+### Git Workflow
+
+Common commands for working with branches and deploying.
+
+**1. Start a new feature**
+```bash
+git checkout dev
+git pull origin dev
+git checkout -b feature/my-feature-name
+```
+
+**2. Save changes**
+```bash
+git add .
+git commit -m "Description of changes"
+git push origin feature/my-feature-name
+```
+
+**3. Merge to dev (Development)**
+```bash
+git checkout dev
+git merge feature/my-feature-name
+git push origin dev
+```
+
+**4. Merge to main (Production)**
+```bash
+git checkout main
+git merge dev
+git push origin main
+```
+
 ### Project Structure
 
 ```
