@@ -35,21 +35,21 @@ A web application for viewing and searching TalTech (Tallinn University of Techn
    git lfs pull
    ```
 
-3. **Start local server**
-
-   **Option 1: VS Code (Recommended)**
-   - Open project in VS Code
-   - Press **`Ctrl+Shift+B`**
-   - Opens `http://localhost:8000` automatically
-
-   **Option 2: Command Line**
+3. **Install dependencies**
    ```bash
-   python -m http.server 8000
+   npm install
    ```
-   - Open `http://localhost:8000` in your browser
 
-   **Option 3: Node.js Custom Server (Supports Calendar View)**
-   If you cannot use Netlify CLI or need full Calendar View functionality locally:
+4. **Start local server**
+
+   **Option 1: Command Line (Recommended)**
+   ```bash
+   npm start
+   ```
+   - Opens `http://localhost:8888` in your browser
+   - Supports full Calendar View functionality
+
+   **Option 2: Manual Node Server**
    ```bash
    node server.js
    ```
