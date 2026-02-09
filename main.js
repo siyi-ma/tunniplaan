@@ -595,20 +595,6 @@ function renderCardView(courses) {
         }
     });
     courseListContainerDOM.innerHTML = html;
-    document.querySelectorAll('.expand-button').forEach(button => {
-        if (button.dataset.listener) return;
-        button.addEventListener('click', () => {
-            const cardRoot = button.closest('.flex-col'), content = cardRoot.querySelector('.expandable-content'), desc = cardRoot.querySelector('.course-description');
-            if (!content || !desc) return;
-            const icon = button.querySelector('i'), span = button.querySelector('span'), isHidden = content.classList.contains('hidden');
-            content.classList.toggle('hidden');
-            desc.classList.toggle('max-h-20', !isHidden);
-            button.setAttribute('aria-expanded', isHidden);
-            icon.className = isHidden ? 'fas fa-minus' : 'fas fa-plus';
-            span.textContent = isHidden ? ` ${uiTexts.showLess[currentLanguage]}` : ` ${uiTexts.showMore[currentLanguage]}`;
-        });
-        button.dataset.listener = 'true';
-    });
 }
 
 // --- Updated and Final toggleCalendarView Function ---
@@ -1203,6 +1189,24 @@ function setupEventListeners() {
     eapFilterRadiosDOM.forEach(r => r.addEventListener('change', e => { activeFilters.eap = e.target.value; applyAllFiltersAndRender(); }));
     languageFilterRadiosDOM.forEach(r => r.addEventListener('change', e => { activeFilters.teachingLanguage = e.target.value; applyAllFiltersAndRender(); }));
     
+    // Event Delegation for course card "Show more/less" buttons
+    courseListContainerDOM.addEventListener('click', (event) => {
+        const button = event.target.closest('.expand-button');
+        if (!button) return;
+
+        const cardRoot = button.closest('.flex-col');
+        const content = cardRoot.querySelector('.expandable-content');
+        const desc = cardRoot.querySelector('.course-description');
+        if (!content || !desc) return;
+
+        const icon = button.querySelector('i'), span = button.querySelector('span'), isHidden = content.classList.contains('hidden');
+        content.classList.toggle('hidden');
+        desc.classList.toggle('max-h-20', !isHidden);
+        button.setAttribute('aria-expanded', isHidden);
+        icon.className = isHidden ? 'fas fa-minus' : 'fas fa-plus';
+        span.textContent = isHidden ? ` ${uiTexts.showLess[currentLanguage]}` : ` ${uiTexts.showMore[currentLanguage]}`;
+    });
+
     filterToggleButton.addEventListener('click', () => filterPanelDOM.classList.toggle('filter-drawer-open'));
     document.getElementById('closeFilterButton').addEventListener('click', () => filterPanelDOM.classList.remove('filter-drawer-open'));
     

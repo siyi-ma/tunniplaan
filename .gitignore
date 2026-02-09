@@ -1,5 +1,14 @@
 .vscode/
+<<<<<<< HEAD
 docs/
 .claude/
 # Local Netlify folder
 .netlify
+=======
+.claude/
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+.env
+>>>>>>> bed8df27870934729a08e57de2385eb125da90e5

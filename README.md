@@ -35,18 +35,25 @@ A web application for viewing and searching TalTech (Tallinn University of Techn
    git lfs pull
    ```
 
-3. **Start local server**
-
-   **Option 1: VS Code (Recommended)**
-   - Open project in VS Code
-   - Press **`Ctrl+Shift+B`**
-   - Opens `http://localhost:8000` automatically
-
-   **Option 2: Command Line**
+3. **Install dependencies**
    ```bash
-   python -m http.server 8000
+   npm install
    ```
-   - Open `http://localhost:8000` in your browser
+
+4. **Start local server**
+
+   **Option 1: Command Line (Recommended)**
+   ```bash
+   npm start
+   ```
+   - Opens `http://localhost:8888` in your browser
+   - Supports full Calendar View functionality
+
+   **Option 2: Manual Node Server**
+   ```bash
+   node server.js
+   ```
+   - Open `http://localhost:8888` in your browser
 
 ## Development
 
@@ -67,12 +74,45 @@ We've configured convenient keyboard shortcuts in [.vscode/tasks.json](.vscode/t
    - Type "Run Task"
    - Select deployment task
 
+### Git Workflow
+
+Common commands for working with branches and deploying.
+
+**1. Start a new feature**
+```bash
+git checkout dev
+git pull origin dev
+git checkout -b feature/my-feature-name
+```
+
+**2. Save changes**
+```bash
+git add .
+git commit -m "Description of changes"
+git push origin feature/my-feature-name
+```
+
+**3. Merge to dev (Development)**
+```bash
+git checkout dev
+git merge feature/my-feature-name
+git push origin dev
+```
+
+**4. Merge to main (Production)**
+```bash
+git checkout main
+git merge dev
+git push origin main
+```
+
 ### Project Structure
 
 ```
 tunniplaan/
 ├── index.html              # Main HTML file
 ├── main.js                 # Application logic
+├── server.js               # Local Node.js server (mocks Netlify functions)
 ├── main.css                # Custom styles
 ├── unified_courses.json    # Course metadata (~6MB, Git LFS)
 ├── sessions.json           # Session data (~42MB, Git LFS)
