@@ -1,242 +1,223 @@
-# TalTech Tunniplaan (Course Timetable Viewer)
+# TalTech Tunniplaan
 
-A web application for viewing and searching TalTech (Tallinn University of Technology) course timetables. Browse ~1000 courses across ~395 student groups with bilingual support (Estonian/English).
+TalTech Tunniplaan is a vanilla JavaScript timetable viewer for Tallinn University of Technology (TalTech). It shows course metadata and timetable sessions for roughly 1000 courses and 395 student groups, with Estonian and English UI support.
 
-**Live Site**: Hosted on Netlify
-**Data Update Frequency**: Weekly
+The app is deployed on Netlify and uses a Netlify function to filter timetable sessions from a large `sessions.json` file.
 
 ## Features
 
-- 🔍 **Advanced Search** - Search by course code, title, instructor, or keywords
-- 🏛️ **Multi-Filter System** - Filter by faculty, institute, group, credits (EAP), assessment form, teaching language
-- 📅 **Calendar View** - Weekly timetable view with session details
-- 🌐 **Bilingual UI** - Switch between Estonian and English
-- 🎨 **Session Types** - Visual indicators for online, hybrid, and offline courses
-- 📱 **Responsive Design** - Works on desktop and mobile devices
+- Search courses by title, course code, keyword, or instructor
+- Build a combined timetable by adding multiple study groups in a dedicated group builder
+- Use autocomplete and `Tab` / `Enter` to add groups quickly
+- Bulk-add groups by prefix with patterns like `TVTB*`
+- Copy a reusable link for the selected group timetable
+- Export the visible timetable week as CSV
+- Filter by faculty, institute, group, EAP, assessment form, and teaching language
+- Switch between card view and weekly calendar view
+- View bilingual UI text in Estonian and English
+- Distinguish online, hybrid, and offline courses visually
 
-## Quick Start
+## Stack
 
-### Prerequisites
+- Frontend: Vanilla JavaScript, HTML, CSS
+- Styling: Tailwind CSS via CDN plus `main.css`
+- Backend: Netlify serverless function in `netlify/functions/getTimetable.js`
+- Local backend alternative: `server.js`
+- Data: `unified_courses.json` and `sessions.json` via Git LFS
 
-- Python 3.x (for local development server)
-- Git with Git LFS installed (for data files)
+## Prerequisites
 
-### Setup
+- Node.js
+- npm
+- Git LFS
+- Optional: Netlify CLI for full local parity, though `npx netlify` works through the npm script
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd tunniplaan
-   ```
+## Setup
 
-2. **Pull data files** (required for Git LFS)
-   ```bash
-   git lfs install
-   git lfs pull
-   ```
+1. Clone the repository.
+2. Install Git LFS and pull large files.
+3. Install npm dependencies.
 
-3. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-4. **Start local server**
-
-   **Option 1: Command Line (Recommended)**
-   ```bash
-   npm start
-   ```
-   - Opens `http://localhost:8888` in your browser
-   - Supports full Calendar View functionality
-
-   **Option 2: Manual Node Server**
-   ```bash
-   node server.js
-   ```
-   - Open `http://localhost:8888` in your browser
-
-## Development
-
-### VS Code Tasks
-
-We've configured convenient keyboard shortcuts in [.vscode/tasks.json](.vscode/tasks.json):
-
-| Task | Shortcut | Description |
-|------|----------|-------------|
-| **Run Localhost Server** | `Ctrl+Shift+B` | Start local dev server on port 8000 |
-| Netlify: Deploy Main | Run Task menu | Deploy to production (main branch) |
-| Netlify: Deploy Dev | Run Task menu | Deploy to development (dev branch) |
-
-**How to use**:
-1. **Start localhost**: Press `Ctrl+Shift+B` (fastest!)
-2. **Deploy to Netlify**:
-   - Press `Ctrl+Shift+P`
-   - Type "Run Task"
-   - Select deployment task
-
-### Git Workflow
-
-Common commands for working with branches and deploying.
-
-**1. Start a new feature**
 ```bash
-git checkout dev
-git pull origin dev
-git checkout -b feature/my-feature-name
+git lfs install
+git lfs pull
+npm install
 ```
 
-**2. Save changes**
+## Local Development
+
+There are three local run modes in this repo.
+
+### Recommended: Netlify dev
+
+Use this when testing calendar view or anything that depends on `/.netlify/functions/getTimetable`.
+
 ```bash
-git add .
-git commit -m "Description of changes"
-git push origin feature/my-feature-name
+npm run dev:netlify
 ```
 
-**3. Merge to dev (Development)**
+Open `http://localhost:8000`.
+
+This is the most accurate local environment for:
+
+- calendar view
+- session loading
+- Netlify function behavior
+
+### Static frontend only
+
+Use this when working only on frontend layout or client-side filtering that does not need the timetable function.
+
 ```bash
-git checkout dev
-git merge feature/my-feature-name
-git push origin dev
+npm run dev
 ```
 
-**4. Merge to main (Production)**
+Open `http://localhost:8000`.
+
+Note: this mode does not provide the Netlify function. Calendar view will not work here.
+
+### Node local server with mocked function route
+
+This repo also includes a local Node server that serves static files and handles `/.netlify/functions/getTimetable` directly.
+
 ```bash
-git checkout main
-git merge dev
-git push origin main
+npm start
 ```
 
-### Project Structure
+Open `http://localhost:8888`.
 
-```
+This is useful if you want a local backend without Netlify CLI.
+
+## VS Code Tasks
+
+The repository includes tasks in `.vscode/tasks.json`.
+
+- `Run Localhost Server`: runs `python -m http.server 8000`
+- `Netlify: Deploy Main Branch`
+- `Netlify: Deploy Dev Branch`
+
+Important: the localhost Python task serves static files only. It does not provide the timetable function, so it is not suitable for calendar-view testing.
+
+## Search and Calendar Behavior
+
+### General search
+
+The main search box supports comma-separated terms and field-specific examples for:
+
+- all fields
+- course name
+- course code
+- keyword
+- instructor
+
+Keyword search now checks the active UI language first and falls back to the other language if translations are missing.
+
+### Build timetable by groups
+
+The main timetable-composition flow is now separate from the general search.
+
+To build a combined timetable by study groups:
+
+1. Open the `Build timetable by groups` section.
+2. Add one or more study groups using autocomplete.
+3. Press `Tab` or `Enter` to accept the current group.
+4. Click `Open timetable`.
+
+Supported shortcuts:
+
+- Add multiple specific groups such as `EAUI71, EAUI72`
+- Add all matching groups by prefix with a pattern like `TVTB*`
+- Use `Copy link` to generate a reusable URL for the selected group set
+
+### Calendar export
+
+In calendar view, the `Export CSV` button downloads the currently visible timetable week as a UTF-8 CSV file that opens correctly in Excel.
+
+The export includes:
+
+- date
+- time
+- course code
+- course name
+- type
+- room
+- instructors
+- visible groups
+- mandatory and elective groups
+- comment
+- online-only indicator
+
+## Data Files
+
+- `unified_courses.json`: course metadata and grouped session metadata
+- `sessions.json`: timetable session records used by the calendar view
+
+Both files are tracked with Git LFS.
+
+## Architecture
+
+### Frontend
+
+- `index.html`: application shell, general course search UI, and dedicated group-timetable builder UI
+- `main.js`: state management, filtering, rendering, language toggle, group builder logic, calendar logic, CSV export
+- `main.css`: custom styles
+
+### Backend
+
+- `netlify/functions/getTimetable.js`: reads `sessions.json` and returns only sessions for requested courses
+- `server.js`: local Node server that serves the app and exposes the same function path for development on port 8888
+- `netlify.toml`: includes `sessions.json` in the Netlify function bundle
+
+### Data flow
+
+1. The frontend loads `unified_courses.json`.
+2. The user either searches courses or builds a timetable from selected groups.
+3. When calendar view is opened, the frontend requests `/.netlify/functions/getTimetable?courses=...`.
+4. The backend returns only matching sessions from `sessions.json`.
+5. The frontend merges and renders sessions in the weekly view.
+
+## Project Structure
+
+```text
 tunniplaan/
-├── index.html              # Main HTML file
-├── main.js                 # Application logic
-├── server.js               # Local Node.js server (mocks Netlify functions)
-├── main.css                # Custom styles
-├── unified_courses.json    # Course metadata (~6MB, Git LFS)
-├── sessions.json           # Session data (~42MB, Git LFS)
-├── netlify/
-│   └── functions/
-│       └── getTimetable.js # Serverless function for calendar view
-├── .vscode/
-│   └── tasks.json          # VS Code tasks configuration
-└── docs/                   # Development documentation
+|-- index.html
+|-- main.js
+|-- main.css
+|-- server.js
+|-- netlify.toml
+|-- unified_courses.json
+|-- sessions.json
+|-- netlify/
+|   `-- functions/
+|       `-- getTimetable.js
+|-- .vscode/
+|   `-- tasks.json
+`-- docs/
 ```
-
-### Technology Stack
-
-- **Frontend**: Vanilla JavaScript, HTML5, CSS3
-- **Styling**: Tailwind CSS (CDN), custom CSS
-- **Backend**: Netlify serverless functions (Node.js)
-- **Hosting**: Netlify
-- **Data Management**: Git LFS for large JSON files
-
-### Data Files
-
-Two main data files (tracked with Git LFS):
-- **`unified_courses.json`** (~6MB) - Course metadata with grouped sessions
-- **`sessions.json`** (~42MB) - Individual session/event data
-
-**Important**: Always use Git LFS when working with these files.
 
 ## Deployment
 
-### Automatic Deployments
+The site is hosted on Netlify.
 
-- **Production**: Push to `main` branch
-- **Development**: Push to `dev` branch
+- `main` branch: production
+- `dev` branch: development deployment
 
-### Manual Deployments (via Build Hooks)
+Manual build hooks are also configured in `.vscode/tasks.json`.
 
-**VS Code** (Recommended):
-1. Press `Ctrl+Shift+P`
-2. Type "Run Task"
-3. Select "Netlify: Deploy Main Branch" or "Netlify: Deploy Dev Branch"
+## Notes for Contributors
 
-**Command Line**:
-```bash
-# Production
-curl -X POST -d {} https://api.netlify.com/build_hooks/6980b6f3e6f1a66c892e33ab
-
-# Development
-curl -X POST -d {} https://api.netlify.com/build_hooks/6980b7cb2f57c96b40fd08ab
-```
-
-## Data Updates
-
-Course data is updated weekly via an external scraping process. After updates:
-1. New JSON files are committed with Git LFS
-2. Commit message format: `Update YYYYMMDD session and unified courses: X groups and Y courses`
-3. Automatic deployment to Netlify
-
-## Features in Detail
-
-### Search Functionality
-
-- Search by course code (e.g., "ITI0102")
-- Search by title (Estonian or English)
-- Search by instructor name
-- Comma-separated terms for multiple searches
-- Real-time filtering
-
-### Filter System
-
-Filter courses by:
-- **Faculty (School)**: 6 faculties/schools
-- **Institute**: Department/institute within faculty
-- **Student Group**: ~395 groups
-- **EAP Credits**: 1-24 credits
-- **Assessment Form**: Exam, test, etc.
-- **Teaching Language**: Estonian, English, etc.
-
-### Calendar View
-
-- Weekly timetable display
-- Time slots: 8:00 AM - 10:00 PM
-- Session limit: 4000 events (performance optimization)
-- Color-coded by session type:
-  - **Pink border**: Online courses
-  - **Blue border**: Hybrid courses
-  - **Gray border**: Offline (in-person) courses
-
-### Bilingual Support
-
-Toggle between Estonian and English:
-- All UI elements translated
-- Course information shown in selected language
-- URL parameters preserved when switching
-
-## Browser Support
-
-- Chrome/Edge (recommended)
-- Firefox
-- Safari
-- Mobile browsers
-
-## Contributing
-
-1. Create a feature branch from `dev`
-2. Make your changes
-3. Test locally with `Ctrl+Shift+B`
-4. Commit and push
-5. Deploy to dev for testing: `Ctrl+Shift+P` → "Netlify: Deploy Dev Branch"
-6. Create pull request to `dev`
+- Keep `sessions.json` and `unified_courses.json` in Git LFS.
+- Test calendar behavior with `npm run dev:netlify` or `npm start`, not with a static-only server.
+- Preserve bilingual UI strings in the `uiTexts` object in `main.js`.
+- Keep search UX and group-timetable UX conceptually separate.
+- Be careful with calendar performance. The app enforces a 4000-session limit before rendering the weekly view.
 
 ## Documentation
 
-- [CLAUDE.md](CLAUDE.md) - Technical guide for AI-assisted development
-- [docs/](docs/) - Development logs and session summaries
-- [docs/AI_agent_comm_guidelines.md](docs/AI_agent_comm_guidelines.md) - AI collaboration guidelines
+- `AGENTS.md`: repo-specific instructions for coding agents
+- `CLAUDE.md`: additional AI collaboration notes
+- `docs/`: development logs and handoff material
 
-## License
+## Last Updated
 
-Educational project for TalTech community.
-
-## Contact
-
-For questions or issues, please open a GitHub issue.
-
----
-
-**Last Updated**: February 2, 2026
+2026-04-21
