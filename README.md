@@ -6,8 +6,12 @@ The app is deployed on Netlify and uses a Netlify function to filter timetable s
 
 ## Features
 
-- Search courses by title, course code, keyword, instructor, or study group
-- Combine multiple study groups in one calendar view by searching groups separated with commas
+- Search courses by title, course code, keyword, or instructor
+- Build a combined timetable by adding multiple study groups in a dedicated group builder
+- Use autocomplete and `Tab` / `Enter` to add groups quickly
+- Bulk-add groups by prefix with patterns like `TVTB*`
+- Copy a reusable link for the selected group timetable
+- Export the visible timetable week as CSV
 - Filter by faculty, institute, group, EAP, assessment form, and teaching language
 - Switch between card view and weekly calendar view
 - View bilingual UI text in Estonian and English
@@ -46,7 +50,7 @@ There are three local run modes in this repo.
 
 ### Recommended: Netlify dev
 
-Use this when testing the calendar view or anything that depends on `/.netlify/functions/getTimetable`.
+Use this when testing calendar view or anything that depends on `/.netlify/functions/getTimetable`.
 
 ```bash
 npm run dev:netlify
@@ -98,17 +102,50 @@ Important: the localhost Python task serves static files only. It does not provi
 
 ### General search
 
-The main search box supports comma-separated terms.
+The main search box supports comma-separated terms and field-specific examples for:
 
-### Multi-group calendar view
+- all fields
+- course name
+- course code
+- keyword
+- instructor
 
-To view multiple study groups in one calendar:
+Keyword search now checks the active UI language first and falls back to the other language if translations are missing.
 
-1. Choose `Ruhm` / `Study group` in the search field selector.
-2. Enter groups separated by commas, for example `EAUI71, EAUI72`.
-3. Open calendar view.
+### Build timetable by groups
 
-The app will combine sessions for the selected groups into one weekly timetable.
+The main timetable-composition flow is now separate from the general search.
+
+To build a combined timetable by study groups:
+
+1. Open the `Build timetable by groups` section.
+2. Add one or more study groups using autocomplete.
+3. Press `Tab` or `Enter` to accept the current group.
+4. Click `Open timetable`.
+
+Supported shortcuts:
+
+- Add multiple specific groups such as `EAUI71, EAUI72`
+- Add all matching groups by prefix with a pattern like `TVTB*`
+- Use `Copy link` to generate a reusable URL for the selected group set
+
+### Calendar export
+
+In calendar view, the `Export CSV` button downloads the currently visible timetable week as a UTF-8 CSV file that opens correctly in Excel.
+
+The export includes:
+
+- date
+- time
+- course code
+- course name
+- type
+- room
+- instructors
+- visible groups
+- mandatory and elective groups
+- comment
+- online-only indicator
 
 ## Data Files
 
@@ -121,8 +158,8 @@ Both files are tracked with Git LFS.
 
 ### Frontend
 
-- `index.html`: application shell and filter/search UI
-- `main.js`: state management, filtering, rendering, language toggle, calendar logic
+- `index.html`: application shell, general course search UI, and dedicated group-timetable builder UI
+- `main.js`: state management, filtering, rendering, language toggle, group builder logic, calendar logic, CSV export
 - `main.css`: custom styles
 
 ### Backend
@@ -134,7 +171,7 @@ Both files are tracked with Git LFS.
 ### Data flow
 
 1. The frontend loads `unified_courses.json`.
-2. The user filters or searches courses on the client.
+2. The user either searches courses or builds a timetable from selected groups.
 3. When calendar view is opened, the frontend requests `/.netlify/functions/getTimetable?courses=...`.
 4. The backend returns only matching sessions from `sessions.json`.
 5. The frontend merges and renders sessions in the weekly view.
@@ -172,6 +209,7 @@ Manual build hooks are also configured in `.vscode/tasks.json`.
 - Keep `sessions.json` and `unified_courses.json` in Git LFS.
 - Test calendar behavior with `npm run dev:netlify` or `npm start`, not with a static-only server.
 - Preserve bilingual UI strings in the `uiTexts` object in `main.js`.
+- Keep search UX and group-timetable UX conceptually separate.
 - Be careful with calendar performance. The app enforces a 4000-session limit before rendering the weekly view.
 
 ## Documentation

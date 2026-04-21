@@ -136,7 +136,7 @@ const uiTexts = {
     toggleGroupBuilderButtonText: { et: 'Koosta tunniplaan rühmade järgi', en: 'Build timetable by groups' },
     copyGroupTimetableLinkButtonText: { et: 'Kopeeri link', en: 'Copy link' },
     groupBuilderInputLabel: { et: 'Õpperühmad', en: 'Study groups' },
-    groupBuilderInputHelpText: { et: 'Kasuta automaattäitmist ning vajuta rühma lisamiseks Tab või Enter.', en: 'Use autocomplete, then press Tab or Enter to add a group.' },
+    groupBuilderInputHelpText: { et: 'Kasuta automaattäitmist ning vajuta rühma lisamiseks Tab või Enter. Lisa kõik sobivad rühmad korraga kujul TVTB*.', en: 'Use autocomplete, then press Tab or Enter to add a group. Add all matching groups at once with a pattern like TVTB*.' },
     openGroupTimetableButtonText: { et: 'Ava tunniplaan', en: 'Open timetable' },
     clearGroupBuilderButtonText: { et: 'Tühjenda rühmad', en: 'Clear groups' },
     groupBuilderPlaceholder: { et: 'Nt EAUI71, EAUI72', en: 'E.g. EAUI71, EAUI72' },
@@ -375,16 +375,31 @@ function renderGroupBuilderChips() {
     });
 }
 function updateGroupBuilderActions() {
-    const hasGroups = groupBuilderSelected.length > 0;
+    const hasGroups = groupBuilderSelected.length > 0 || Boolean(groupBuilderInputDOM?.value.trim());
     openGroupTimetableButtonDOM && (openGroupTimetableButtonDOM.disabled = !hasGroups);
     openGroupTimetableButtonDOM?.classList.toggle('opacity-50', !hasGroups);
     openGroupTimetableButtonDOM?.classList.toggle('cursor-not-allowed', !hasGroups);
-    copyGroupTimetableLinkButtonDOM?.classList.toggle('hidden', !hasGroups);
+    copyGroupTimetableLinkButtonDOM?.classList.toggle('hidden', !(groupBuilderSelected.length > 0 || Boolean(groupBuilderInputDOM?.value.trim())));
 }
 function addGroupToBuilder(group) {
     const trimmed = String(group || '').trim();
     if (!trimmed || groupBuilderSelected.includes(trimmed)) return false;
     groupBuilderSelected.push(trimmed);
+    renderGroupBuilderChips();
+    updateGroupBuilderActions();
+    if (groupBuilderInputDOM) groupBuilderInputDOM.value = '';
+    renderGroupBuilderSuggestions('');
+    return true;
+}
+function addGroupsByPrefix(prefix) {
+    const normalizedPrefix = normalizeGroupKey(prefix);
+    if (!normalizedPrefix) return false;
+    const matches = allUniqueGroups.filter(group =>
+        !groupBuilderSelected.includes(group) &&
+        normalizeGroupKey(group).startsWith(normalizedPrefix)
+    );
+    if (matches.length === 0) return false;
+    matches.forEach(group => groupBuilderSelected.push(group));
     renderGroupBuilderChips();
     updateGroupBuilderActions();
     if (groupBuilderInputDOM) groupBuilderInputDOM.value = '';
@@ -397,10 +412,17 @@ function acceptGroupBuilderInput() {
     if (parsedTerms.length > 1) {
         let addedAny = false;
         parsedTerms.forEach(parsedTerm => {
+            if (parsedTerm.endsWith('*')) {
+                addedAny = addGroupsByPrefix(parsedTerm.slice(0, -1)) || addedAny;
+                return;
+            }
             const exactMatch = allUniqueGroups.find(group => normalizeGroupKey(group) === normalizeGroupKey(parsedTerm));
             if (exactMatch) addedAny = addGroupToBuilder(exactMatch) || addedAny;
         });
         return addedAny;
+    }
+    if (term.trim().endsWith('*')) {
+        return addGroupsByPrefix(term.trim().slice(0, -1));
     }
     const suggestions = getGroupBuilderSuggestions(term);
     if (suggestions.length > 0) return addGroupToBuilder(suggestions[0]);
@@ -416,6 +438,7 @@ function buildGroupTimetableUrl() {
     return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
 }
 async function copyGroupTimetableLink() {
+    if (groupBuilderInputDOM?.value.trim()) acceptGroupBuilderInput();
     if (groupBuilderSelected.length === 0) return;
     const url = buildGroupTimetableUrl();
     try {
@@ -425,6 +448,7 @@ async function copyGroupTimetableLink() {
     }
 }
 async function openGroupTimetableFromBuilder() {
+    if (groupBuilderInputDOM?.value.trim()) acceptGroupBuilderInput();
     if (groupBuilderSelected.length === 0) return;
     activeFilters.group = '';
     activeFilters.searchFieldType = 'study_group';
@@ -1472,7 +1496,10 @@ function setupEventListeners() {
         setGroupBuilderVisibility(!isGroupBuilderVisible());
         if (isGroupBuilderVisible()) groupBuilderInputDOM?.focus();
     });
-    groupBuilderInputDOM?.addEventListener('input', () => renderGroupBuilderSuggestions(groupBuilderInputDOM.value));
+    groupBuilderInputDOM?.addEventListener('input', () => {
+        renderGroupBuilderSuggestions(groupBuilderInputDOM.value);
+        updateGroupBuilderActions();
+    });
     groupBuilderInputDOM?.addEventListener('focus', () => renderGroupBuilderSuggestions(groupBuilderInputDOM.value));
     groupBuilderInputDOM?.addEventListener('keydown', (event) => {
         if (event.key === 'Tab' || event.key === 'Enter' || event.key === ',') {
