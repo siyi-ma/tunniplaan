@@ -46,13 +46,9 @@ python -m http.server 8000
 - Press `Ctrl+Shift+P` → Type "Run Task" → Select deployment task
 
 **Via Command Line**:
-```bash
-# Deploy to production (main branch)
-curl -X POST -d {} https://api.netlify.com/build_hooks/6980b6f3e6f1a66c892e33ab
-
-# Deploy to development (dev branch)
-curl -X POST -d {} https://api.netlify.com/build_hooks/6980b7cb2f57c96b40fd08ab
-```
+Trigger deploys with `curl -X POST -d {} <build-hook-url>`. Build-hook URLs are
+secrets — get them from the Netlify UI (Site configuration → Build & deploy →
+Build hooks); do not commit them to the repo.
 
 ### Data Files
 
@@ -163,8 +159,9 @@ Language switching updates:
 
 ### Data Updates
 
-- Course data is updated weekly via external scraping process
-- Commit messages follow pattern: "Update YYYYMMDD session and unified courses: X groups and Y courses"
+- Course data is produced by the scraper repo (`C:\Projects\scrape_taltech_tunniplaan`, [siyi-ma/tunniplaanScraping](https://github.com/siyi-ma/tunniplaanScraping)) and published here via its `publish_to_webapp.py` script, which validates the data and copies both JSON files into this repo root
+- The schema of both files is defined in the scraper repo's `docs/data-contract.md` — fields consumed by [main.js](main.js) and [netlify/functions/getTimetable.js](netlify/functions/getTimetable.js) must not change without a coordinated update on both sides
+- Commit messages follow pattern: "Update YYYYMMDD session and unified courses: X groups and Y courses" (the publish script prints this ready-made)
 - Always verify data file integrity after updates
 
 ### Git LFS Considerations
