@@ -105,6 +105,7 @@ Follow these rules for every task.
 14. Stop if a change requires guessing the external scraper schema.
 15. Stop if URL backward compatibility becomes ambiguous.
 16. Stop before overwriting unrelated dirty files.
+17. PowerShell note: the command examples below use Git Bash syntax in a few places. In this workspace, prefer `Select-String` over `grep` and `Select-Object -First 5` over `head -5` when you stay in PowerShell.
 
 ---
 
@@ -225,6 +226,8 @@ Tasks:
 2. In active filter pill rendering, escape both the label and value before interpolation.
 3. Grep `main.js` for `innerHTML`.
 4. Check only user-controlled URL/search/group inputs in this phase. Do not blanket-escape all course data fields in the same commit.
+
+   Opinion: treat this as a first-sink fix. `renderActiveFiltersDisplay()` and tooltip rendering still interpolate HTML and should be reviewed in a follow-up if this phase does not cover them.
 
 Validation:
 
@@ -667,6 +670,8 @@ Tasks:
    ```text
    G-S3SQ4PZ2JF
    ```
+
+   Opinion: if the current branch already matches this, skip the edit and record it as already satisfied instead of forcing a no-op change.
 
 2. Update `searchHelpText_study_group` and hardcoded default help text so users are pointed to the group builder, not a removed dropdown option.
 3. Update or remove stale `startsInDays` / `semesterComplete` strings that mention autumn 2025.
