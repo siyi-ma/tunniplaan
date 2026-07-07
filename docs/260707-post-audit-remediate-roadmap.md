@@ -127,11 +127,15 @@ Tasks:
    ```
 
 2. Confirm the branch is `dev`.
-3. Confirm whether these known dirty items exist:
-   - `CLAUDE.md` modified
-   - old `docs/20250813-Gemini-...` deleted
-   - possible `test.txt`
-   - possible `.vscode/tasks.json` local-only
+3. Confirm whether these known dirty items exist. Note: as of commit `db73e17`
+   the working tree was verified clean — the `CLAUDE.md` rewrite, GA ID fix,
+   hook stripping (`88352fb`), and Gemini doc archival (`516f24e`) are already
+   committed. Expect no dirty files; anything dirty now is new and must be
+   reported, not assumed to be the items below.
+   - `CLAUDE.md` modified (already committed; expect clean)
+   - old `docs/20250813-Gemini-...` deleted (already committed; expect clean)
+   - `test.txt` (still tracked in Git; handled in Phase 8)
+   - `.vscode/tasks.json` (gitignored, local-only; handled in Phase 7)
 4. Do not fix anything in this phase.
 
 Validation:
@@ -456,6 +460,7 @@ Tasks:
 3. In `main.js`, update the calendar fetch handling:
    - parse response JSON
    - if `tooManySessions === true`, show the existing too-large-selection message using returned `count` and `limit`
+   - build the message from the response's `count` and `limit` fields, not from the local `CALENDAR_SESSION_LIMIT` constant — the server value is authoritative, which removes one sync hazard between the two copies of the constant. The local constant then only matters for the pre-fetch UI guard in `updateViewToggleButton`.
    - do not treat the object as a session array
    - preserve existing behavior for normal arrays
 
@@ -494,7 +499,14 @@ audit H7: enforce calendar session limit in function
 
 Goal: make deploy tooling reproducible without committing secrets.
 
-Source basis: Fable found `.vscode/tasks.json` is documented as tracked but gitignored, and build hook URLs are committed in `CLAUDE.md`.
+Source basis: Fable found `.vscode/tasks.json` is documented as tracked but gitignored, and build hook URLs were committed in `CLAUDE.md`.
+
+State correction (verified 2026-07-07): `CLAUDE.md` was already stripped of hook URLs in commit `88352fb`. The literal hook URLs that remain in tracked files are in:
+
+- `docs/distilled-how-to-run.md` lines ~80 and ~83 (active doc — must be scrubbed in this phase)
+- `docs/archive/setup-and-devops-2026/20260202-claude-md-and-index-html-fixes.md` (archived doc)
+
+Archive policy: do not edit the archived doc. After the owner rotates the main build hook (owner-only action below), the archived URLs are inert historical text. The validation grep for this phase and the final checklist must therefore exclude `docs/archive/`.
 
 Files:
 
@@ -503,7 +515,8 @@ Files:
 - `package.json`
 - `README.md`
 - `AGENTS.md`
-- `CLAUDE.md`
+- `CLAUDE.md` (verify only — hooks already stripped)
+- `docs/distilled-how-to-run.md`
 
 Tasks:
 
@@ -528,20 +541,20 @@ Option A tasks:
 4. Document required env vars in README:
    - `NETLIFY_HOOK_MAIN`
    - optional `NETLIFY_HOOK_DEV`
-5. Remove literal `build_hooks/` URLs from `CLAUDE.md`, README, and AGENTS if present.
+5. Remove literal `build_hooks/` URLs from `docs/distilled-how-to-run.md`, and from `CLAUDE.md`, README, and AGENTS if still present.
 6. Explain that the owner must rotate the live main Netlify build hook in Netlify UI. Do not attempt rotation.
 
 Validation:
 
 ```bash
-grep -R "build_hooks/" -n . --exclude-dir=.git
+grep -RE "api\.netlify\.com/build_hooks/[a-f0-9]+" -n . --exclude-dir=.git --exclude-dir=docs/archive
 npm test
 ```
 
 Expected grep result:
 
-- no literal hook URLs
-- only safe explanatory text, if any
+- no literal hook URLs outside `docs/archive/`
+- the bare pattern text `build_hooks/` in audit docs (this roadmap, the audit reports) is safe explanatory text and does not count
 
 Stop condition:
 
@@ -561,39 +574,40 @@ Owner-only action after commit:
 
 ---
 
-### Phase 8 — Commit intentional working-tree cleanup
+### Phase 8 — Remaining repo cleanup
 
-Goal: resolve known dirty files so future agents start from a clean baseline.
+Goal: remove the last known junk file and stale claims so future agents start from an accurate baseline.
 
-Source basis: both audits saw `CLAUDE.md` modified and old long-form doc deleted; Fable says the rewrite is likely better and the deletion is intentional.
+Source basis: both audits saw `CLAUDE.md` modified and old long-form doc deleted. State correction (verified 2026-07-07): that cleanup is already committed — the `CLAUDE.md` rewrite and GA fix landed in `88352fb`, the Gemini doc archival in `516f24e`, and the working tree is clean. The original tasks 1, 2, and 4 of this phase are done. What remains:
 
 Files:
 
 - `CLAUDE.md`
-- deleted `docs/20250813-Gemini-...`
 - `test.txt`
 
 Tasks:
 
-1. Review the pending `CLAUDE.md` rewrite.
-2. Fold in Phase 7 hook cleanup if not already done.
-3. Correct stale file-size claims:
-   - `sessions.json` is around 27 MB, not 42 MB.
-4. Confirm the deleted old doc exists in archive before staging deletion.
-5. Remove `test.txt` if it is only the UTF-16 test deploy file.
+1. Correct stale file-size claims in `CLAUDE.md`:
+   - `sessions.json` is about 26 MB on disk (verified 2026-07-07), not 42 MB.
+   - `unified_courses.json` is about 5 MB, not 6 MB (minor; fix in the same edit).
+2. Remove `test.txt` (verified: tracked in Git, content is only the text "Test deploy"):
+
+   ```bash
+   git rm test.txt
+   ```
 
 Validation:
 
 ```bash
 git status --short
-grep -R "42 MB\|build_hooks/" -n CLAUDE.md README.md AGENTS.md docs/ --exclude-dir=.git
+grep -R "42 MB\|42MB" -n CLAUDE.md README.md AGENTS.md docs/ --exclude-dir=archive
 npm test
 ```
 
 Commit message:
 
 ```text
-audit H6: commit agent doc cleanup and remove deploy test file
+audit H6: fix stale size claims and remove deploy test file
 ```
 
 ---
@@ -959,8 +973,8 @@ npm test
 node --check main.js
 node --check server.js
 node --check netlify/functions/getTimetable.js
-grep -R "build_hooks/" -n . --exclude-dir=.git
-grep -R "42 MB\|tab-separated\|before fetch" README.md AGENTS.md docs/ -n
+grep -RE "api\.netlify\.com/build_hooks/[a-f0-9]+" -n . --exclude-dir=.git --exclude-dir=docs/archive
+grep -R "42 MB\|tab-separated\|before fetch" README.md AGENTS.md docs/ -n --exclude-dir=archive
 ```
 
 Expected final state:
@@ -968,7 +982,7 @@ Expected final state:
 - Working tree clean except deliberate owner-local files.
 - `git lfs ls-files` lists only `sessions.json` and `unified_courses.json`.
 - `npm test` passes.
-- No raw Netlify build-hook URLs remain in tracked files.
+- No raw Netlify build-hook URLs remain in tracked files outside `docs/archive/` (archived copies are inert once the owner rotates the hook; do not edit archived docs).
 - Active docs do not contradict executable behavior.
 - Calendar normal selection works.
 - Broad calendar selection shows friendly too-many-sessions message, not a 502.
@@ -988,7 +1002,7 @@ Use this order unless a phase is explicitly skipped:
 5. `audit M2: move Netlify build ignore into root config`
 6. `audit H7: enforce calendar session limit in function`
 7. `audit H5: sanitize deploy tooling and remove hook URLs`
-8. `audit H6: commit agent doc cleanup and remove deploy test file`
+8. `audit H6: fix stale size claims and remove deploy test file`
 9. `audit H1 H3: remove duplicate data fetch and debug logs`
 10. `audit H2 H4: fix analytics id and stale UI text`
 11. `audit docs: align active guidance with executable behavior`
@@ -1029,7 +1043,7 @@ Use this prompt when handing the remediation to another coding agent:
 ```text
 You are working in the `tunniplaan` repo on branch `dev`.
 
-Execute the remediation roadmap in `260707-post-audit-remediate-roadmap.md`.
+Execute the remediation roadmap in `docs/260707-post-audit-remediate-roadmap.md`.
 
 Rules:
 - Work only on `dev`; do not touch `main`.
