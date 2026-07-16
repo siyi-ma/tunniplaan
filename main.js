@@ -16,7 +16,9 @@ function updateDynamicTitle() {
     }
     if (facultyParam) titleParts.push(currentLanguage === 'et' ? `Teaduskond ${facultyParam}` : `Faculty ${facultyParam}`);
     if (instituteParam) titleParts.push(currentLanguage === 'et' ? `Instituut ${instituteParam}` : `Department ${instituteParam}`);
-    const suffix = currentLanguage === 'et' ? 'TalTech tunniplaan kevad 2026' : 'TalTech timetable spring 2026';
+    const suffix = currentLanguage === 'et'
+        ? `TalTech tunniplaan${semesterInfo?.name_et ? ' ' + semesterInfo.name_et : ''}`
+        : `TalTech timetable${semesterInfo?.name_en ? ' ' + semesterInfo.name_en : ''}`;
     const newTitle = titleParts.length > 0 ? `${titleParts.join(' | ')} | ${suffix}` : suffix;
     document.title = newTitle;
 }
@@ -55,7 +57,9 @@ const activeFiltersDisplayDOM = document.getElementById('activeFiltersDisplay');
 const viewToggleButtonContainerDOM = document.getElementById('viewToggleButtonContainer');
 const scrollTopBtnDOM = document.getElementById('scrollTopBtn');
 const groupFilterInput = document.getElementById('groupFilterInput');
-const toggleGroupBuilderButtonDOM = document.getElementById('toggleGroupBuilderButton');
+const searchTabButtonDOM = document.getElementById('searchTabButton');
+const groupBuilderTabButtonDOM = document.getElementById('groupBuilderTabButton');
+const searchPanelDOM = document.getElementById('searchPanel');
 const groupBuilderPanelDOM = document.getElementById('groupBuilderPanel');
 const groupBuilderInputDOM = document.getElementById('groupBuilderInput');
 const groupBuilderListDOM = document.getElementById('groupBuilderList');
@@ -69,9 +73,13 @@ const languageFilterRadiosDOM = document.querySelectorAll('input[name="languageF
 
 // --- State & Constants ---
 let allCourses = [], filteredCourses = [], currentLanguage = 'et', isCalendarViewVisible = false, totalFilteredSessions = 0;
+// Semester identity and bounds come from unified_courses.json (the scraper embeds
+// the label shown on tunniplaan.taltech.ee); the values below are fallbacks for
+// data files that predate the semester block.
+let semesterInfo = null;
 updateDynamicTitle();
-const SEMESTER_START = new Date('2026-02-02T00:00:00'), SEMESTER_END = new Date('2026-06-30T23:59:59');
-const STUDY_WEEK_CUTOFF = new Date('2026-05-20T23:59:59');
+let SEMESTER_START = new Date('2026-02-02T00:00:00'), SEMESTER_END = new Date('2026-06-30T23:59:59');
+let STUDY_WEEK_CUTOFF = new Date('2026-05-20T23:59:59');
 const CALENDAR_SESSION_LIMIT = 4000;
 let calendarDate = new Date();
 let sessionDataCache = null, activeFilters = { searchTerm: '', searchFieldType: 'all', school: '', institute: '', eap: '', assessmentForm: '', teachingLanguage: '', group: '' };
@@ -81,8 +89,19 @@ let allUniqueGroups = [], allSchoolNames = new Map();
 let groupBuilderSelected = [];
 const HOUR_HEIGHT_PX = 60, START_HOUR = 8, END_HOUR = 22;
 
+// Semester phrasing for the calendar countdown banner, derived from the
+// scraper's semester block (evaluated at render time, after applySemesterInfo).
+function semesterPhraseEt() {
+    const [season, year] = (semesterInfo?.name_et || 'sügis 2025').split(' ');
+    return `${season === 'kevad' ? 'Kevadsemestri' : 'Sügissemestri'} ${year || ''}`.trim();
+}
+function semesterPhraseEn() {
+    const name = semesterInfo?.name_en || 'autumn 2025';
+    return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
 const uiTexts = {
-    pageTitle: { et: 'TalTech kursused kevad 2026', en: 'TalTech Courses Spring 2026' },
+    pageTitle: { et: 'TalTech kursused', en: 'TalTech Courses' },
     searchInputLabel: { et: 'Otsisõna (eralda komaga)', en: 'Search term (separate by comma)' },
     searchPlaceholder: { et: 'Sisesta otsisõna või -sõnad...', en: 'Enter search term(s)...' },
     searchPlaceholder_all: { et: 'Nt andmebaasid, ITI', en: 'E.g. databases, ITI' },
@@ -97,7 +116,7 @@ const uiTexts = {
     searchHelpText_course_id: { et: 'Sisesta ainekood, näiteks ITI0102.', en: 'Enter a course code, for example ITI0102.' },
     searchHelpText_keyword: { et: 'Sisesta märksõna või mitu märksõna komaga.', en: 'Enter a keyword or multiple keywords separated by commas.' },
     searchHelpText_instructor: { et: 'Sisesta õppejõu nimi, näiteks Mari Maasikas.', en: 'Enter a lecturer name, for example John Smith.' },
-    searchHelpText_study_group: { et: 'Rühmade kalendrivaate jaoks vali otsinguväljaks Rühm ja sisesta näiteks EAUI71, EAUI72.', en: 'For a combined timetable, choose Study group and enter values like EAUI71, EAUI72.' },
+    searchHelpText_study_group: { et: 'Rühmade tunniplaani jaoks ava vahekaart „Koosta tunniplaan rühmade järgi”.', en: 'For a combined timetable, open the "Build timetable by groups" tab.' },
     searchFieldSelectorLabel: { et: 'Otsi väljal', en: 'Search in field' },
     searchField_all: { et: 'Kõik väljad', en: 'All fields' },
     searchField_title: { et: 'Aine nimetus', en: 'Course name' },
@@ -133,7 +152,8 @@ const uiTexts = {
     exportCsv: { et: 'Ekspordi CSV', en: 'Export CSV' },
     groupTimetableTitle: { et: 'Koosta tunniplaan rühmade järgi', en: 'Build timetable by groups' },
     groupTimetableHelpText: { et: 'Lisa üks või mitu õpperühma, et avada nende ühine tunniplaan.', en: 'Add one or more study groups to open a combined timetable.' },
-    toggleGroupBuilderButtonText: { et: 'Koosta tunniplaan rühmade järgi', en: 'Build timetable by groups' },
+    searchTabText: { et: 'Otsi aineid', en: 'Search courses' },
+    groupBuilderTabText: { et: 'Koosta tunniplaan rühmade järgi', en: 'Build timetable by groups' },
     copyGroupTimetableLinkButtonText: { et: 'Kopeeri link', en: 'Copy link' },
     groupBuilderInputLabel: { et: 'Õpperühmad', en: 'Study groups' },
     groupBuilderInputHelpText: { et: 'Kasuta automaattäitmist ning vajuta rühma lisamiseks Tab või Enter. Lisa kõik sobivad rühmad korraga kujul TVTB*.', en: 'Use autocomplete, then press Tab or Enter to add a group. Add all matching groups at once with a pattern like TVTB*.' },
@@ -148,8 +168,8 @@ const uiTexts = {
     loadingText: { et: 'Laen andmeid...', en: 'Loading data...' },
     loadingCalendarText: { et: 'Laen kalendri andmeid...', en: 'Loading calendar data...' },
     today: { et: 'Täna', en: 'Today' },
-    startsInDays: { et: (d, n) => `Täna on ${d}. Sügissemestri 2025 õppetöö algab ${n} päeva pärast.`, en: (d, n) => `Today is ${d}. The 2025 autumn semester will start in ${n} days.` },
-    semesterComplete: { et: (d) => `Täna on ${d}. Sügissemestri 2025 kontaktõpe on lõppenud.`, en: (d) => `Today is ${d}. The contact study of Autumn 2025 is complete.` },
+    startsInDays: { et: (d, n) => `Täna on ${d}. ${semesterPhraseEt()} õppetöö algab ${n} päeva pärast.`, en: (d, n) => `Today is ${d}. The ${semesterPhraseEn()} semester will start in ${n} days.` },
+    semesterComplete: { et: (d) => `Täna on ${d}. ${semesterPhraseEt()} kontaktõpe on lõppenud.`, en: (d) => `Today is ${d}. The contact study of ${semesterPhraseEn()} is complete.` },
     todayIs: { et: (d, w) => `Täna: ${d} (${w}. õppenädal)`, en: (d, w) => `Today: ${d} (Study week ${w})` },
     mandatoryForGroups: { et: 'Aine on rühmale kohustuslik', en: 'Mandatory for groups' },
     electiveForGroups: { et: 'Aine on rühmale valikuline', en: 'Elective for groups' },
@@ -459,9 +479,17 @@ async function openGroupTimetableFromBuilder() {
     updateURLParameters();
     await toggleCalendarView();
 }
+// Course search and the group-timetable builder are mutually exclusive tabs:
+// only one workflow is visible at a time so the search field can't be mistaken
+// for a group input while building a timetable.
 function setGroupBuilderVisibility(visible) {
-    if (!groupBuilderPanelDOM) return;
+    if (!groupBuilderPanelDOM || !searchPanelDOM) return;
     groupBuilderPanelDOM.classList.toggle('hidden', !visible);
+    searchPanelDOM.classList.toggle('hidden', visible);
+    searchTabButtonDOM?.classList.toggle('mode-tab-active', !visible);
+    searchTabButtonDOM?.setAttribute('aria-selected', String(!visible));
+    groupBuilderTabButtonDOM?.classList.toggle('mode-tab-active', visible);
+    groupBuilderTabButtonDOM?.setAttribute('aria-selected', String(visible));
     if (visible) {
         renderGroupBuilderChips();
         renderGroupBuilderSuggestions(groupBuilderInputDOM?.value || '');
@@ -1492,9 +1520,10 @@ function setupEventListeners() {
             updateURLParameters();
         }
     });
-    toggleGroupBuilderButtonDOM?.addEventListener('click', () => {
-        setGroupBuilderVisibility(!isGroupBuilderVisible());
-        if (isGroupBuilderVisible()) groupBuilderInputDOM?.focus();
+    searchTabButtonDOM?.addEventListener('click', () => setGroupBuilderVisibility(false));
+    groupBuilderTabButtonDOM?.addEventListener('click', () => {
+        setGroupBuilderVisibility(true);
+        groupBuilderInputDOM?.focus();
     });
     groupBuilderInputDOM?.addEventListener('input', () => {
         renderGroupBuilderSuggestions(groupBuilderInputDOM.value);
@@ -1520,7 +1549,7 @@ function setupEventListeners() {
         groupBuilderInputDOM?.focus();
     });
     document.addEventListener('click', (event) => {
-        if (!event.target.closest('#groupBuilderPanel') && !event.target.closest('#toggleGroupBuilderButton')) {
+        if (!event.target.closest('#groupBuilderPanel') && !event.target.closest('#groupBuilderTabButton')) {
             groupBuilderListDOM?.classList.add('hidden');
         }
     });
@@ -1603,6 +1632,38 @@ function setupEventListeners() {
     });
 }
 
+// Adopt the semester block the scraper embeds in unified_courses.json: page
+// titles and semester bounds follow the data instead of hardcoded strings.
+function applySemesterInfo(semester) {
+    if (!semester) return;
+    semesterInfo = semester;
+    if (semester.name_et && semester.name_en) {
+        const capitalizedEn = semester.name_en.charAt(0).toUpperCase() + semester.name_en.slice(1);
+        uiTexts.pageTitle = {
+            et: `TalTech kursused ${semester.name_et}`,
+            en: `TalTech Courses ${capitalizedEn}`
+        };
+    }
+    // Official week-1 Monday (TalTech's own study-week numbering) wins over the
+    // earliest-session date: sessions before it (orientation events) are
+    // pre-semester and get no week label.
+    if (semester.week1_monday) {
+        SEMESTER_START = new Date(`${semester.week1_monday}T00:00:00`);
+    } else if (semester.start_date) {
+        SEMESTER_START = new Date(`${semester.start_date}T00:00:00`);
+    }
+    if (semester.end_date) SEMESTER_END = new Date(`${semester.end_date}T23:59:59`);
+    if (semester.week1_monday || semester.start_date) {
+        // Study-week numbers stop after week 16, counted from week-1 Monday
+        // (getStudyWeek snaps SEMESTER_START to Monday itself as fallback).
+        const startMonday = new Date(SEMESTER_START);
+        startMonday.setDate(startMonday.getDate() - (startMonday.getDay() + 6) % 7);
+        startMonday.setHours(0, 0, 0, 0);
+        STUDY_WEEK_CUTOFF = new Date(startMonday.getTime() + 16 * 7 * 24 * 60 * 60 * 1000 - 1);
+    }
+    updateDynamicTitle();
+}
+
 // --- Main app initialization ---
 async function initializeApp() {
     try {
@@ -1611,6 +1672,7 @@ async function initializeApp() {
         const responseData = await coursesRes.json();
         allCourses = responseData.courses || [];
         window.groupToFacultyMap = responseData.groupToFacultyMap || {};
+        applySemesterInfo(responseData.semester);
         postProcessUnifiedData();
 
         // --- CORRECTED LOGIC STARTS HERE ---
