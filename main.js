@@ -57,7 +57,9 @@ const activeFiltersDisplayDOM = document.getElementById('activeFiltersDisplay');
 const viewToggleButtonContainerDOM = document.getElementById('viewToggleButtonContainer');
 const scrollTopBtnDOM = document.getElementById('scrollTopBtn');
 const groupFilterInput = document.getElementById('groupFilterInput');
-const toggleGroupBuilderButtonDOM = document.getElementById('toggleGroupBuilderButton');
+const searchTabButtonDOM = document.getElementById('searchTabButton');
+const groupBuilderTabButtonDOM = document.getElementById('groupBuilderTabButton');
+const searchPanelDOM = document.getElementById('searchPanel');
 const groupBuilderPanelDOM = document.getElementById('groupBuilderPanel');
 const groupBuilderInputDOM = document.getElementById('groupBuilderInput');
 const groupBuilderListDOM = document.getElementById('groupBuilderList');
@@ -114,7 +116,7 @@ const uiTexts = {
     searchHelpText_course_id: { et: 'Sisesta ainekood, näiteks ITI0102.', en: 'Enter a course code, for example ITI0102.' },
     searchHelpText_keyword: { et: 'Sisesta märksõna või mitu märksõna komaga.', en: 'Enter a keyword or multiple keywords separated by commas.' },
     searchHelpText_instructor: { et: 'Sisesta õppejõu nimi, näiteks Mari Maasikas.', en: 'Enter a lecturer name, for example John Smith.' },
-    searchHelpText_study_group: { et: 'Rühmade kalendrivaate jaoks vali otsinguväljaks Rühm ja sisesta näiteks EAUI71, EAUI72.', en: 'For a combined timetable, choose Study group and enter values like EAUI71, EAUI72.' },
+    searchHelpText_study_group: { et: 'Rühmade tunniplaani jaoks ava vahekaart „Koosta tunniplaan rühmade järgi”.', en: 'For a combined timetable, open the "Build timetable by groups" tab.' },
     searchFieldSelectorLabel: { et: 'Otsi väljal', en: 'Search in field' },
     searchField_all: { et: 'Kõik väljad', en: 'All fields' },
     searchField_title: { et: 'Aine nimetus', en: 'Course name' },
@@ -150,7 +152,8 @@ const uiTexts = {
     exportCsv: { et: 'Ekspordi CSV', en: 'Export CSV' },
     groupTimetableTitle: { et: 'Koosta tunniplaan rühmade järgi', en: 'Build timetable by groups' },
     groupTimetableHelpText: { et: 'Lisa üks või mitu õpperühma, et avada nende ühine tunniplaan.', en: 'Add one or more study groups to open a combined timetable.' },
-    toggleGroupBuilderButtonText: { et: 'Koosta tunniplaan rühmade järgi', en: 'Build timetable by groups' },
+    searchTabText: { et: 'Otsi aineid', en: 'Search courses' },
+    groupBuilderTabText: { et: 'Koosta tunniplaan rühmade järgi', en: 'Build timetable by groups' },
     copyGroupTimetableLinkButtonText: { et: 'Kopeeri link', en: 'Copy link' },
     groupBuilderInputLabel: { et: 'Õpperühmad', en: 'Study groups' },
     groupBuilderInputHelpText: { et: 'Kasuta automaattäitmist ning vajuta rühma lisamiseks Tab või Enter. Lisa kõik sobivad rühmad korraga kujul TVTB*.', en: 'Use autocomplete, then press Tab or Enter to add a group. Add all matching groups at once with a pattern like TVTB*.' },
@@ -476,9 +479,17 @@ async function openGroupTimetableFromBuilder() {
     updateURLParameters();
     await toggleCalendarView();
 }
+// Course search and the group-timetable builder are mutually exclusive tabs:
+// only one workflow is visible at a time so the search field can't be mistaken
+// for a group input while building a timetable.
 function setGroupBuilderVisibility(visible) {
-    if (!groupBuilderPanelDOM) return;
+    if (!groupBuilderPanelDOM || !searchPanelDOM) return;
     groupBuilderPanelDOM.classList.toggle('hidden', !visible);
+    searchPanelDOM.classList.toggle('hidden', visible);
+    searchTabButtonDOM?.classList.toggle('mode-tab-active', !visible);
+    searchTabButtonDOM?.setAttribute('aria-selected', String(!visible));
+    groupBuilderTabButtonDOM?.classList.toggle('mode-tab-active', visible);
+    groupBuilderTabButtonDOM?.setAttribute('aria-selected', String(visible));
     if (visible) {
         renderGroupBuilderChips();
         renderGroupBuilderSuggestions(groupBuilderInputDOM?.value || '');
@@ -1509,9 +1520,10 @@ function setupEventListeners() {
             updateURLParameters();
         }
     });
-    toggleGroupBuilderButtonDOM?.addEventListener('click', () => {
-        setGroupBuilderVisibility(!isGroupBuilderVisible());
-        if (isGroupBuilderVisible()) groupBuilderInputDOM?.focus();
+    searchTabButtonDOM?.addEventListener('click', () => setGroupBuilderVisibility(false));
+    groupBuilderTabButtonDOM?.addEventListener('click', () => {
+        setGroupBuilderVisibility(true);
+        groupBuilderInputDOM?.focus();
     });
     groupBuilderInputDOM?.addEventListener('input', () => {
         renderGroupBuilderSuggestions(groupBuilderInputDOM.value);
@@ -1537,7 +1549,7 @@ function setupEventListeners() {
         groupBuilderInputDOM?.focus();
     });
     document.addEventListener('click', (event) => {
-        if (!event.target.closest('#groupBuilderPanel') && !event.target.closest('#toggleGroupBuilderButton')) {
+        if (!event.target.closest('#groupBuilderPanel') && !event.target.closest('#groupBuilderTabButton')) {
             groupBuilderListDOM?.classList.add('hidden');
         }
     });
