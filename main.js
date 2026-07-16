@@ -87,6 +87,17 @@ let allUniqueGroups = [], allSchoolNames = new Map();
 let groupBuilderSelected = [];
 const HOUR_HEIGHT_PX = 60, START_HOUR = 8, END_HOUR = 22;
 
+// Semester phrasing for the calendar countdown banner, derived from the
+// scraper's semester block (evaluated at render time, after applySemesterInfo).
+function semesterPhraseEt() {
+    const [season, year] = (semesterInfo?.name_et || 'sügis 2025').split(' ');
+    return `${season === 'kevad' ? 'Kevadsemestri' : 'Sügissemestri'} ${year || ''}`.trim();
+}
+function semesterPhraseEn() {
+    const name = semesterInfo?.name_en || 'autumn 2025';
+    return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
 const uiTexts = {
     pageTitle: { et: 'TalTech kursused', en: 'TalTech Courses' },
     searchInputLabel: { et: 'Otsisõna (eralda komaga)', en: 'Search term (separate by comma)' },
@@ -154,8 +165,8 @@ const uiTexts = {
     loadingText: { et: 'Laen andmeid...', en: 'Loading data...' },
     loadingCalendarText: { et: 'Laen kalendri andmeid...', en: 'Loading calendar data...' },
     today: { et: 'Täna', en: 'Today' },
-    startsInDays: { et: (d, n) => `Täna on ${d}. Sügissemestri 2025 õppetöö algab ${n} päeva pärast.`, en: (d, n) => `Today is ${d}. The 2025 autumn semester will start in ${n} days.` },
-    semesterComplete: { et: (d) => `Täna on ${d}. Sügissemestri 2025 kontaktõpe on lõppenud.`, en: (d) => `Today is ${d}. The contact study of Autumn 2025 is complete.` },
+    startsInDays: { et: (d, n) => `Täna on ${d}. ${semesterPhraseEt()} õppetöö algab ${n} päeva pärast.`, en: (d, n) => `Today is ${d}. The ${semesterPhraseEn()} semester will start in ${n} days.` },
+    semesterComplete: { et: (d) => `Täna on ${d}. ${semesterPhraseEt()} kontaktõpe on lõppenud.`, en: (d) => `Today is ${d}. The contact study of ${semesterPhraseEn()} is complete.` },
     todayIs: { et: (d, w) => `Täna: ${d} (${w}. õppenädal)`, en: (d, w) => `Today: ${d} (Study week ${w})` },
     mandatoryForGroups: { et: 'Aine on rühmale kohustuslik', en: 'Mandatory for groups' },
     electiveForGroups: { et: 'Aine on rühmale valikuline', en: 'Elective for groups' },
