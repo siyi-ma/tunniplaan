@@ -16,7 +16,9 @@ function updateDynamicTitle() {
     }
     if (facultyParam) titleParts.push(currentLanguage === 'et' ? `Teaduskond ${facultyParam}` : `Faculty ${facultyParam}`);
     if (instituteParam) titleParts.push(currentLanguage === 'et' ? `Instituut ${instituteParam}` : `Department ${instituteParam}`);
-    const suffix = currentLanguage === 'et' ? 'TalTech tunniplaan kevad 2026' : 'TalTech timetable spring 2026';
+    const suffix = currentLanguage === 'et'
+        ? `TalTech tunniplaan${semesterInfo?.name_et ? ' ' + semesterInfo.name_et : ''}`
+        : `TalTech timetable${semesterInfo?.name_en ? ' ' + semesterInfo.name_en : ''}`;
     const newTitle = titleParts.length > 0 ? `${titleParts.join(' | ')} | ${suffix}` : suffix;
     document.title = newTitle;
 }
@@ -69,9 +71,13 @@ const languageFilterRadiosDOM = document.querySelectorAll('input[name="languageF
 
 // --- State & Constants ---
 let allCourses = [], filteredCourses = [], currentLanguage = 'et', isCalendarViewVisible = false, totalFilteredSessions = 0;
+// Semester identity and bounds come from unified_courses.json (the scraper embeds
+// the label shown on tunniplaan.taltech.ee); the values below are fallbacks for
+// data files that predate the semester block.
+let semesterInfo = null;
 updateDynamicTitle();
-const SEMESTER_START = new Date('2026-02-02T00:00:00'), SEMESTER_END = new Date('2026-06-30T23:59:59');
-const STUDY_WEEK_CUTOFF = new Date('2026-05-20T23:59:59');
+let SEMESTER_START = new Date('2026-02-02T00:00:00'), SEMESTER_END = new Date('2026-06-30T23:59:59');
+let STUDY_WEEK_CUTOFF = new Date('2026-05-20T23:59:59');
 const CALENDAR_SESSION_LIMIT = 4000;
 let calendarDate = new Date();
 let sessionDataCache = null, activeFilters = { searchTerm: '', searchFieldType: 'all', school: '', institute: '', eap: '', assessmentForm: '', teachingLanguage: '', group: '' };
@@ -82,7 +88,7 @@ let groupBuilderSelected = [];
 const HOUR_HEIGHT_PX = 60, START_HOUR = 8, END_HOUR = 22;
 
 const uiTexts = {
-    pageTitle: { et: 'TalTech kursused kevad 2026', en: 'TalTech Courses Spring 2026' },
+    pageTitle: { et: 'TalTech kursused', en: 'TalTech Courses' },
     searchInputLabel: { et: 'Otsisõna (eralda komaga)', en: 'Search term (separate by comma)' },
     searchPlaceholder: { et: 'Sisesta otsisõna või -sõnad...', en: 'Enter search term(s)...' },
     searchPlaceholder_all: { et: 'Nt andmebaasid, ITI', en: 'E.g. databases, ITI' },
@@ -1603,6 +1609,38 @@ function setupEventListeners() {
     });
 }
 
+// Adopt the semester block the scraper embeds in unified_courses.json: page
+// titles and semester bounds follow the data instead of hardcoded strings.
+function applySemesterInfo(semester) {
+    if (!semester) return;
+    semesterInfo = semester;
+    if (semester.name_et && semester.name_en) {
+        const capitalizedEn = semester.name_en.charAt(0).toUpperCase() + semester.name_en.slice(1);
+        uiTexts.pageTitle = {
+            et: `TalTech kursused ${semester.name_et}`,
+            en: `TalTech Courses ${capitalizedEn}`
+        };
+    }
+    // Official week-1 Monday (TalTech's own study-week numbering) wins over the
+    // earliest-session date: sessions before it (orientation events) are
+    // pre-semester and get no week label.
+    if (semester.week1_monday) {
+        SEMESTER_START = new Date(`${semester.week1_monday}T00:00:00`);
+    } else if (semester.start_date) {
+        SEMESTER_START = new Date(`${semester.start_date}T00:00:00`);
+    }
+    if (semester.end_date) SEMESTER_END = new Date(`${semester.end_date}T23:59:59`);
+    if (semester.week1_monday || semester.start_date) {
+        // Study-week numbers stop after week 16, counted from week-1 Monday
+        // (getStudyWeek snaps SEMESTER_START to Monday itself as fallback).
+        const startMonday = new Date(SEMESTER_START);
+        startMonday.setDate(startMonday.getDate() - (startMonday.getDay() + 6) % 7);
+        startMonday.setHours(0, 0, 0, 0);
+        STUDY_WEEK_CUTOFF = new Date(startMonday.getTime() + 16 * 7 * 24 * 60 * 60 * 1000 - 1);
+    }
+    updateDynamicTitle();
+}
+
 // --- Main app initialization ---
 async function initializeApp() {
     try {
@@ -1611,6 +1649,7 @@ async function initializeApp() {
         const responseData = await coursesRes.json();
         allCourses = responseData.courses || [];
         window.groupToFacultyMap = responseData.groupToFacultyMap || {};
+        applySemesterInfo(responseData.semester);
         postProcessUnifiedData();
 
         // --- CORRECTED LOGIC STARTS HERE ---
