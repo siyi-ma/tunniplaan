@@ -1,6 +1,6 @@
 const { test, beforeEach } = require('node:test');
 const assert = require('node:assert');
-const { handleRequest, _resetSemesterCache } = require('../../netlify/functions/getTimetable.js');
+const { handler, handleRequest, _resetSemesterCache } = require('../../netlify/functions/getTimetable.js');
 
 const CACHE_CONTROL = 'public, max-age=300, stale-while-revalidate=3600';
 
@@ -86,4 +86,11 @@ test('active semester lookup is cached across requests', async () => {
   await handleRequest({ queryStringParameters: { courses: 'A' } }, sql);
   await handleRequest({ queryStringParameters: { courses: 'B' } }, sql);
   assert.strictEqual(calls.filter((c) => c.text.includes('is_active')).length, 1);
+});
+
+test('handler returns 500 envelope when NEON_DATABASE_URL is missing', async () => {
+  delete process.env.NEON_DATABASE_URL;
+  const res = await handler({ queryStringParameters: { courses: 'ITX0020' } });
+  assert.strictEqual(res.statusCode, 500);
+  assert.ok(JSON.parse(res.body).error);
 });

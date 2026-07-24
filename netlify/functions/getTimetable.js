@@ -75,6 +75,15 @@ async function handleRequest(event, sql) {
   }
 }
 
-exports.handler = (event) => handleRequest(event, getSql());
+exports.handler = async (event) => {
+  let sql;
+  try {
+    sql = getSql();
+  } catch (error) {
+    console.error('getTimetable configuration error:', error);
+    return { statusCode: 500, body: JSON.stringify({ error: 'Error processing timetable data.' }) };
+  }
+  return handleRequest(event, sql);
+};
 exports.handleRequest = handleRequest;
 exports._resetSemesterCache = () => { semesterCache = { code: null, expiresAt: 0 }; };
