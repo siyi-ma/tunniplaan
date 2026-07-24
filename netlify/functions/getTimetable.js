@@ -1,46 +1,80 @@
-const fs = require('fs').promises;
-const path = require('path');
+const { neon } = require('@neondatabase/serverless');
 
-exports.handler = async (event) => {
-  // 1. Get the list of course IDs from the request URL (e.g., ?courses=ID1,ID2,ID3)
-  const requestedCoursesQuery = event.queryStringParameters.courses;
-  if (!requestedCoursesQuery) {
-    // Return an empty list if no courses are requested, this is not an error.
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify([]),
-    };
+const SESSION_LIMIT = parseInt(process.env.CALENDAR_SESSION_LIMIT, 10) || 4000;
+const SEMESTER_CACHE_MS = 5 * 60 * 1000;
+
+const JSON_HEADERS = {
+  'Content-Type': 'application/json',
+  'Cache-Control': 'public, max-age=300, stale-while-revalidate=3600',
+};
+
+let cachedSql = null;
+function getSql() {
+  if (!cachedSql) {
+    cachedSql = neon(process.env.NEON_DATABASE_URL);
   }
-  const requestedCourses = new Set(requestedCoursesQuery.split(','));
+  return cachedSql;
+}
+
+// Cached with a TTL so a semester flip at ingest reaches warm lambdas within minutes.
+let semesterCache = { code: null, expiresAt: 0 };
+
+async function getActiveSemesterCode(sql) {
+  const now = Date.now();
+  if (semesterCache.code && now < semesterCache.expiresAt) {
+    return semesterCache.code;
+  }
+  const rows = await sql`SELECT code FROM semesters WHERE is_active = true LIMIT 1`;
+  if (rows.length === 0) {
+    throw new Error('No active semester configured');
+  }
+  semesterCache = { code: rows[0].code, expiresAt: now + SEMESTER_CACHE_MS };
+  return semesterCache.code;
+}
+
+async function handleRequest(event, sql) {
+  const coursesParam = event.queryStringParameters && event.queryStringParameters.courses;
+  if (!coursesParam) {
+    return { statusCode: 200, headers: JSON_HEADERS, body: JSON.stringify([]) };
+  }
+  const courseIds = coursesParam.split(',').map((s) => s.trim()).filter(Boolean);
 
   try {
-    // 2. Find and read the massive JSON file on the server.
-    // This path looks for the file in the root of your published site.
-    const dataPath = path.resolve(process.cwd(), 'sessions.json');
-    console.log('Resolved timetable path:', dataPath);
-    try {
-      await fs.access(dataPath);
-      console.log('Timetable file exists!');
-    } catch (err) {
-      console.error('Timetable file does NOT exist:', err);
+    const semesterCode = await getActiveSemesterCode(sql);
+
+    const [{ count }] = await sql`
+      SELECT count(*)::int AS count
+      FROM sessions
+      WHERE semester_code = ${semesterCode} AND course_id = ANY(${courseIds})
+    `;
+
+    if (count > SESSION_LIMIT) {
+      return {
+        statusCode: 200,
+        headers: JSON_HEADERS,
+        body: JSON.stringify({ error: 'limit_exceeded', count, limit: SESSION_LIMIT }),
+      };
     }
-    const timetableData = await fs.readFile(dataPath, 'utf-8');
-    const allEvents = JSON.parse(timetableData);
 
-    // 3. Filter the data to find only matching events. This is the magic part.
-    const filteredEvents = allEvents.filter(event => 
-      requestedCourses.has(event.course_id)
-    );
+    // Wire format contract: dotted dates, HH:MM times, exact field names --
+    // defined by what main.js parses (see spec). Internal id is never selected.
+    const rows = await sql`
+      SELECT course_id,
+             to_char(date, 'DD.MM.YYYY')    AS date,
+             to_char(start_time, 'HH24:MI') AS start,
+             to_char(end_time, 'HH24:MI')   AS "end",
+             type, room, weeks, comment, instructor, groups, is_veebiope
+      FROM sessions
+      WHERE semester_code = ${semesterCode} AND course_id = ANY(${courseIds})
+    `;
 
-    // 4. Send back only the small, filtered list.
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(filteredEvents),
-    };
+    return { statusCode: 200, headers: JSON_HEADERS, body: JSON.stringify(rows) };
   } catch (error) {
-    console.error('Error reading or filtering timetable data:', error);
+    console.error('getTimetable query failed:', error);
     return { statusCode: 500, body: JSON.stringify({ error: 'Error processing timetable data.' }) };
   }
-};
+}
+
+exports.handler = (event) => handleRequest(event, getSql());
+exports.handleRequest = handleRequest;
+exports._resetSemesterCache = () => { semesterCache = { code: null, expiresAt: 0 }; };
