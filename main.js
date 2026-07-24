@@ -81,6 +81,7 @@ updateDynamicTitle();
 let SEMESTER_START = new Date('2026-02-02T00:00:00'), SEMESTER_END = new Date('2026-06-30T23:59:59');
 let STUDY_WEEK_CUTOFF = new Date('2026-05-20T23:59:59');
 const CALENDAR_SESSION_LIMIT = 4000;
+let calendarSessionLimit = CALENDAR_SESSION_LIMIT;
 let calendarDate = new Date();
 let sessionDataCache = null, activeFilters = { searchTerm: '', searchFieldType: 'all', school: '', institute: '', eap: '', assessmentForm: '', teachingLanguage: '', group: '' };
 const DATA_URL_UNIFIED_COURSES = './unified_courses.json';
@@ -146,7 +147,7 @@ const uiTexts = {
     langEnLabel: { et: 'Inglise keel', en: 'English' },
     noCoursesFound: { et: 'Vastavaid aineid ei leitud.', en: 'No matching courses found.' },
     resultsFound: { et: (n) => `Leitud ${n} ainet`, en: (n) => `Found ${n} courses` },
-    calendarLimitExceeded: { et: (n) => `Leitud ${n} sessiooni. Kalendrivaate kuvamiseks (max ${CALENDAR_SESSION_LIMIT}) kitsenda valikut.`, en: (n) => `Found ${n} sessions. Please narrow your search to display the calendar view (max ${CALENDAR_SESSION_LIMIT}).` },
+    calendarLimitExceeded: { et: (n, limit) => `Leitud ${n} sessiooni. Kalendrivaate kuvamiseks (max ${limit}) kitsenda valikut.`, en: (n, limit) => `Found ${n} sessions. Please narrow your search to display the calendar view (max ${limit}).` },
     showCalendarView: { et: 'Kalendrivaade', en: 'Calendar View' },
     backToCourses: { et: 'Tagasi ainete juurde', en: 'Back to Courses' },
     exportCsv: { et: 'Ekspordi CSV', en: 'Export CSV' },
@@ -948,13 +949,27 @@ async function toggleCalendarView() {
         }
 
         const filteredTimetableData = await response.json();
+
+        // The server enforces the session limit and returns
+        // { error: 'limit_exceeded', count, limit } instead of an array.
+        if (!Array.isArray(filteredTimetableData)) {
+            if (filteredTimetableData && filteredTimetableData.error === 'limit_exceeded') {
+                totalFilteredSessions = filteredTimetableData.count;
+                calendarSessionLimit = filteredTimetableData.limit;
+                updateViewToggleButton(); // Renders the "session limit exceeded" message
+                loadingIndicatorDOM.classList.add('hidden');
+                return; // Stops the function to ensure the message stays visible.
+            }
+            throw new Error('Unexpected timetable response shape');
+        }
+
         totalFilteredSessions = filteredTimetableData.length;
 
-        // This handles the session limit error.
-        if (totalFilteredSessions > CALENDAR_SESSION_LIMIT) {
-            updateViewToggleButton(); // Renders the "session limit exceeded" message
+        // Safety net for a server that does not enforce the limit (e.g. stale deploy).
+        if (totalFilteredSessions > calendarSessionLimit) {
+            updateViewToggleButton();
             loadingIndicatorDOM.classList.add('hidden');
-            return; // Stops the function to ensure the message stays visible.
+            return;
         }
 
         mergeTimetableData(filteredTimetableData);
@@ -998,8 +1013,8 @@ function updateViewToggleButton() {
     let buttonHTML = '';
     if (isCalendarViewVisible) {
         buttonHTML = `<button id="toggleViewBtn" class="px-3 py-1 rounded text-sm font-medium bg-tt-magenta text-white hover:bg-opacity-80"><i class="fas fa-arrow-left mr-1"></i> ${uiTexts.backToCourses[currentLanguage]}</button>`;
-    } else if (totalFilteredSessions > CALENDAR_SESSION_LIMIT) {
-        buttonHTML = `<div class="flex flex-col items-end"><button class="px-3 py-1 rounded text-sm font-medium bg-gray-400 text-white cursor-not-allowed" disabled><i class="fas fa-calendar-week mr-1"></i> ${uiTexts.showCalendarView[currentLanguage]}</button><p class="text-xs text-red-600 mt-1 text-right">${uiTexts.calendarLimitExceeded[currentLanguage](totalFilteredSessions)}</p></div>`;
+    } else if (totalFilteredSessions > calendarSessionLimit) {
+        buttonHTML = `<div class="flex flex-col items-end"><button class="px-3 py-1 rounded text-sm font-medium bg-gray-400 text-white cursor-not-allowed" disabled><i class="fas fa-calendar-week mr-1"></i> ${uiTexts.showCalendarView[currentLanguage]}</button><p class="text-xs text-red-600 mt-1 text-right">${uiTexts.calendarLimitExceeded[currentLanguage](totalFilteredSessions, calendarSessionLimit)}</p></div>`;
     } else {
         buttonHTML = `<button id="toggleViewBtn" class="px-3 py-1 rounded text-sm font-medium bg-tt-dark-blue text-white hover:bg-tt-dark-blue-hover"><i class="fas fa-calendar-week mr-1"></i> ${uiTexts.showCalendarView[currentLanguage]}</button>`;
     }
