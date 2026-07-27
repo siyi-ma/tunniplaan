@@ -9,7 +9,7 @@ const assert = require('assert');
 const { neon } = require('@neondatabase/serverless');
 const { handleRequest, _resetSemesterCache } = require('../netlify/functions/getTimetable.js');
 
-const BATCH_SIZE = 50;
+const MAX_BATCH_SESSIONS = 3500; // keep each batch under getTimetable's 4000 limit
 
 function canonicalize(value) {
   if (Array.isArray(value)) return value.map(canonicalize);
@@ -33,9 +33,29 @@ async function main() {
   const courseIds = [...new Set(allEvents.map((e) => e.course_id))].sort();
   console.log(`${allEvents.length} events, ${courseIds.length} distinct courses`);
 
+  // Group courses into batches whose total event count stays under the handler's
+  // session limit, so every batch returns an array (not limit_exceeded). Data grows
+  // denser over time, so size by session count rather than a fixed course count.
+  const countByCourse = new Map();
+  for (const e of allEvents) countByCourse.set(e.course_id, (countByCourse.get(e.course_id) || 0) + 1);
+  const batches = [];
+  let current = [];
+  let currentCount = 0;
+  for (const id of courseIds) {
+    const n = countByCourse.get(id) || 0;
+    if (current.length && currentCount + n > MAX_BATCH_SESSIONS) {
+      batches.push(current);
+      current = [];
+      currentCount = 0;
+    }
+    current.push(id);
+    currentCount += n;
+  }
+  if (current.length) batches.push(current);
+
   let compared = 0;
-  for (let i = 0; i < courseIds.length; i += BATCH_SIZE) {
-    const batch = courseIds.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < batches.length; i++) {
+    const batch = batches[i];
     const batchSet = new Set(batch);
 
     const legacy = allEvents.filter((e) => batchSet.has(e.course_id));
