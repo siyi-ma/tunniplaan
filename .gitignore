@@ -7,3 +7,8 @@ Thumbs.db
 *.log
 .env
 deno.lock
+
+# Session data now lives in Neon Postgres (sessions table), not a bundled file.
+# The scraper may still copy sessions.json here until its ingest plan lands;
+# this guard keeps that stray copy from being re-committed.
+sessions.json

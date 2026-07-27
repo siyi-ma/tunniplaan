@@ -12,15 +12,15 @@ Primary characteristics:
 - around 395 student groups
 - Estonian-first UI with English translations
 - course metadata loaded from `unified_courses.json`
-- calendar sessions loaded from `sessions.json` through a backend endpoint
+- calendar sessions queried from Neon Postgres (`sessions` table) through the backend endpoint
 
 ## Tech Stack
 
 - Frontend: Vanilla JavaScript, HTML, CSS
 - Styling: Tailwind CSS via CDN plus `main.css`
 - Backend: Netlify function in `netlify/functions/getTimetable.js`
-- Local backend alternative: `server.js`
-- Data storage: Git LFS for `unified_courses.json` and `sessions.json`
+- Database: Neon Postgres (`sessions` table) for timetable sessions
+- Data storage: Git LFS for `unified_courses.json` (course metadata)
 - Hosting: Netlify
 
 ## Files That Matter Most
@@ -28,9 +28,8 @@ Primary characteristics:
 - `index.html`: search UI, filters, and page shell
 - `main.js`: application state, filtering, rendering, calendar logic, language toggle
 - `main.css`: custom styling
-- `netlify/functions/getTimetable.js`: production timetable endpoint
-- `server.js`: local HTTP server with a compatible `/.netlify/functions/getTimetable` route
-- `netlify.toml`: ensures `sessions.json` is included with the function
+- `netlify/functions/getTimetable.js`: production timetable endpoint (queries Neon)
+- `db/schema.sql`: Neon Postgres schema for the timetable backend
 - `.vscode/tasks.json`: local server and deploy tasks
 
 ## Local Development Commands
@@ -57,15 +56,7 @@ Runs on `http://localhost:8000`.
 
 This does not serve `/.netlify/functions/getTimetable`, so calendar view will fail in this mode.
 
-### Local Node server with function-compatible route
-
-```bash
-npm start
-```
-
-Runs on `http://localhost:8888`.
-
-This serves both the app and a local timetable endpoint.
+Note: `npm run dev:netlify` auto-loads `.env`, so the function reads `NEON_DATABASE_URL` (read-only Neon connection string) to query the `sessions` table. Calendar view needs that variable set.
 
 ### Git LFS
 
@@ -130,17 +121,16 @@ The main state lives in `main.js` through module-level variables such as:
 
 ### Calendar constraints
 
-- The weekly calendar enforces a `CALENDAR_SESSION_LIMIT` of 4000.
-- Use backend-assisted filtering for session retrieval.
-- Do not make the client load the full `sessions.json`.
+- The session limit (default 4000) is enforced **server-side** in `getTimetable.js`; when exceeded it returns `{ error: 'limit_exceeded', count, limit }` (HTTP 200) instead of the array. The client reads `count`/`limit` from that envelope to build its message.
+- Use the backend endpoint for session retrieval; it queries Neon.
+- Do not make the client load all sessions directly.
 
 ## Documentation Drift To Avoid
 
 When updating docs or scripts, keep these distinctions accurate:
 
 - `npm run dev` is static-only
-- `npm run dev:netlify` is the recommended local mode for calendar testing
-- `npm start` uses `server.js` on port 8888
+- `npm run dev:netlify` is the recommended (and only) local mode for calendar testing; it needs `NEON_DATABASE_URL` in `.env`
 - the VS Code Python task is static-only and not enough for calendar testing
 
 ## Common Change Patterns
@@ -174,7 +164,7 @@ If you add or change scripts in `package.json`, also update:
 
 ## Performance and Safety Notes
 
-- Keep `sessions.json` in Git LFS.
+- Keep `unified_courses.json` in Git LFS. Session data lives in Neon, not a bundled file.
 - Be mindful of Netlify function bundle size.
 - Prefer targeted filtering over broader client-side session loading.
 - Preserve existing bilingual behavior.
@@ -186,7 +176,7 @@ Minimum expectations for changes:
 
 - syntax-check `main.js` if modified
 - test search and filter interactions for regressions
-- if calendar code changes, verify in `npm run dev:netlify` or `npm start`
+- if calendar code changes, verify in `npm run dev:netlify`
 
 For multi-group calendar work specifically, verify:
 
@@ -203,4 +193,4 @@ For multi-group calendar work specifically, verify:
 
 ## Last Updated
 
-2026-04-21
+2026-07-27

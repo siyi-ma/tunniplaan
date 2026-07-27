@@ -2,7 +2,7 @@
 
 TalTech Tunniplaan is a vanilla JavaScript timetable viewer for Tallinn University of Technology (TalTech). It shows course metadata and timetable sessions for roughly 1000 courses and 395 student groups, with Estonian and English UI support.
 
-The app is deployed on Netlify and uses a Netlify function to filter timetable sessions from a large `sessions.json` file.
+The app is deployed on Netlify and uses a Netlify function to fetch timetable sessions from a Neon Postgres database.
 
 ## Features
 
@@ -22,8 +22,8 @@ The app is deployed on Netlify and uses a Netlify function to filter timetable s
 - Frontend: Vanilla JavaScript, HTML, CSS
 - Styling: Tailwind CSS via CDN plus `main.css`
 - Backend: Netlify serverless function in `netlify/functions/getTimetable.js`
-- Local backend alternative: `server.js`
-- Data: `unified_courses.json` and `sessions.json` via Git LFS
+- Database: Neon Postgres (`sessions` table) for timetable sessions
+- Data: `unified_courses.json` (course metadata) via Git LFS
 
 ## Prerequisites
 
@@ -46,7 +46,7 @@ npm install
 
 ## Local Development
 
-There are three local run modes in this repo.
+There are two local run modes in this repo.
 
 ### Recommended: Netlify dev
 
@@ -64,6 +64,10 @@ This is the most accurate local environment for:
 - session loading
 - Netlify function behavior
 
+Netlify Dev auto-loads `.env`, so the function reads `NEON_DATABASE_URL` (the
+read-only Neon connection string) to query the `sessions` table. Calendar view
+will not load sessions without that variable set.
+
 ### Static frontend only
 
 Use this when working only on frontend layout or client-side filtering that does not need the timetable function.
@@ -75,18 +79,6 @@ npm run dev
 Open `http://localhost:8000`.
 
 Note: this mode does not provide the Netlify function. Calendar view will not work here.
-
-### Node local server with mocked function route
-
-This repo also includes a local Node server that serves static files and handles `/.netlify/functions/getTimetable` directly.
-
-```bash
-npm start
-```
-
-Open `http://localhost:8888`.
-
-This is useful if you want a local backend without Netlify CLI.
 
 ## VS Code Tasks
 
@@ -149,10 +141,8 @@ The export includes:
 
 ## Data Files
 
-- `unified_courses.json`: course metadata and grouped session metadata
-- `sessions.json`: timetable session records used by the calendar view
-
-Both files are tracked with Git LFS.
+- `unified_courses.json`: course metadata and grouped session metadata (tracked with Git LFS)
+- Timetable session records live in Neon Postgres (`sessions` table), not in a bundled file. See `db/schema.sql`.
 
 ## Architecture
 
@@ -164,16 +154,15 @@ Both files are tracked with Git LFS.
 
 ### Backend
 
-- `netlify/functions/getTimetable.js`: reads `sessions.json` and returns only sessions for requested courses
-- `server.js`: local Node server that serves the app and exposes the same function path for development on port 8888
-- `netlify.toml`: includes `sessions.json` in the Netlify function bundle
+- `netlify/functions/getTimetable.js`: queries the Neon `sessions` table and returns only sessions for the requested courses, enforcing a server-side session limit
+- `db/schema.sql`: Neon Postgres schema (`semesters`, `groups`, `courses`, `sessions`)
 
 ### Data flow
 
 1. The frontend loads `unified_courses.json`.
 2. The user either searches courses or builds a timetable from selected groups.
 3. When calendar view is opened, the frontend requests `/.netlify/functions/getTimetable?courses=...`.
-4. The backend returns only matching sessions from `sessions.json`.
+4. The backend queries Neon and returns only matching sessions (or a `limit_exceeded` envelope if the set is too large).
 5. The frontend merges and renders sessions in the weekly view.
 
 ## Project Structure
@@ -183,13 +172,13 @@ tunniplaan/
 |-- index.html
 |-- main.js
 |-- main.css
-|-- server.js
-|-- netlify.toml
 |-- unified_courses.json
-|-- sessions.json
 |-- netlify/
 |   `-- functions/
 |       `-- getTimetable.js
+|-- db/
+|   `-- schema.sql
+|-- scripts/
 |-- .vscode/
 |   `-- tasks.json
 `-- docs/
@@ -206,8 +195,8 @@ Manual build hooks are also configured in `.vscode/tasks.json`.
 
 ## Notes for Contributors
 
-- Keep `sessions.json` and `unified_courses.json` in Git LFS.
-- Test calendar behavior with `npm run dev:netlify` or `npm start`, not with a static-only server.
+- Keep `unified_courses.json` in Git LFS.
+- Test calendar behavior with `npm run dev:netlify`, not with a static-only server.
 - Preserve bilingual UI strings in the `uiTexts` object in `main.js`.
 - Keep search UX and group-timetable UX conceptually separate.
 - Be careful with calendar performance. The app enforces a 4000-session limit before rendering the weekly view.
@@ -220,4 +209,4 @@ Manual build hooks are also configured in `.vscode/tasks.json`.
 
 ## Last Updated
 
-2026-04-21
+2026-07-27

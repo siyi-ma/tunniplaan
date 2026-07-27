@@ -52,11 +52,17 @@ Build hooks); do not commit them to the repo.
 
 ### Data Files
 
-The project uses two large JSON files:
-- [sessions.json](sessions.json) (~42MB) - Individual session/event data
+Session/event data lives in **Neon Postgres** (`sessions` table, schema in
+[db/schema.sql](db/schema.sql)) and is queried by
+[netlify/functions/getTimetable.js](netlify/functions/getTimetable.js) via the
+`NEON_DATABASE_URL` env var (read-only `webapp_ro` role). It is no longer bundled
+as a JSON file.
+
+Course metadata still ships as one large JSON file:
 - [unified_courses.json](unified_courses.json) (~6MB) - Course metadata with grouped sessions
 
-Both files are tracked with Git LFS due to their size.
+`unified_courses.json` is tracked with Git LFS due to its size (moving it to Neon
+is a future Phase 2).
 
 ### Git LFS
 
@@ -107,10 +113,10 @@ The application is a single-page application (SPA) built with vanilla JavaScript
 ### Backend Architecture
 
 **Serverless Function**: [netlify/functions/getTimetable.js](netlify/functions/getTimetable.js)
-- **Purpose**: Filter and return session data from the large `sessions.json` file
+- **Purpose**: Query the `sessions` table in Neon Postgres for the active semester and return the events for the requested courses
 - **Input**: Query parameter `?courses=ID1,ID2,ID3`
-- **Output**: Filtered array of session events for requested courses
-- **Why**: Avoids loading the entire 42MB sessions.json file client-side
+- **Output**: Bare JSON array of session events for requested courses. Enforces a server-side session limit (default 4000, env `CALENDAR_SESSION_LIMIT`); when a request exceeds it, returns `{ "error": "limit_exceeded", "count", "limit" }` instead of the array (still HTTP 200). DB failure returns HTTP 500 with an error body.
+- **Why**: Serving from Neon keeps the function payload tiny (fixes the 502 at large course sets) and lets scrapes update the live site without a redeploy
 
 ### Data Structure
 
@@ -137,8 +143,8 @@ The application is a single-page application (SPA) built with vanilla JavaScript
 }
 ```
 
-**sessions.json**:
-Array of individual session events with timestamps, locations, and course references.
+**`sessions` table (Neon Postgres)**:
+One row per individual session event (timestamps, room, course reference, instructor/groups JSONB). Full schema in [db/schema.sql](db/schema.sql). The wire format returned by `getTimetable.js` uses dotted dates (`DD.MM.YYYY`) and `HH:MM` times with field names `course_id`, `date`, `start`, `end`, `type`, `room`, `weeks`, `comment`, `instructor`, `groups`, `is_veebiope` — this contract is consumed by [main.js](main.js) and must stay stable.
 
 ## Bilingual UI System
 
@@ -166,7 +172,7 @@ Language switching updates:
 
 ### Git LFS Considerations
 
-- `sessions.json` must remain under Netlify's 50MB function size limit
+- `unified_courses.json` is the only remaining LFS-tracked data file (session data now lives in Neon, not a bundled file)
 - Use `.gitattributes` to track large JSON files with LFS
 - Never commit large files without LFS
 
