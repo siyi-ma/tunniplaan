@@ -28,7 +28,6 @@ Active reference documents for TalTech Tunniplaan.
 |---|---|
 | [AI_agent_comm_guidelines.md](AI_agent_comm_guidelines.md) | AI collaboration guidelines referenced in CLAUDE.md; protocol for session summaries |
 | [git_bash_setup.md](git_bash_setup.md) | Windows-specific: setting `CLAUDE_CODE_GIT_BASH_PATH` without admin rights |
-| [netlify.toml](netlify.toml) | Netlify build config copy kept here for reference; actual config is at project root |
 
 ---
 

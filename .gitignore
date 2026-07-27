@@ -1,6 +1,8 @@
 .vscode/
 .claude/
 .netlify/
+.playwright-mcp/
+.remember/
 node_modules/
 .DS_Store
 Thumbs.db
