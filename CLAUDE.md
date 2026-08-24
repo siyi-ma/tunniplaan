@@ -206,6 +206,10 @@ of 430 groups were unreachable. Fixed 2026-08-24: `stripGroupLocationSuffix()` i
 [main.js](main.js) normalises every key to the bare code when `facultyToGroupsMap` is
 built, so all 430 map entries now resolve. Stripping is collision-free — 430 suffixed
 keys reduce to 430 distinct bare keys, none mapping to two different faculties.
+The scraper now strips at source too (`strip_group_location_suffix()`, scraper
+`7584856`), so this is deliberately redundant: `stripGroupLocationSuffix()` stays
+because the committed `unified_courses.json` still carries suffixed keys until the
+next scrape-and-publish, and it costs nothing once they are bare.
 
 `DOKTOR` and `VABA` appear in `course.groups` (432 unique) but not in
 `groupToFacultyMap`; they are pseudo-groups, not student groups, and are correctly
