@@ -80,6 +80,15 @@ Open `http://localhost:8000`.
 
 Note: this mode does not provide the Netlify function. Calendar view will not work here.
 
+Note: `python -m http.server` sends `Last-Modified` but no `Cache-Control`, so browsers
+apply heuristic freshness and may keep serving a stale `main.js` after an edit. If a change
+does not appear, hard-reload with `Ctrl+Shift+R`. To confirm what the server is actually
+sending rather than what the browser is showing:
+
+```bash
+curl -s http://localhost:8000/main.js | grep -c "<a string from your edit>"
+```
+
 ## VS Code Tasks
 
 The repository includes tasks in `.vscode/tasks.json`.

@@ -182,10 +182,21 @@ Language switching updates:
 (`26s_pipeline.py`) assigns each course a one-letter `school_code`; [main.js](main.js):180-187
 has its own hardcoded `FACULTY_INFO` keyed by those same letters. Adding a *new* code on the
 scraper side without adding it here makes the faculty label fall back to the raw code, so
-prefer reusing an existing letter. When TalTech promoted Kuressaare and Virumaa colleges to
-top-level faculties (2026-08-24) both were mapped to `E`, matching their `institute_code`
-prefixes `EC`/`EV` — the institute filter at [main.js](main.js):1407 selects via
-`institute_code.startsWith(schoolCode)`, so a distinct code would have orphaned them.
+prefer reusing an existing letter.
+
+When TalTech promoted Kuressaare and Virumaa to top-level faculties (2026-08-24), the
+scraper kept filing their courses under `school_code` `E` (and `I` for 12 Virumaa IT
+courses). The webapp therefore derives the *display* faculty itself:
+`effectiveSchoolCode(course)` in [main.js](main.js) returns `EC`/`EV` when
+`institute_code` starts with those prefixes, else falls back to `school_code`. Every
+faculty comparison must go through this helper — the filter predicate, the dropdown
+build, the institute list, the card label, and the deep-link preselect all do.
+A raw `course.school_code === activeFilters.school` comparison returns zero courses
+for a college, because no course ever carries `school_code` `EC` or `EV`.
+
+`groupToFacultyMap` is still keyed on the parent letter, so `groupMapCodeFor()` maps
+`EC`/`EV` back to `E` for group lookups only. Tartu Kolledž (`ET`, 61 courses) was
+*not* promoted and stays under Inseneriteaduskond.
 
 **Group names are stored in two incompatible forms (handled).** `groupToFacultyMap` is
 keyed on location-suffixed names from the scraper's structure tree (`EAKB10_K (Saaremaa
