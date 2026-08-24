@@ -30,7 +30,7 @@ The project includes configured VS Code tasks in [.vscode/tasks.json](.vscode/ta
 **Available Tasks**:
 1. **Run Localhost Server** - Starts Python HTTP server on `http://localhost:8000`
 2. **Netlify: Deploy Main Branch** - Triggers production deployment via build hook
-3. **Netlify: Deploy Dev Branch** - Triggers dev deployment via build hook
+3. **Netlify: Deploy Dev Branch** - ⚠ broken: its build hook was revoked (404). Push to `dev` instead; see Netlify Deployments below
 
 ### Local Development (Manual)
 
@@ -42,8 +42,15 @@ python -m http.server 8000
 
 ### Netlify Deployments
 
-**Via VS Code Tasks** (Recommended):
+**Netlify auto-deploys from GitHub** — pushing `dev` produces a branch deploy at
+`https://dev--taltech-tunniplaan.netlify.app`, and pushing `main` produces the
+production deploy. Neither needs a build hook; verified 2026-08-24.
+
+**Via VS Code Tasks**:
 - Press `Ctrl+Shift+P` → Type "Run Task" → Select deployment task
+- ⚠ As of 2026-08-24 only one build hook exists on the site (branch `main`). The
+  "Netlify: Deploy Dev Branch" task references a hook that has been revoked and
+  returns HTTP 404 — it fails silently. Push to `dev` instead.
 
 **Via Command Line**:
 Trigger deploys with `curl -X POST -d {} <build-hook-url>`. Build-hook URLs are
@@ -183,9 +190,14 @@ prefixes `EC`/`EV` — the institute filter at [main.js](main.js):1407 selects v
 **Known issue — group names are stored in two incompatible forms.** `groupToFacultyMap` is
 keyed on location-suffixed names from the scraper's structure tree (`EAKB10_K (Saaremaa
 vald)`), while `course.groups` and `group_sessions[].group` use bare codes (`EAKB10_K`).
-[main.js](main.js):1414-1416 intersects the two, so suffixed entries never match and 29 groups
-remain unreachable in the group dropdown. This predates the college change and is not a
-regression from it; fixing it means normalising one side to the other.
+[main.js](main.js):1414-1416 intersects the two, so suffixed entries never match and **60**
+groups are unreachable in the group dropdown (370 of 430 map entries resolve). This predates
+the college change and is not a regression from it — the college fix raised the orphan count
+29 → 60 only because it added 31 correctly-mapped-but-suffixed entries.
+
+All 60 orphans are suffixed, and every one of their bare forms already appears in
+`course.groups`, so stripping the ` (Location)` suffix when building `groupToFacultyMap`
+would make all 60 reachable and take the dropdown from 370 to 430.
 
 ### Git LFS Considerations
 
