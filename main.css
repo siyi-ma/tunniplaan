@@ -102,3 +102,39 @@ body { font-family: 'Proxima Nova', system-ui, -apple-system, BlinkMacSystemFont
     height: 2rem;
     font-size: 1rem;
 }
+
+/* --- Language pill (ET/EN segmented toggle) --- */
+.lang-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.16);
+}
+.lang-pill-option {
+  min-width: 2.5rem;
+  padding: 0.25rem 0.75rem;
+  border: 0;
+  border-radius: 9999px;
+  background: transparent;
+  color: #ffffff;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.lang-pill-option:hover:not([aria-pressed="true"]) {
+  background-color: rgba(255, 255, 255, 0.22);
+}
+.lang-pill-option[aria-pressed="true"] {
+  background-color: #e4067e;
+  color: #ffffff;
+  cursor: default;
+}
+.lang-pill-option:focus-visible {
+  outline: 2px solid #4dbed2;
+  outline-offset: 2px;
+}

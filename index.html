@@ -28,7 +28,10 @@
                 <button id="filterToggleButton" class="mr-4 p-2 text-white hover:bg-tt-dark-blue-hover rounded" aria-label="Ava filtrid"><i class="fas fa-bars fa-lg"></i></button>
                 <h1 id="pageTitle" class="text-2xl proxima-nova-bold uppercase">TalTech kursused</h1>
             </div>
-            <button id="languageToggle" class="p-2 bg-tt-magenta hover:bg-opacity-80 rounded" aria-label="Switch language"><i class="fas fa-globe"></i> <span id="langIndicator">EN</span></button>
+            <div id="languageToggle" class="lang-pill" role="group" aria-label="Keel / Language">
+                <button type="button" class="lang-pill-option" data-lang="et" aria-pressed="true">ET</button>
+                <button type="button" class="lang-pill-option" data-lang="en" aria-pressed="false">EN</button>
+            </div>
         </div>
     </header>
 

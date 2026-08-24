@@ -183,8 +183,30 @@ const FACULTY_INFO = {
     E: { et: 'Inseneriteaduskond', en: 'School of Engineering' },
     I: { et: 'Infotehnoloogia teaduskond', en: 'School of Information Technologies' },
     V: { et: 'Eesti Mereakadeemia', en: 'Estonian Maritime Academy' },
+    EC: { et: 'Kuressaare Kolledž', en: 'Kuressaare College' },
+    EV: { et: 'Virumaa Kolledž', en: 'Virumaa College' },
     DOK: { et: 'Doktoriope', en: 'Doctoral Studies' }
 };
+
+// Kuressaare (EC) and Virumaa (EV) became top-level faculties in 2026-08, but the
+// scraper still files their courses under school_code 'E' (see CLAUDE.md). Derive the
+// display faculty from institute_code so each college gets its own dropdown entry and
+// Inseneriteaduskond no longer absorbs them.
+const COLLEGE_SCHOOL_CODES = ['EC', 'EV'];
+function effectiveSchoolCode(course) {
+    const ic = typeof course.institute_code === 'string' ? course.institute_code : '';
+    return COLLEGE_SCHOOL_CODES.find(code => ic.startsWith(code)) || course.school_code;
+}
+// groupToFacultyMap is keyed on the parent letter, so college codes look up under 'E'.
+function groupMapCodeFor(schoolCode) {
+    return COLLEGE_SCHOOL_CODES.includes(schoolCode) ? schoolCode[0] : schoolCode;
+}
+// Group codes arrive in two forms: bare ('EDTR11_V') in course.groups, and with a
+// trailing location in groupToFacultyMap ('EDTR11_V (Kohtla-Jarve linn)'). Only the
+// bare form is comparable, so strip a trailing parenthesised suffix.
+function stripGroupLocationSuffix(group) {
+    return typeof group === 'string' ? group.replace(/\s*\([^()]*\)\s*$/, '').trim() : group;
+}
 
 // --- Utility Functions ---
 // --- Course Card Legend Statistics ---
@@ -535,7 +557,11 @@ function postProcessUnifiedData(groupToFacultyLookup = {}) {
     facultyToGroupsMap.clear();
     const uniqueGroups = new Set();
 
-    // Build facultyToGroupsMap ONLY from groupToFacultyMap
+    // Build facultyToGroupsMap ONLY from groupToFacultyMap.
+    // The scraper's structure tree keys some groups with a location suffix
+    // ('EDTR11_Tartu (Tartu linn)') while course.groups always uses the bare code
+    // ('EDTR11_Tartu'). The group dropdown intersects the two, so unstripped keys
+    // never match and their groups are unreachable. Normalise to the bare code here.
     const groupToFacultyMap = window.groupToFacultyMap || {};
     Object.values(groupToFacultyMap).forEach(facultyCode => {
         if (!facultyToGroupsMap.has(facultyCode)) {
@@ -544,7 +570,7 @@ function postProcessUnifiedData(groupToFacultyLookup = {}) {
     });
     Object.entries(groupToFacultyMap).forEach(([group, facultyCode]) => {
         if (facultyToGroupsMap.has(facultyCode)) {
-            facultyToGroupsMap.get(facultyCode).add(group);
+            facultyToGroupsMap.get(facultyCode).add(stripGroupLocationSuffix(group));
         }
     });
 
@@ -554,12 +580,16 @@ function postProcessUnifiedData(groupToFacultyLookup = {}) {
             course.groups.forEach(group => uniqueGroups.add(group));
         }
         if (course.school_code && course.school_name) {
-            allSchoolNames.set(course.school_code, { et: course.school_name, en: course.school_name_en || course.school_name });
-            if (!schoolToInstitutes.has(course.school_code)) {
-                schoolToInstitutes.set(course.school_code, new Set());
+            const schoolCode = effectiveSchoolCode(course);
+            const collegeInfo = COLLEGE_SCHOOL_CODES.includes(schoolCode) ? FACULTY_INFO[schoolCode] : null;
+            allSchoolNames.set(schoolCode, collegeInfo
+                ? { et: collegeInfo.et, en: collegeInfo.en }
+                : { et: course.school_name, en: course.school_name_en || course.school_name });
+            if (!schoolToInstitutes.has(schoolCode)) {
+                schoolToInstitutes.set(schoolCode, new Set());
             }
             if (course.institute_name) {
-                schoolToInstitutes.get(course.school_code).add(course.institute_name);
+                schoolToInstitutes.get(schoolCode).add(course.institute_name);
             }
         }
     });
@@ -588,7 +618,7 @@ function applyAllFiltersAndRender(resetView = true) {
     filteredCourses = allCourses.filter(course => {
         if (activeFilters.school === 'DOKTOR') {
             if (!course.groups || !course.groups.includes('DOKTOR')) return false;
-        } else if (activeFilters.school && course.school_code !== activeFilters.school) {
+        } else if (activeFilters.school && effectiveSchoolCode(course) !== activeFilters.school) {
             return false;
         }
 
@@ -763,7 +793,7 @@ function createCourseCardHTML(course) {
     // Use first character of institute_code to get school name from FACULTY_INFO
     let schoolInstituteHTML = '';
     if (course.institute_code && typeof course.institute_code === 'string') {
-        const schoolCode = course.institute_code[0];
+        const schoolCode = effectiveSchoolCode(course);
         const facultyObj = FACULTY_INFO[schoolCode];
         const schoolName = facultyObj ? facultyObj[currentLanguage] : course.school_name || schoolCode;
         const displayString = `${schoolName} | ${course.institute_code}`;
@@ -1404,16 +1434,17 @@ function updateDependentFilters() {
     if (schoolCode) {
         // Only include institutes whose code starts with the faculty code
         allCourses.forEach(course => {
-            if (course.institute_code && course.institute_code.startsWith(schoolCode) && course.institute_name) {
+            if (course.institute_code && effectiveSchoolCode(course) === schoolCode && course.institute_name) {
                 institutes.add(course.institute_name);
             }
         });
         // Only include groups that are mapped to the selected faculty and actually exist in courses of that faculty
         const validGroups = new Set();
         allCourses.forEach(course => {
-            if (course.school_code === schoolCode && Array.isArray(course.groups)) {
+            if (effectiveSchoolCode(course) === schoolCode && Array.isArray(course.groups)) {
+                const groupMapCode = groupMapCodeFor(schoolCode);
                 course.groups.forEach(group => {
-                    if (facultyToGroupsMap.has(schoolCode) && facultyToGroupsMap.get(schoolCode).has(group)) {
+                    if (facultyToGroupsMap.has(groupMapCode) && facultyToGroupsMap.get(groupMapCode).has(group)) {
                         validGroups.add(group);
                     }
                 });
@@ -1507,8 +1538,16 @@ function updateAllUITexts() {
     updateSearchInputContext();
     renderGroupBuilderChips();
     updateGroupBuilderActions();
-    document.getElementById('langIndicator').textContent = currentLanguage === 'et' ? 'EST' : 'ENG';
+    updateLangPill();
     applyAllFiltersAndRender(false);
+}
+
+// Reflect the active language on the ET/EN pill. aria-pressed drives both the
+// highlight (see .lang-pill-option[aria-pressed="true"] in main.css) and screen readers.
+function updateLangPill() {
+    document.querySelectorAll('#languageToggle .lang-pill-option').forEach(btn => {
+        btn.setAttribute('aria-pressed', String(btn.dataset.lang === currentLanguage));
+    });
 }
 
 function setLanguage(lang) {
@@ -1520,7 +1559,10 @@ function setLanguage(lang) {
 }
 
 function setupEventListeners() {
-    document.getElementById('languageToggle').addEventListener('click', () => setLanguage(currentLanguage === 'et' ? 'en' : 'et'));
+    document.getElementById('languageToggle').addEventListener('click', e => {
+        const option = e.target.closest('.lang-pill-option');
+        if (option && option.dataset.lang !== currentLanguage) setLanguage(option.dataset.lang);
+    });
     document.getElementById('searchButton').addEventListener('click', () => { activeFilters.searchTerm = searchInputDOM.value; activeFilters.searchFieldType = searchFieldSelectorDOM.value; applyAllFiltersAndRender(); updateURLParameters(); });
     document.getElementById('resetSearchButton').addEventListener('click', () => {
         history.replaceState({}, '', window.location.pathname);
@@ -1720,7 +1762,7 @@ async function initializeApp() {
 
             // This is the key: We only set the dropdown's value, NOT activeFilters.school.
             if (courseForGroup && courseForGroup.school_code) {
-                schoolFilterDOM.value = courseForGroup.school_code;
+                schoolFilterDOM.value = effectiveSchoolCode(courseForGroup);
             }
         } else if (facultyFromUrl) {
             // If faculty IS in the URL, make sure the dropdown reflects that.

@@ -187,17 +187,18 @@ top-level faculties (2026-08-24) both were mapped to `E`, matching their `instit
 prefixes `EC`/`EV` — the institute filter at [main.js](main.js):1407 selects via
 `institute_code.startsWith(schoolCode)`, so a distinct code would have orphaned them.
 
-**Known issue — group names are stored in two incompatible forms.** `groupToFacultyMap` is
+**Group names are stored in two incompatible forms (handled).** `groupToFacultyMap` is
 keyed on location-suffixed names from the scraper's structure tree (`EAKB10_K (Saaremaa
 vald)`), while `course.groups` and `group_sessions[].group` use bare codes (`EAKB10_K`).
-[main.js](main.js):1414-1416 intersects the two, so suffixed entries never match and **60**
-groups are unreachable in the group dropdown (370 of 430 map entries resolve). This predates
-the college change and is not a regression from it — the college fix raised the orphan count
-29 → 60 only because it added 31 correctly-mapped-but-suffixed entries.
+The group dropdown intersects the two, so unstripped suffixed keys never matched and 60
+of 430 groups were unreachable. Fixed 2026-08-24: `stripGroupLocationSuffix()` in
+[main.js](main.js) normalises every key to the bare code when `facultyToGroupsMap` is
+built, so all 430 map entries now resolve. Stripping is collision-free — 430 suffixed
+keys reduce to 430 distinct bare keys, none mapping to two different faculties.
 
-All 60 orphans are suffixed, and every one of their bare forms already appears in
-`course.groups`, so stripping the ` (Location)` suffix when building `groupToFacultyMap`
-would make all 60 reachable and take the dropdown from 370 to 430.
+`DOKTOR` and `VABA` appear in `course.groups` (432 unique) but not in
+`groupToFacultyMap`; they are pseudo-groups, not student groups, and are correctly
+absent from the faculty-filtered dropdown.
 
 ### Git LFS Considerations
 
