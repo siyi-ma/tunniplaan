@@ -790,7 +790,8 @@ function createCourseCardHTML(course) {
     }
     const instructors = instructorsArr.map(i => i.name).filter(Boolean).join(', ');
 
-    // Use first character of institute_code to get school name from FACULTY_INFO
+    // Derive the display faculty from institute_code (see effectiveSchoolCode) so the
+    // colleges are labelled as themselves rather than as their parent faculty.
     let schoolInstituteHTML = '';
     if (course.institute_code && typeof course.institute_code === 'string') {
         const schoolCode = effectiveSchoolCode(course);
@@ -1440,9 +1441,9 @@ function updateDependentFilters() {
         });
         // Only include groups that are mapped to the selected faculty and actually exist in courses of that faculty
         const validGroups = new Set();
+        const groupMapCode = groupMapCodeFor(schoolCode);
         allCourses.forEach(course => {
             if (effectiveSchoolCode(course) === schoolCode && Array.isArray(course.groups)) {
-                const groupMapCode = groupMapCodeFor(schoolCode);
                 course.groups.forEach(group => {
                     if (facultyToGroupsMap.has(groupMapCode) && facultyToGroupsMap.get(groupMapCode).has(group)) {
                         validGroups.add(group);
