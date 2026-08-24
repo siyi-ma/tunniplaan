@@ -1,6 +1,6 @@
 # TalTech Tunniplaan
 
-TalTech Tunniplaan is a vanilla JavaScript timetable viewer for Tallinn University of Technology (TalTech). It shows course metadata and timetable sessions for roughly 1000 courses and 395 student groups, with Estonian and English UI support.
+TalTech Tunniplaan is a vanilla JavaScript timetable viewer for Tallinn University of Technology (TalTech). It shows course metadata and timetable sessions for roughly 1000 courses and 430 student groups, with Estonian and English UI support.
 
 The app is deployed on Netlify and uses a Netlify function to fetch timetable sessions from a Neon Postgres database.
 

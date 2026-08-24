@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-TalTech Tunniplaan is a course timetable viewer for Tallinn University of Technology (TalTech). The application displays course information for ~1000 courses across ~395 student groups, with bilingual support (Estonian/English). Data is periodically synced from the official TalTech timetable system.
+TalTech Tunniplaan is a course timetable viewer for Tallinn University of Technology (TalTech). The application displays course information for ~1030 courses across ~430 student groups, with bilingual support (Estonian/English). Data is periodically synced from the official TalTech timetable system.
 
 **Live Site**: Hosted on Netlify
 **Primary Language**: Estonian (et) with English (en) translations
@@ -170,6 +170,22 @@ Language switching updates:
 - After publishing, ingest the fresh sessions into Neon: `node scripts/seed-sessions-from-json.js` (needs `NEON_SCRAPER_URL`). This replaces the active semester's rows. `sessions.json` is gitignored and **not** committed — only `unified_courses.json` is committed to this repo
 - Commit messages follow pattern: "Update YYYYMMDD unified courses: X groups and Y courses" (the publish script still prints the older "session and unified courses" wording and a `git add sessions.json` — ignore the sessions part, it lives in Neon)
 - Always verify data after updates (e.g. `node scripts/contract-test-gettimetable.js`)
+
+**School codes are duplicated across the two repos.** The scraper's `FACULTY_INFO`
+(`26s_pipeline.py`) assigns each course a one-letter `school_code`; [main.js](main.js):180-187
+has its own hardcoded `FACULTY_INFO` keyed by those same letters. Adding a *new* code on the
+scraper side without adding it here makes the faculty label fall back to the raw code, so
+prefer reusing an existing letter. When TalTech promoted Kuressaare and Virumaa colleges to
+top-level faculties (2026-08-24) both were mapped to `E`, matching their `institute_code`
+prefixes `EC`/`EV` — the institute filter at [main.js](main.js):1407 selects via
+`institute_code.startsWith(schoolCode)`, so a distinct code would have orphaned them.
+
+**Known issue — group names are stored in two incompatible forms.** `groupToFacultyMap` is
+keyed on location-suffixed names from the scraper's structure tree (`EAKB10_K (Saaremaa
+vald)`), while `course.groups` and `group_sessions[].group` use bare codes (`EAKB10_K`).
+[main.js](main.js):1414-1416 intersects the two, so suffixed entries never match and 29 groups
+remain unreachable in the group dropdown. This predates the college change and is not a
+regression from it; fixing it means normalising one side to the other.
 
 ### Git LFS Considerations
 
