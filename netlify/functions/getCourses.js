@@ -21,6 +21,13 @@ const {
 // and no exponent: '1.5', '1e2' and ' 1' are all malformed, not rounded.
 const PAGE_PATTERN = /^(0|[1-9][0-9]*)$/;
 
+// The regex accepts digit strings of any length, so page * PAGE_SIZE could
+// exceed int8 or become Infinity and make Postgres reject the bind parameter --
+// a 500 for what is simply an out-of-range page. No dataset will ever hold 2^53
+// courses, so anything beyond this is out of range by definition and is answered
+// without a database round trip.
+const MAX_PAGE = Math.floor(Number.MAX_SAFE_INTEGER / PAGE_SIZE);
+
 function parseRequest(event) {
   const query = (event && event.queryStringParameters) || {};
   const version = query.version;
@@ -72,6 +79,9 @@ async function handleRequest(event, sql) {
     return jsonResponse(400, { error: 'bad_request' });
   }
   const { version, page } = request;
+  if (page > MAX_PAGE) {
+    return jsonResponse(404, { error: 'page_not_found' });
+  }
   const offset = page * PAGE_SIZE;
 
   try {

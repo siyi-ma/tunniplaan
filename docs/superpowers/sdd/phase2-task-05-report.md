@@ -3,7 +3,7 @@
 **Date:** 2026-08-30
 **Repo:** webapp `C:\Projects\tunniplaan`, branch `phase2-api`
 **Plan:** Task 5 · **Spec:** §9.2
-**Status:** implemented; awaiting independent review
+**Status:** complete — independently reviewed, all findings applied
 
 ---
 
@@ -131,3 +131,31 @@ This is the concrete instance of the normalisation Task 2's review anticipated f
    is a test for it.
 3. Latency is 44–522 ms per page against a 0.25 CU Neon compute, the first request paying
    cold-start. Six pages fetched in parallel by the browser is the Task 7 concern.
+4. **Task 6 must assert live page bytes against the 4.5 MiB ceiling.** Spec §9.2 requires the
+   contract test to measure *serialized response bytes*; this task's committed ceiling test
+   uses a fixture (2.596 MiB, 58% of the ceiling — not trivially passing, but it can never
+   be tripped by growth in the real dataset). The only measurement against real bytes so far
+   is the ad-hoc run in §3. Task 6 owns making that a standing gate.
+
+## 6. Independent review findings, applied
+
+Verdict: **approved with minor findings**. The reviewer worked through every interleaving of
+a concurrent ingest against the single statement and could construct no counterexample: an
+ingest committing before the snapshot yields a 409, one committing after is invisible to the
+whole statement, and one committing "during" is unobservable because the snapshot is fixed at
+statement start. It confirmed the field contract independently over all 1030 courses —
+including a type census showing `eap` is a JS number in 1030/1030 and the four JSONB fields
+are real arrays rather than JSON strings — and reproduced every live byte count exactly.
+
+It also proved the tests discriminate, by applying **eleven** mutations. Eight were caught.
+The three that were not — dropping the SQL `semester_code` strip, echoing the requested
+version instead of the row's, and removing an unreachable filter — are all cases where the
+mutated code remains *correct*, so they are gaps in discrimination rather than in safety.
+
+| # | Finding | Fix |
+|---|---|---|
+| **I-1** | The page regex accepts digit strings of any length, so `page * 200` could exceed `int8` or become `Infinity` and make Postgres reject the bind parameter — **a 500 where spec §9.2 requires 404**, plus a needless database round trip and a `console.error` per request on attacker-controlled input | anything above `MAX_SAFE_INTEGER / 200` is out of range by definition (no dataset will hold 2^53 courses) and is answered 404 with no query. Verified live at four magnitudes, including a 400-digit page |
+| M-1 | The committed ceiling test is a fixture and can never be tripped by real data growth | recorded as an explicit Task 6 obligation (carried forward 4) |
+| M-2 | No test distinguishes echoing the requested version from returning the row's, or covers the SQL `semester_code` strip | the single-query test now asserts the strip is present in the SQL, keeping the redundancy deliberate. The other two are accepted: the predicate guarantees the versions are equal, and the filter is unreachable behind the 404 |
+
+After the fixes: **57 passed**, and the live run unchanged.

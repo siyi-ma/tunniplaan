@@ -176,6 +176,9 @@ test('the query orders by id and pages with limit and offset', async () => {
   // The requested version must be part of the predicate, not checked separately.
   assert.ok(calls[0].values.includes(VERSION), 'the version must be bound into the query');
   assert.ok(calls[0].values.includes(400), 'offset = page * page_size');
+  // The storage-only column is stripped in SQL as well as in the projection, so
+  // the redundancy stays deliberate rather than becoming accidental.
+  assert.match(text, /semester_code/, 'the storage-only column must be stripped');
 });
 
 test('the last partial page is returned in full', async () => {
@@ -300,4 +303,33 @@ test('a full 200-course page stays well below the 4.5 MiB ceiling', async () => 
   const CEILING = 4.5 * 1024 * 1024;
   assert.strictEqual(response.statusCode, 200);
   assert.ok(bytes < CEILING, `page is ${bytes} bytes, ceiling is ${CEILING}`);
+});
+
+// --- oversized page indices ------------------------------------------------
+
+test('an absurd page index is 404, not a 500 from a bigint overflow', async () => {
+  // page * 200 can exceed int8 or become Infinity, which Postgres rejects with
+  // "invalid input syntax for type bigint". That is a wrong status on
+  // attacker-controlled input, and a needless database round trip per request.
+  const cases = [
+    '46116860184273879',        // page * 200 > int8 max
+    '100000000000000000000',    // serialises as 2e+22
+    '9'.repeat(400),            // page * 200 === Infinity
+  ];
+  for (const page of cases) {
+    const { response, body, calls } = await get({ version: VERSION, page },
+      [pageRow(courseRow(), { total: 1030 })]);
+    assert.strictEqual(response.statusCode, 404, page.slice(0, 24));
+    assert.strictEqual(body.error, 'page_not_found');
+    assert.strictEqual(response.headers['Cache-Control'], 'no-store');
+    assert.strictEqual(calls.length, 0, 'an impossible page must not reach the database');
+  }
+});
+
+test('the largest addressable page is still queried normally', async () => {
+  const maxPage = String(Math.floor(Number.MAX_SAFE_INTEGER / 200));
+  const { response, calls } = await get({ version: VERSION, page: maxPage },
+    [{ dataset_version: VERSION, course_count: 1030, course: null }]);
+  assert.strictEqual(calls.length, 1, 'a representable page is a normal range question');
+  assert.strictEqual(response.statusCode, 404);
 });
