@@ -65,7 +65,7 @@ so a production ingest cannot be run by accident. Credentials never appear in a 
 | 8 Versioned calendar | **complete, reviewed** | webapp `phase2-frontend` | `5e3cc64`, `0ac0c64` | version pinning, 409 handling, cache split, and contract coverage |
 | 9 Local E2E | **complete, reviewed** | webapp `phase2-frontend` | `097f901`, `a4c9d76` | HTTP matrix and real-browser matrix pass; 15/15 browser checks |
 | 10 Docs / runbook | implemented; independent review pending | both | `4a2556a`, `ef1d92f`, `867950d` | cold-operator findings applied; final independent review still required |
-| 11 Staged rollout | **in progress — webapp branches consolidated into `dev`** | both | webapp closeout commit | owner explicitly directed both Phase 2 branches into `dev`; deployment, production-data, review, and `main` gates remain |
+| 11 Staged rollout | **in progress — code deployed to `dev`, production DDL applied** | both | webapp closeout commit | both migrations applied to production 2026-08-30 and verified; the ingest is blocked on F16 (no scrape possible on this device). Review and `main` gates remain |
 | 12 Gated cleanup | pending | webapp | | not before 2026-09-15 |
 
 ## Production checkpoints
@@ -74,6 +74,25 @@ The webapp code rollout to `dev` was completed on 2026-08-30. After the initial 
 push, the owner explicitly directed `phase2-frontend` to be fast-forwarded into `dev` and
 both remote feature refs to be removed. No production DDL, production ingest, merge to
 `main`, or Task 12 cleanup has been performed.
+
+**Production DDL applied 2026-08-30.** Both migrations were run with `NEON_ADMIN_URL`
+(`neondb_owner`) after a read-only baseline was captured, and re-applied once to prove
+idempotence in production. No data was written; `courses` and `groups` are still empty and
+`sessions` still holds 66,846 rows.
+
+| Check | Before | After |
+|---|---|---|
+| `dataset_version` / `ingested_at` | absent | `text` / `timestamptz`, both nullable |
+| `semesters` indexes | `semesters_pkey` | `semesters_pkey`, `semesters_one_active` |
+| active semesters | 1 | 1 |
+| `webapp_ro` on the new columns | — | SELECT true / UPDATE false, per F10 |
+| `sessions` rows | 66,846 | 66,846 |
+| deployed manifest | `500 manifest_unavailable` | `503 dataset_unavailable`, `no-store` |
+
+The manifest's move from 500 to 503 is the designed path, and end-to-end evidence the DDL
+landed: the query now succeeds, and the endpoint refuses to serve a null `dataset_version`
+rather than letting a client pin itself to `null`. The unversioned timetable request still
+returns 200, so the legacy consumer is unaffected.
 
 The deployment gate has two halves and only one has passed:
 
@@ -86,7 +105,7 @@ The deployment gate has two halves and only one has passed:
 
 | # | Finding | Owner |
 |---|---|---|
-| F1 | ~~`NEON_*` blank~~ **closed 2026-08-30.** Test-branch credentials generated from the Neon control plane at the owner's instruction and written to both `.env` files (gitignored). `webapp_ro` connectivity confirmed against `br-calm-art-as9qjjef`: reads 66,846 sessions and both Phase 2 columns. **`NEON_SCRAPER_URL` (production write) remains deliberately unset** — production ingest is Task 11's gate | closed; production credential still owner-only |
+| F1 | ~~`NEON_*` blank~~ **closed 2026-08-30.** Test-branch credentials generated from the Neon control plane at the owner's instruction and written to both `.env` files (gitignored). `webapp_ro` connectivity confirmed against `br-calm-art-as9qjjef`: reads 66,846 sessions and both Phase 2 columns. ~~**`NEON_SCRAPER_URL` (production write) remains deliberately unset**~~ **all three production credentials configured 2026-08-30** by the owner, in both `.env` files: `neondb_owner`, `scraper_rw` and `webapp_ro` on `ep-lively-cherry-as4w8a51-pooler`. The webapp's `NEON_DATABASE_URL` now points at **production**, not the disposable branch, so the local contract tests are no longer sandboxed | closed |
 | F2 | ~~Hardcoded `DATA_DIRECTORY` embeds username `siyima`; unusable on this device~~ **closed 2026-08-30 in the pipeline itself.** Task 2 taught the ingest and publish scripts `TUNNIPLAAN_DATA_DIR` but left `26s_pipeline.py:35` hardcoded, so the first attempt at Task 11's scrape died on `PermissionError: Access is denied: 'C:\Users\siyima'` before any network call. `ensure_directories()` now resolves the artifact directory from `TUNNIPLAAN_DATA_DIR` via the repo's own `load_env_file`, with the root as its parent; 172 scraper tests still pass | closed |
 | F3 | ~~`contract-test-gettimetable.js` reads a deleted repo-root `sessions.json`~~ **closed in Task 6.** It resolves `--source-dir` > `TUNNIPLAAN_DATA_DIR` now and passes: 66,846 events deep-equal, its first successful run since Phase 1 | closed |
 | F4 | `groups` and `courses` are empty **in production** (0 rows). The disposable branch is now fully populated by Task 3, which is what unblocked Task 6; production stays empty until Task 11 | Task 11 |
@@ -97,7 +116,7 @@ The deployment gate has two halves and only one has passed:
 | F11 | The disposable branch is now also the **Phase 2 integration test target** — `NEON_TEST_SCRAPER_URL` / `NEON_TEST_DATABASE_URL` (scraper) and `NEON_DATABASE_URL` (webapp local) all point at it. Reused rather than creating a second full copy of production data. Netlify's production env is untouched | Task 3 onward |
 | F9 | Disposable Neon branch `phase2-task1-migration-test` (`br-calm-art-as9qjjef`) holds a copy of production data and one additional, **redundant** `webapp_ro → neondb_owner` membership row (production already grants that membership via `cloud_admin`). Delete after Task 1's review — needs owner approval | owner, after Task 1 review |
 | F10 | `db/roles.sql` needs no change for the new columns: table-level grants extend to columns added later (verified both by catalog and by acting as the role) | Task 10 runbook |
-| F12 | **DDL needs an owner credential.** `db/migrations/20260830_one_active_semester.sql` cannot be applied by `scraper_rw` (`must be owner of table semesters`) or `webapp_ro`. Task 1's migration only worked because the Neon control plane acts as owner. Task 11 needs a third, owner-level credential for both migrations | Task 10 runbook, Task 11 |
+| F12 | ~~**DDL needs an owner credential.**~~ **closed 2026-08-30:** the owner provisioned `neondb_owner` locally and both migrations were applied with it. Original finding: `db/migrations/20260830_one_active_semester.sql` cannot be applied by `scraper_rw` (`must be owner of table semesters`) or `webapp_ro`. Task 1's migration only worked because the Neon control plane acts as owner. Task 11 needs a third, owner-level credential for both migrations | closed |
 | F13 | Task 7 must keep applying `stripGroupLocationSuffix()` to the manifest's group map: 60 of 430 keys still carry location suffixes, and dropping the strip would make those groups unreachable again | Task 7 |
 | F14 | Task 7's sync indicator must fall back to the semester label if `scraping_datetime` is null — the manifest serves null rather than 503-ing the site over a cosmetic field | Task 7 |
 | F15 | `total_pages: 0` is a legal manifest meaning an empty dataset. Task 7 must show the fallback rather than fetching page 0, which correctly 404s | Task 7 |
