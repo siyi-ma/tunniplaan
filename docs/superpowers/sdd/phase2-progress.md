@@ -73,14 +73,21 @@ so a production ingest cannot be run by accident. Credentials never appear in a 
 The webapp code rollout to `dev` was completed on 2026-08-30. After the initial API-only
 push, the owner explicitly directed `phase2-frontend` to be fast-forwarded into `dev` and
 both remote feature refs to be removed. No production DDL, production ingest, merge to
-`main`, verified deployment gate, or Task 12 cleanup has been performed.
+`main`, or Task 12 cleanup has been performed.
+
+The deployment gate has two halves and only one has passed:
+
+| Gate | State |
+|---|---|
+| Code deployment, fallback mode | **passed 2026-08-30.** `dev` serves `4c8b58d` byte-for-byte; Edge rendered 1,030 fallback cards, dated notices in both languages, disabled calendar, working search/reset and the `?group=IADB11` deep link, no unexpected console errors |
+| API-mode data verification | **blocked.** Production Neon is unmigrated, so the manifest returns `500 manifest_unavailable` (correctly `no-store`) and the browser falls back. Unblocked only by the Task 11 migrations and ingest |
 
 ## Cross-task findings
 
 | # | Finding | Owner |
 |---|---|---|
 | F1 | ~~`NEON_*` blank~~ **closed 2026-08-30.** Test-branch credentials generated from the Neon control plane at the owner's instruction and written to both `.env` files (gitignored). `webapp_ro` connectivity confirmed against `br-calm-art-as9qjjef`: reads 66,846 sessions and both Phase 2 columns. **`NEON_SCRAPER_URL` (production write) remains deliberately unset** — production ingest is Task 11's gate | closed; production credential still owner-only |
-| F2 | Hardcoded `DATA_DIRECTORY` embeds username `siyima`; unusable on this device | Task 2 |
+| F2 | ~~Hardcoded `DATA_DIRECTORY` embeds username `siyima`; unusable on this device~~ **closed 2026-08-30 in the pipeline itself.** Task 2 taught the ingest and publish scripts `TUNNIPLAAN_DATA_DIR` but left `26s_pipeline.py:35` hardcoded, so the first attempt at Task 11's scrape died on `PermissionError: Access is denied: 'C:\Users\siyima'` before any network call. `ensure_directories()` now resolves the artifact directory from `TUNNIPLAAN_DATA_DIR` via the repo's own `load_env_file`, with the root as its parent; 172 scraper tests still pass | closed |
 | F3 | ~~`contract-test-gettimetable.js` reads a deleted repo-root `sessions.json`~~ **closed in Task 6.** It resolves `--source-dir` > `TUNNIPLAAN_DATA_DIR` now and passes: 66,846 events deep-equal, its first successful run since Phase 1 | closed |
 | F4 | `groups` and `courses` are empty **in production** (0 rows). The disposable branch is now fully populated by Task 3, which is what unblocked Task 6; production stays empty until Task 11 | Task 11 |
 | F5 | The map key is `groupToFacultyMap` (camelCase), not snake_case | Task 4 |
@@ -94,6 +101,8 @@ both remote feature refs to be removed. No production DDL, production ingest, me
 | F13 | Task 7 must keep applying `stripGroupLocationSuffix()` to the manifest's group map: 60 of 430 keys still carry location suffixes, and dropping the strip would make those groups unreachable again | Task 7 |
 | F14 | Task 7's sync indicator must fall back to the semester label if `scraping_datetime` is null — the manifest serves null rather than 503-ing the site over a cosmetic field | Task 7 |
 | F15 | `total_pages: 0` is a legal manifest meaning an empty dataset. Task 7 must show the fallback rather than fetching page 0, which correctly 404s | Task 7 |
+| F16 | **The production scrape cannot run on this device.** Group policy refuses to launch executables from user-writable paths (`%APPDATA%`, `C:\Projects`, `%TEMP%` all verified), so Selenium Manager cannot run and `webdriver.Edge()` raises `NoSuchDriverException`. Edge itself is installed and allow-listed; no `msedgedriver` exists anywhere on the machine. Same policy class as F8's `npm` block. Unblocked only by an admin placing `msedgedriver.exe` in an allow-listed directory, or by scraping from an unpoliced machine. Task 9's CDP-attach approach sidesteps this for *verification* but not for scraping | Task 11, owner |
+| F17 | `26s_pipeline.py:285` prints an emoji in its WebDriver friendly-error handler. Under redirected stdout the console codepage is cp1257, so the handler crashes with `UnicodeEncodeError` and buries the real cause — every unattended failure reports the wrong problem. Not fixed; outside the scrape's scope | open |
 
 ## Deviations from the plan
 
