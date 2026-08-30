@@ -24,15 +24,10 @@ function updateDynamicTitle() {
 }
 // Initial call moved below currentLanguage initialization
 
-// Update title on language toggle
-document.addEventListener('DOMContentLoaded', function() {
-    const langToggle = document.getElementById('languageToggle');
-    if (langToggle) {
-        langToggle.addEventListener('click', function() {
-            setTimeout(updateDynamicTitle, 10); // Wait for currentLanguage to update
-        });
-    }
-});
+// The title used to be refreshed by a second click listener on the language
+// toggle, firing on a 10 ms timer to "wait for currentLanguage to update".
+// setLanguage() sets the language and calls updateDynamicTitle() itself, in
+// order, so that listener was a duplicate racing the real one.
 // main.js - FINAL VERSION
 // This script is fully optimized to work with the final data structure and includes all new features.
 
@@ -84,7 +79,14 @@ const CALENDAR_SESSION_LIMIT = 4000;
 let calendarSessionLimit = CALENDAR_SESSION_LIMIT;
 let calendarDate = new Date();
 let sessionDataCache = null, activeFilters = { searchTerm: '', searchFieldType: 'all', school: '', institute: '', eap: '', assessmentForm: '', teachingLanguage: '', group: '' };
-const DATA_URL_UNIFIED_COURSES = './unified_courses.json';
+// Dataset identity for this tab. Every calendar request carries
+// activeDatasetVersion so one page load can never mix two datasets, and
+// lastSyncDate is the single source for the sync line in the header -- not a
+// DOM id, not a second fetch.
+let activeDatasetVersion = null;
+let lastSyncDate = null;
+let datasetSource = 'api';          // 'api' | 'fallback'
+let freshnessChecker = null;
 let schoolToInstitutes = new Map(), facultyToGroupsMap = new Map();
 let allUniqueGroups = [], allSchoolNames = new Map();
 let groupBuilderSelected = [];
@@ -963,6 +965,16 @@ function renderCardView(courses) {
 // --- Updated and Final toggleCalendarView Function ---
 
 async function toggleCalendarView() {
+    // On the static fallback there is no dataset version to pin sessions to, so
+    // the calendar would be querying today's sessions against however old the
+    // fallback course metadata is. Showing that silently is worse than not
+    // showing it; the banner already explains why the view is unavailable.
+    if (datasetSource === 'fallback') {
+        renderDatasetNotices();
+        alert(noticeText('fallbackBody'));
+        return;
+    }
+
     document.getElementById('loadingText').textContent = uiTexts.loadingCalendarText[currentLanguage];
     loadingIndicatorDOM.classList.remove('hidden');
 
@@ -1557,6 +1569,10 @@ function setLanguage(lang) {
     populateFilterOptions();
     updateAllUITexts();
     updateDynamicTitle();
+    // Both re-render from stored state, so a language switch cannot lose the
+    // sync date or a standing notice.
+    updateSyncInfoText();
+    renderDatasetNotices();
 }
 
 function setupEventListeners() {
@@ -1725,13 +1741,24 @@ function applySemesterInfo(semester) {
 // --- Main app initialization ---
 async function initializeApp() {
     try {
-        const coursesRes = await fetch(DATA_URL_UNIFIED_COURSES);
-        if (!coursesRes.ok) throw new Error(`Failed to load initial data file.`);
-        const responseData = await coursesRes.json();
+        // One manifest, then every course page, assembled into the envelope this
+        // function has always consumed. The loader refuses to return a partial
+        // course list, so nothing below can initialise against half a dataset.
+        const responseData = await CourseData.loadCourseData({
+            allowFallback: STATIC_FALLBACK_ENABLED,
+        });
         allCourses = responseData.courses || [];
         window.groupToFacultyMap = responseData.groupToFacultyMap || {};
+        activeDatasetVersion = responseData.dataset_version;
+        datasetSource = responseData.source;
+        // The date shown must describe the data actually loaded. On the static
+        // fallback that is the file's own older timestamp, never the manifest's.
+        lastSyncDate = responseData.scraping_datetime || null;
         applySemesterInfo(responseData.semester);
         postProcessUnifiedData();
+        updateSyncInfoText();
+        renderDatasetNotices();
+        startFreshnessWatch();
 
         // --- CORRECTED LOGIC STARTS HERE ---
         const params = new URLSearchParams(window.location.search);
@@ -1802,28 +1829,133 @@ async function initializeApp() {
     }
 }
 
+// --- Dataset notices (fallback banner, new-version prompt) ---
+
+// The committed unified_courses.json is still deployed as a rollback path
+// during the Phase 2 observation window. Task 12 removes it and this flag.
+const STATIC_FALLBACK_ENABLED = true;
+
+// A pending new version, if the freshness check has seen one and the user has
+// not dismissed it. Never acted on automatically.
+let pendingDatasetVersion = null;
+
+const datasetNoticeTexts = {
+    fallbackTitle: {
+        et: 'Varuandmed',
+        en: 'Backup data',
+    },
+    fallbackBody: {
+        et: 'Ainete andmebaasiga ei saanud ühendust, seega on kuvatud varasem salvestatud koopia. Kalendrivaade on välja lülitatud, sest tunniplaani ajad ei pruugi nende ainetega kokku sobida.',
+        en: 'The course database could not be reached, so an earlier saved copy is shown. Calendar view is turned off, because session times may not match these courses.',
+    },
+    updateTitle: {
+        et: 'Uued andmed on saadaval',
+        en: 'New data is available',
+    },
+    updateBody: {
+        et: 'Tunniplaani on pärast selle lehe avamist uuendatud. Lehe värskendamine säilitab rühma ja otsingu, kuid EAP, õppekeele ja kalendrivaate valikud lähevad kaotsi.',
+        en: 'The timetable has been updated since this page was opened. Reloading keeps the group and search filters, but the EAP, teaching-language and calendar-view selections are lost.',
+    },
+    updateAction: { et: 'Värskenda', en: 'Reload' },
+    dismiss: { et: 'Peida', en: 'Dismiss' },
+};
+
+function noticeText(key) {
+    return datasetNoticeTexts[key][currentLanguage] || datasetNoticeTexts[key].et;
+}
+
+function renderDatasetNotices() {
+    const host = document.getElementById('datasetNotices');
+    if (!host) return;
+    host.innerHTML = '';
+
+    if (datasetSource === 'fallback') {
+        host.appendChild(buildNotice({
+            tone: 'warning',
+            title: noticeText('fallbackTitle'),
+            body: noticeText('fallbackBody'),
+        }));
+    }
+    if (pendingDatasetVersion) {
+        const version = pendingDatasetVersion;
+        host.appendChild(buildNotice({
+            tone: 'info',
+            title: noticeText('updateTitle'),
+            body: noticeText('updateBody'),
+            actionLabel: noticeText('updateAction'),
+            // A normal reload, so the URL -- and therefore the filters main.js
+            // round-trips through it -- is preserved by the browser.
+            onAction: () => window.location.reload(),
+            dismissLabel: noticeText('dismiss'),
+            onDismiss: () => {
+                if (freshnessChecker) freshnessChecker.dismiss(version);
+                pendingDatasetVersion = null;
+                renderDatasetNotices();
+            },
+        }));
+    }
+}
+
+function buildNotice({ tone, title, body, actionLabel, onAction, dismissLabel, onDismiss }) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'dataset-notice dataset-notice-' + tone;
+    wrapper.setAttribute('role', 'status');
+
+    const heading = document.createElement('strong');
+    heading.textContent = title;
+    wrapper.appendChild(heading);
+
+    const paragraph = document.createElement('p');
+    paragraph.textContent = body;
+    wrapper.appendChild(paragraph);
+
+    if (actionLabel) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'dataset-notice-action';
+        button.textContent = actionLabel;
+        button.addEventListener('click', onAction);
+        wrapper.appendChild(button);
+    }
+    if (dismissLabel) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'dataset-notice-dismiss';
+        button.textContent = dismissLabel;
+        button.addEventListener('click', onDismiss);
+        wrapper.appendChild(button);
+    }
+    return wrapper;
+}
+
+// Checks only when the tab becomes visible, at most once every five minutes,
+// and only ever offers. Nothing here reloads the page: the user is in the middle
+// of assembling a timetable, and throwing that away because a scrape landed is
+// not a trade worth making for data that is never safety-critical.
+function startFreshnessWatch() {
+    if (datasetSource !== 'api' || !activeDatasetVersion) return;
+    if (typeof CourseData.createFreshnessChecker !== 'function') return;
+    freshnessChecker = CourseData.createFreshnessChecker({});
+    document.addEventListener('visibilitychange', async () => {
+        if (document.visibilityState !== 'visible') return;
+        const version = await freshnessChecker.check(activeDatasetVersion);
+        if (!version) return;
+        pendingDatasetVersion = version;
+        renderDatasetNotices();
+    });
+}
+
 // --- Sync Info Update Function ---
-function updateSyncInfoText(syncDate) {
+// Renders from the stored lastSyncDate, which is the only source. It used to
+// read the date back out of its own <span id="syncDate">, which meant the value
+// survived a language switch only by accident, and the top-level call below it
+// depended on `syncDate` being the browser's implicit global for that element.
+function updateSyncInfoText() {
     const syncInfoDOM = document.getElementById('syncInfo');
     if (!syncInfoDOM) return;
     const taltechUrl = 'https://tunniplaan.taltech.ee/#/public';
-    let textEt = `See leht on sünkroniseeritud <a href="${taltechUrl}" target="_blank" rel="noopener noreferrer" class="underline text-tt-magenta">TalTechi tunniplaaniga</a> <span id="syncDate">${syncDate || '...'}</span>`;
-    let textEn = `This site was synced with <a href="${taltechUrl}" target="_blank" rel="noopener noreferrer" class="underline text-tt-magenta">TalTech Timetable</a> on <span id="syncDate">${syncDate || '...'}</span>`;
+    const shown = lastSyncDate || (semesterInfo && semesterInfo.label) || '...';
+    const textEt = `See leht on sünkroniseeritud <a href="${taltechUrl}" target="_blank" rel="noopener noreferrer" class="underline text-tt-magenta">TalTechi tunniplaaniga</a> <span id="syncDate">${shown}</span>`;
+    const textEn = `This site was synced with <a href="${taltechUrl}" target="_blank" rel="noopener noreferrer" class="underline text-tt-magenta">TalTech Timetable</a> on <span id="syncDate">${shown}</span>`;
     syncInfoDOM.innerHTML = currentLanguage === 'et' ? textEt : textEn;
-}
-
-// Call this after loading data and on language change
-// Example usage after data load:
-updateSyncInfoText(syncDate);
-
-// Example usage on language toggle:
-const langToggle = document.getElementById('languageToggle');
-if (langToggle) {
-    langToggle.addEventListener('click', function() {
-        setTimeout(() => {
-            const syncDateSpan = document.getElementById('syncDate');
-            let syncDate = syncDateSpan ? syncDateSpan.textContent : '';
-            updateSyncInfoText(syncDate);
-        }, 10);
-    });
 }

@@ -22,6 +22,10 @@
         This site was synced with <a href="https://tunniplaan.taltech.ee/#/public" target="_blank" rel="noopener noreferrer" class="underline text-tt-magenta">TalTech Timetable</a> on <span id="syncDate">...</span>
     </div>
 
+    <!-- Backup-data banner and the new-data prompt. Rendered by main.js from
+         stored state, so a language switch cannot lose a standing notice. -->
+    <div id="datasetNotices" class="container mx-auto"></div>
+
     <header class="sticky top-0 z-50 bg-tt-dark-blue text-white p-2 shadow-md">
         <div class="container mx-auto flex items-center justify-between">
             <div class="flex items-center">
@@ -143,15 +147,14 @@
     
     <div id="customTooltip"></div>
 
+    <!-- course-data.js must be parsed before main.js runs: initializeApp calls
+         CourseData.loadCourseData. Both are deferred, and deferred scripts run
+         in document order.
+
+         The second fetch of unified_courses.json that used to live here is gone.
+         It downloaded the whole 5+ MB file a second time purely to fill in the
+         sync date, which main.js now renders from the manifest it already has. -->
+    <script src="course-data.js" defer></script>
     <script src="main.js" defer></script>
-    <script>
-fetch('./unified_courses.json')
-  .then(response => response.json())
-  .then(data => {
-    if (data.scraping_datetime) {
-      document.getElementById('syncDate').textContent = data.scraping_datetime;
-    }
-  });
-</script>
 </body>
 </html>
