@@ -3,7 +3,7 @@
 **Date:** 2026-08-30
 **Repo:** webapp `C:\Projects\tunniplaan`, branch `phase2-api`
 **Plan:** Task 6 · **Spec:** §7.2.2, §9.1, §9.2, §13 (criteria 5, 6)
-**Status:** implemented; awaiting independent review
+**Status:** complete — independently reviewed, all findings applied
 
 ---
 
@@ -49,14 +49,16 @@ SQL column can distinguish "absent" from "null" coming back out. Applying it sym
 what keeps it honest — a source field holding a real value against a null from the API still
 fails, because only one side loses the key.
 
-The gate **counts and prints** how much that rule absorbed, so it can never quietly grow:
+The gate **counts and prints** how much that rule absorbed, at every depth and on both sides,
+so it can never quietly grow:
 
 ```text
-null-for-absent normalisations absorbed: 157
+null keys dropped by canonicalisation (both sides, all depths): 295
 ```
 
-157 is exactly the `school_name_en` population Task 5 measured. If that number jumps, someone
-has to explain why.
+295 decomposes exactly: 157 `school_name_en` nulls from the API, plus 69 nested
+`group_sessions[].session_status` nulls the source already contains — counted once on each
+side. If that number moves, someone has to explain why.
 
 ## 4. Red before green
 
@@ -69,7 +71,7 @@ CONTRACT FAILED: --source-dir points at C:/nope/does/not/exist, which is not a d
 $ node scripts/contract-test-getcourses.js --source-dir <a directory with no artifacts>
 CONTRACT FAILED: …\unified_courses.json does not exist                                     [exit 1]
 
-$ node scripts/contract-test-getcourses.js            # with no source directory configured
+$ node scripts/contract-test-getcourses.js   # with TUNNIPLAAN_DATA_DIR unset in .env too
 CONTRACT FAILED: no source directory. Pass --source-dir or set TUNNIPLAAN_DATA_DIR.
                  There is no repository-root fallback on purpose.                          [exit 1]
 
@@ -88,13 +90,19 @@ contract test ends up passing against the wrong data.
 ```text
 $ node scripts/contract-test-getcourses.js
 Source: C:\Users\siyi.ma\OneDrive - Tallinna Tehnikaülikool\M_õppetöö\TunniplaaniAI\26s\data
+  unified_courses.json: 6687128 bytes, mtime 2026-08-24 14:05:46, sha256 9ad2679dd03f…
+  sessions.json: 52775872 bytes, mtime 2026-08-24 14:05:49, sha256 7f8ec8320d44…
 Reassembled envelope matches the source file.
-  null-for-absent normalisations absorbed: 157
+  null keys dropped by canonicalisation (both sides, all depths): 295
 COURSE CONTRACT OK version=1bf46c1d14e3d474ac97396a77645e7f54657bbc4463bda9767a5a4d56c8da14 \
   courses=1030 groups=430 pages=6 max_page_bytes=1101147
 
 real 1.8s
 ```
+
+The per-artifact provenance line is spec §7.2.2's requirement: identify the file before
+trusting it. Ingesting or testing against the wrong artifact is the most common failure of a
+pipeline like this one, and it is silent.
 
 Matches the receipt shape the plan specifies. `max_page_bytes=1101147` is 1.050 MiB against
 the 4.5 MiB ceiling — and this is now a **standing** measurement of real response bytes,
@@ -147,3 +155,30 @@ sessions, one active semester, one dataset version.
 3. The gate reads the whole 52 MB `sessions.json` only to recompute the version. That is
    unavoidable — the version covers both artifacts — but it is why the course gate takes
    1.8 s rather than 0.3 s.
+
+## 9. Independent review findings, applied
+
+Verdict: **approved with minor findings**. The reviewer attacked the gate 26 ways —
+injecting corruptions on the API side through a wrapper, and on the source side with the
+version check neutralised so the reassembly logic itself was exercised — and it caught 24.
+Both misses were the disclosed null rule, and only one was a genuine weakness.
+
+It confirmed the normalisation is honest rather than permissive, by proof rather than by
+reading: `false`, `0` and `""` all survive (strict `=== null`); array nulls are preserved so
+array length never shifts; a source value against an API null is caught in *both* directions;
+and a null nested two levels deep inside `group_sessions` is caught. The largest failure
+diagnostic across all 26 runs was **336 bytes** — bounded, as the plan requires.
+
+| # | Finding | Fix |
+|---|---|---|
+| **I1** | The "absorbed" counter was a separate top-level-only pass, so it never descended into `group_sessions` or `study_programmes` and counted only one direction. The reviewer proved it: adding a null nested key on the API side left the count at 157 and the gate green. The source already contains **69 nested `session_status` nulls** the counter never saw | counting moved inside `canonical()` itself, so it covers every depth and both sides. The figure is now **295** = 157 + 69 + 69, and a nested null appearing in a future ingest moves it |
+| **I2** | Spec §7.2.2 requires each run to print the resolved path with each file's size, mtime and SHA-256 prefix before doing anything else; both scripts printed only the directory | both now print the full provenance line per artifact |
+| M1 | `--source-dir=PATH` inline form in the session test sliced 14 characters off a 13-character prefix, eating the first character of the path | uses `'--source-dir='.length`; verified with the inline form |
+| M2 | The gate asserted page immutability but never the manifest's own `no-store` | asserted, with the reason in the message |
+| M3 | Stopping the resolution at two tiers instead of spec §7.2.2's three is an undeclared deviation | recorded in the ledger as **D6**, accepted |
+| M4 | Dead `\|\| '(root)'` in a branch where the value is already truthy | removed |
+
+Two report inaccuracies the reviewer could not reproduce, both corrected above: the
+"no source configured" red case needs `TUNNIPLAAN_DATA_DIR` unset as well (the `.env` supplies
+it), and the session gate took 14.9 s for them against 8.0 s here — network latency to Neon,
+not a code difference.

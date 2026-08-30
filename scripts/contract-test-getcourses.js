@@ -69,12 +69,22 @@ function resolveSourceDir() {
 // the way back. So a null is treated as an absent key -- on BOTH sides, which
 // keeps it symmetric. A source field holding a real value against a null from the
 // API still mismatches, because only one side loses the key.
+// Counted at every depth and on both sides, so the printed figure is the true
+// extent of the rule. A counter that only saw top-level course keys would have
+// missed the 69 nested `group_sessions[].session_status` nulls the source
+// already contains, and would not have moved at all if a future ingest started
+// nulling a nested field.
+let nullsDropped = 0;
+
 function canonical(value) {
   if (Array.isArray(value)) return value.map(canonical);
   if (value && typeof value === 'object') {
     const out = {};
     for (const key of Object.keys(value).sort()) {
-      if (value[key] === null || value[key] === undefined) continue;
+      if (value[key] === null || value[key] === undefined) {
+        nullsDropped++;
+        continue;
+      }
       out[key] = canonical(value[key]);
     }
     return out;
@@ -121,7 +131,7 @@ function firstDifference(expected, actual, trail = '') {
 
 function assertEqual(label, expected, actual) {
   const diff = firstDifference(canonical(expected), canonical(actual));
-  if (diff) fail(`${label} differs at ${diff || '(root)'}`);
+  if (diff) fail(`${label} differs at ${diff}`);
 }
 
 async function main() {
@@ -136,7 +146,17 @@ async function main() {
   for (const file of [unifiedPath, sessionsPath]) {
     if (!fs.existsSync(file)) fail(`${file} does not exist`);
   }
+  // Spec 7.2.2: print the resolved path with each file's size, mtime and hash
+  // prefix before doing anything else. Ingesting or testing against the wrong
+  // file is the most common failure of a pipeline like this, and it is silent.
   console.log(`Source: ${sourceDir}`);
+  for (const file of [unifiedPath, sessionsPath]) {
+    const stat = fs.statSync(file);
+    const digest = crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+    console.log(`  ${path.basename(file)}: ${stat.size} bytes, `
+      + `mtime ${stat.mtime.toISOString().slice(0, 19).replace('T', ' ')}, `
+      + `sha256 ${digest.slice(0, 12)}…`);
+  }
 
   // The version covers both artifacts, so it cannot be derived from course
   // metadata alone -- sessions.json has to be read even though this test is
@@ -159,6 +179,10 @@ async function main() {
   const manifestResponse = await manifestFn.handler({});
   if (manifestResponse.statusCode !== 200) {
     fail(`manifest returned ${manifestResponse.statusCode}: ${manifestResponse.body}`);
+  }
+  if (manifestResponse.headers['Cache-Control'] !== 'no-store') {
+    fail(`the manifest is cacheable (${manifestResponse.headers['Cache-Control']}); its `
+       + 'freshness is what invalidates every immutable page behind it');
   }
   const manifest = JSON.parse(manifestResponse.body);
 
@@ -226,16 +250,8 @@ async function main() {
     if (diff) fail(diff);
   }
 
-  // Visible rather than silent: how much the null/absent rule actually absorbed.
-  let absorbed = 0;
-  for (let i = 0; i < expectedCourses.length; i++) {
-    for (const key of Object.keys(actualCourses[i])) {
-      if (actualCourses[i][key] === null && !(key in expectedCourses[i])) absorbed++;
-    }
-  }
-
   console.log(`Reassembled envelope matches the source file.`);
-  console.log(`  null-for-absent normalisations absorbed: ${absorbed}`);
+  console.log(`  null keys dropped by canonicalisation (both sides, all depths): ${nullsDropped}`);
   console.log(`COURSE CONTRACT OK version=${manifest.dataset_version} `
     + `courses=${apiCourses.length} groups=${Object.keys(manifest.groupToFacultyMap).length} `
     + `pages=${manifest.total_pages} max_page_bytes=${maxPageBytes}`);

@@ -5,6 +5,7 @@
 // order are not part of the contract, so both sides are canonicalized first.
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const assert = require('assert');
 const { neon } = require('@neondatabase/serverless');
 const { handleRequest, _resetSemesterCache } = require('../netlify/functions/getTimetable.js');
@@ -46,7 +47,8 @@ function resolveSourceDir() {
   const argv = process.argv.slice(2);
   const flag = argv.indexOf('--source-dir');
   const inline = argv.find((a) => a.startsWith('--source-dir='));
-  const cli = flag !== -1 ? argv[flag + 1] : (inline ? inline.slice(14) : undefined);
+  const cli = flag !== -1 ? argv[flag + 1]
+    : (inline ? inline.slice('--source-dir='.length) : undefined);
   for (const [value, origin] of [[cli, '--source-dir'],
     [process.env.TUNNIPLAAN_DATA_DIR, 'TUNNIPLAAN_DATA_DIR']]) {
     if (!value) continue;
@@ -66,7 +68,14 @@ async function main() {
   const sourceDir = resolveSourceDir();
   const sessionsPath = path.join(sourceDir, 'sessions.json');
   if (!fs.existsSync(sessionsPath)) throw new Error(`${sessionsPath} does not exist`);
+  // Spec 7.2.2: identify the artifact before trusting it.
+  const stat = fs.statSync(sessionsPath);
+  const digest = crypto.createHash('sha256')
+    .update(fs.readFileSync(sessionsPath)).digest('hex');
   console.log(`Source: ${sourceDir}`);
+  console.log(`  sessions.json: ${stat.size} bytes, `
+    + `mtime ${stat.mtime.toISOString().slice(0, 19).replace('T', ' ')}, `
+    + `sha256 ${digest.slice(0, 12)}…`);
   const allEvents = JSON.parse(fs.readFileSync(sessionsPath, 'utf-8'));
   const courseIds = [...new Set(allEvents.map((e) => e.course_id))].sort();
   console.log(`${allEvents.length} events, ${courseIds.length} distinct courses`);
