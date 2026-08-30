@@ -65,12 +65,15 @@ so a production ingest cannot be run by accident. Credentials never appear in a 
 | 8 Versioned calendar | **complete, reviewed** | webapp `phase2-frontend` | `5e3cc64`, `0ac0c64` | version pinning, 409 handling, cache split, and contract coverage |
 | 9 Local E2E | **complete, reviewed** | webapp `phase2-frontend` | `097f901`, `a4c9d76` | HTTP matrix and real-browser matrix pass; 15/15 browser checks |
 | 10 Docs / runbook | implemented; independent review pending | both | `4a2556a`, `ef1d92f`, `867950d` | cold-operator findings applied; final independent review still required |
-| 11 Staged rollout | pending | both | | explicit user gate |
+| 11 Staged rollout | **in progress — webapp branches consolidated into `dev`** | both | webapp closeout commit | owner explicitly directed both Phase 2 branches into `dev`; deployment, production-data, review, and `main` gates remain |
 | 12 Gated cleanup | pending | webapp | | not before 2026-09-15 |
 
 ## Production checkpoints
 
-None reached. No DDL, ingest, push, merge, or deploy has been performed in Phase 2.
+The webapp code rollout to `dev` was completed on 2026-08-30. After the initial API-only
+push, the owner explicitly directed `phase2-frontend` to be fast-forwarded into `dev` and
+both remote feature refs to be removed. No production DDL, production ingest, merge to
+`main`, verified deployment gate, or Task 12 cleanup has been performed.
 
 ## Cross-task findings
 

@@ -65,25 +65,36 @@ report still says independent review is pending. The ledger deliberately keeps t
 status visible; it is a prerequisite for the frontend cutover, not a reason to mix
 the frontend commits into the additive API stage.
 
+### Owner override
+
+After Stage A, the owner clarified that the desired repository state is one remote
+development branch, not two retained Phase 2 refs. The explicit instruction was to
+fast-forward the full `phase2-frontend` lineage into `dev`, push it, and remove
+`phase2-api` and `phase2-frontend` from the remote. That instruction supersedes the
+branch-retention part of the recommendation above; it does not authorise production
+DDL, ingest, a `main` merge, or Task 12 cleanup.
+
 ## Execution record
 
 The agreed first stage was executed after this review:
 
 - `phase2-api` was published as `origin/phase2-api` at `773fd4f`;
-- `phase2-frontend` was published as `origin/phase2-frontend` at `671c8c1`;
+- `phase2-frontend` was first published at `671c8c1`, then advanced to `7763158`
+  with the rollout record and ledger correction;
 - `dev` was fast-forwarded from `7500c2a` to `773fd4f` and pushed to
   `origin/dev`;
 - the API-stage Node test suite passed: 4 test files, 0 failures;
-- no production DDL, production ingest, `main` merge, or frontend merge was done.
+- the owner then directed the complete frontend lineage into `dev`; the closeout commit
+  records that override before the final fast-forward and remote-ref removal;
+- no production DDL, production ingest, or `main` merge was done.
 
-The next gate is verification of the additive API deployment and the old frontend,
-followed by the approved Neon migration/ingest and production contract checks. The
-frontend branch must remain separate until those checks and Task 10's independent
-cold-operator review are complete.
+The next gate is verification of the combined `dev` deployment, followed by the approved
+Neon migration/ingest and production contract checks. Task 10's independent cold-operator
+review remains open even though its implementation is now on `dev`.
 
 ## Recovery path
 
-Both merges are fast-forward-only. Before each push, verify the target branch and
-run `git status --short`. If a deployment or API parity check fails, leave `dev` at
-the last verified commit; do not force-push or merge `main`.
+The final merge into `dev` is fast-forward-only. Before pushing, verify the target branch
+and run `git status --short`. If a deployment or API parity check fails, fix forward on
+`dev`; do not force-push or merge `main`.
 
