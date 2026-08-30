@@ -54,8 +54,8 @@ blank and are owner-supplied. Credentials never appear in a tracked file.
 |---|---|---|---|---|
 | 0 Baselines and ledger | **complete, reviewed** | both | `7500c2a` (+ 3 text fixes in Task 1's commit) | independent review: *approved with minor findings*, 3 doc-consistency fixes, all applied |
 | 1 Dataset identity columns | **complete, reviewed** | webapp `phase2-api` | `ffce930` + this fix commit | review: *changes required* → all findings applied. Migration proven idempotent on disposable branch `br-calm-art-as9qjjef`; production untouched |
-| — Scraper manifest prerequisite | **review** | scraper `phase2-neon-ingest` | `9182c49` | `metadata.json` gains an `artifacts` block + `verify_artifacts()`; blocks Task 2 |
-| 2 Producer validation + mapping | pending | scraper | | must add source-dir resolution |
+| — Scraper manifest prerequisite | **complete, reviewed** | scraper `phase2-neon-ingest` | `9182c49`, `c38a87e` | review: *approved with minor findings*; 3 hardening gaps closed (empty dataset, sessions-not-an-array, malformed manifest shapes) |
+| 2 Producer validation + mapping | **review** | scraper `phase2-neon-ingest` | `289f46d` | `data_contract.py` + `neon_ingest.py`; source-dir resolution added; suite 73 → 133 |
 | 3 Atomic ingest + rollback proof | pending | scraper | | blocks Task 6 |
 | 4 Manifest endpoint | pending | webapp | | needs `NEON_DATABASE_URL` |
 | 5 Paged courses endpoint | pending | webapp | | 6 pages, largest 1.050 MiB |
@@ -75,7 +75,7 @@ None reached. No DDL, ingest, push, merge, or deploy has been performed in Phase
 
 | # | Finding | Owner |
 |---|---|---|
-| F1 | `NEON_DATABASE_URL` / `NEON_SCRAPER_URL` / `NEON_TEST_*` still blank | owner, before Task 4 |
+| F1 | ~~`NEON_*` blank~~ **closed 2026-08-30.** Test-branch credentials generated from the Neon control plane at the owner's instruction and written to both `.env` files (gitignored). `webapp_ro` connectivity confirmed against `br-calm-art-as9qjjef`: reads 66,846 sessions and both Phase 2 columns. **`NEON_SCRAPER_URL` (production write) remains deliberately unset** — production ingest is Task 11's gate | closed; production credential still owner-only |
 | F2 | Hardcoded `DATA_DIRECTORY` embeds username `siyima`; unusable on this device | Task 2 |
 | F3 | `scripts/contract-test-gettimetable.js` reads a deleted repo-root `sessions.json` | Task 8 |
 | F4 | `groups` and `courses` are empty in production (0 rows); only Task 3 can populate them | Task 6 |
@@ -83,6 +83,7 @@ None reached. No DDL, ingest, push, merge, or deploy has been performed in Phase
 | F6 | Live `semesters.scraping_datetime` (`16:43`) disagrees with the source pair (`17:05`) — a real instance of the §7.2.1 hazard | scraper manifest task |
 | F7 | `db/roles.sql` **was** applied: `webapp_ro` holds SELECT only on all four tables (closes handoff finding 7) | resolved |
 | F8 | `npm` is usable here, contradicting the recorded group-policy block; unverified for real installs | informational |
+| F11 | The disposable branch is now also the **Phase 2 integration test target** — `NEON_TEST_SCRAPER_URL` / `NEON_TEST_DATABASE_URL` (scraper) and `NEON_DATABASE_URL` (webapp local) all point at it. Reused rather than creating a second full copy of production data. Netlify's production env is untouched | Task 3 onward |
 | F9 | Disposable Neon branch `phase2-task1-migration-test` (`br-calm-art-as9qjjef`) holds a copy of production data and one additional, **redundant** `webapp_ro → neondb_owner` membership row (production already grants that membership via `cloud_admin`). Delete after Task 1's review — needs owner approval | owner, after Task 1 review |
 | F10 | `db/roles.sql` needs no change for the new columns: table-level grants extend to columns added later (verified both by catalog and by acting as the role) | Task 10 runbook |
 
