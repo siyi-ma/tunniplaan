@@ -3,13 +3,33 @@
 // string in the given env var. {{NAME}} placeholders are substituted from the
 // environment before execution, so .sql files never contain secrets.
 // Usage: node scripts/run-sql.js <file.sql> [ENV_VAR]   (ENV_VAR defaults to NEON_ADMIN_URL)
+// Reads the repo's .env; an already-exported variable wins over the file.
 // Limitation: statements must not contain a ';' at end-of-line mid-statement.
 const fs = require('fs');
+const path = require('path');
 const { neon } = require('@neondatabase/serverless');
+
+function loadDotEnv(file) {
+  if (!fs.existsSync(file)) return;
+  for (const line of fs.readFileSync(file, 'utf-8').split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eq = trimmed.indexOf('=');
+    if (eq < 1) continue;
+    const key = trimmed.slice(0, eq).trim();
+    // An exported variable wins over the file, as everywhere else in Phase 2.
+    if (process.env[key] === undefined) process.env[key] = trimmed.slice(eq + 1).trim();
+  }
+}
 
 async function main() {
   const [file, envVar = 'NEON_ADMIN_URL'] = process.argv.slice(2);
   if (!file) throw new Error('Usage: node scripts/run-sql.js <file.sql> [ENV_VAR]');
+  // Both the connection string and any {{PLACEHOLDER}} below resolve from .env,
+  // the same source the contract tests and the dev server read. Without this an
+  // operator who followed the runbook and wrote NEON_ADMIN_URL to .env gets
+  // "Env var NEON_ADMIN_URL is not set" and no hint that the file was ignored.
+  loadDotEnv(path.resolve(__dirname, '..', '.env'));
   const url = process.env[envVar];
   if (!url) throw new Error(`Env var ${envVar} is not set`);
 
