@@ -218,7 +218,9 @@ absent from the faculty-filtered dropdown.
 ### Git LFS Considerations
 
 - `unified_courses.json` is the only remaining LFS-tracked data file (session data now lives in Neon, not a bundled file)
-- Use `.gitattributes` to track large JSON files with LFS
+- Track individual large files in `.gitattributes` **by name**. Never glob an extension:
+  a `*.json` rule put `package.json` and `package-lock.json` into LFS, so a clone without
+  `git lfs pull` got pointer stubs instead of a readable manifest (narrowed 2026-08-30)
 - Never commit large files without LFS
 
 ### Performance

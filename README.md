@@ -28,9 +28,14 @@ The app is deployed on Netlify and uses a Netlify function to fetch timetable se
 ## Prerequisites
 
 - Node.js
-- npm
 - Git LFS
-- Optional: Netlify CLI for full local parity, though `npx netlify` works through the npm script
+
+> **`npm` and `npx` are blocked by group policy on the maintainer's devices.** Invoke Node
+> directly instead: `node --test` for the suite, `node --check <file>` for syntax,
+> `node scripts/<name>.js` for scripts. To satisfy a missing dependency, copy the
+> lockfile-pinned version out of a sibling project's `node_modules` rather than installing --
+> check the sibling's version against `package-lock.json` first. The npm commands below are
+> the upstream equivalents, for anyone whose environment permits them.
 
 ## Setup
 
@@ -205,7 +210,9 @@ Manual build hooks are also configured in `.vscode/tasks.json`.
 ## Notes for Contributors
 
 - Keep `unified_courses.json` in Git LFS.
-- Test calendar behavior with `npm run dev:netlify`, not with a static-only server.
+- Test calendar behavior against a server that actually serves `/.netlify/functions/*`, not a
+  static-only one. `npm run dev:netlify` is the upstream way; where `npx` is blocked, see the
+  local function server described in the Phase 2 plan (`docs/superpowers/plans/`).
 - Preserve bilingual UI strings in the `uiTexts` object in `main.js`.
 - Keep search UX and group-timetable UX conceptually separate.
 - Be careful with calendar performance. The app enforces a 4000-session limit before rendering the weekly view.
