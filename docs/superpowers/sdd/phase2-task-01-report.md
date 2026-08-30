@@ -1,0 +1,162 @@
+# Task 1 report — Add dataset identity columns and an idempotent migration
+
+**Date:** 2026-08-30
+**Repository:** webapp `C:\Projects\tunniplaan`, branch `dev`
+**Status:** implemented; awaiting independent review
+
+---
+
+## 1. Changes
+
+| File | Change |
+|---|---|
+| `db/schema.sql` | `semesters` gains nullable `dataset_version text` and `ingested_at timestamptz` |
+| `db/migrations/20260829_phase2_dataset_version.sql` | new — two `ADD COLUMN IF NOT EXISTS` statements |
+| `tests/db/schema.test.js` | new — three static assertions over the checked-in DDL |
+
+Nothing else was touched. No Netlify function, no `main.js`, no wire contract, no
+credential, no production DDL.
+
+## 2. Red → green
+
+The test was written first and failed for the right reason:
+
+```text
+not ok 1 - clean schema declares the Phase 2 dataset identity columns
+  error: 'semesters.dataset_version must be declared text'
+not ok 2 - the Phase 2 columns stay nullable until an ingest backfills them
+  error: 'semesters.dataset_version must exist'
+not ok 3 - the Phase 2 migration is idempotent and matches the clean schema
+  error: '…\db\migrations\20260829_phase2_dataset_version.sql must exist'
+# tests 10  # pass 7  # fail 3
+```
+
+After the schema and migration were added:
+
+```text
+# tests 10  # pass 10  # fail 0
+```
+
+The pre-existing seven `getTimetable` tests were green before and after.
+
+One intermediate failure is worth recording: the "no NOT NULL constraint" assertion
+first matched the phrase *"Do not add NOT NULL here"* in the migration's own comment
+header. The **test** was wrong, not the migration — a constraint assertion must read
+statements, not prose — so `stripComments()` was added and applied to both files.
+Deleting the comment would have removed the warning a future editor most needs.
+
+### Why a static test at all
+
+`db/schema.sql` and the migration are applied by hand and have no runtime consumer, so
+nothing else catches drift between them. A column added to one and not the other yields
+two different `semesters` shapes depending on whether a database was *created* or
+*migrated* — and the divergence would only surface much later, in Task 4's manifest
+query. The test asserts three things: the clean schema declares both columns with the
+right types, neither is `NOT NULL`, and the migration adds exactly those columns
+idempotently and additively (no `DROP`).
+
+## 3. Migration proof on a disposable branch
+
+Branch `phase2-task1-migration-test` (`br-calm-art-as9qjjef`), created from production
+HEAD (`br-misty-dawn-asz71awx`, LSN `0/6C480F8`), so it carries the real schema, the real
+row, and the real roles.
+
+**Before:** query for the two columns returned `[]` — neither existed.
+
+**First apply** (both statements in one transaction): success. Resulting `semesters`:
+
+```text
+ 1 code              text                      NOT NULL
+ 2 label             text                      NOT NULL
+ 3 name_et           text
+ 4 name_en           text
+ 5 start_date        date
+ 6 end_date          date
+ 7 week1_monday      date
+ 8 is_active         boolean                   NOT NULL DEFAULT false
+ 9 scraping_datetime text
+10 dataset_version   text                      nullable, no default   <-- new
+11 ingested_at       timestamp with time zone  nullable, no default   <-- new
+```
+
+Both new columns are nullable with no default, as the plan requires. Column order matches
+`db/schema.sql`.
+
+**Second apply:** the identical transaction ran again and **succeeded with no
+duplicate-column error**; the table still reports 11 columns. Idempotence proven.
+
+## 4. Role isolation
+
+Two independent checks on the same branch.
+
+**Catalog privileges** — table-level grants automatically extend to columns added later,
+so `db/roles.sql` needed no change:
+
+| Check | Result |
+|---|---|
+| `webapp_ro` SELECT `dataset_version` / `ingested_at` | **true / true** |
+| `webapp_ro` UPDATE `dataset_version` / `ingested_at` | **false / false** |
+| `webapp_ro` INSERT / DELETE on `semesters` | false / false |
+| `scraper_rw` UPDATE `dataset_version` / `ingested_at` | true / true |
+
+**Empirical, acting as the role.** `neondb_owner` could not `SET ROLE webapp_ro`
+(`permission denied to set role "webapp_ro"`), so membership was granted **on the
+disposable branch only** to make the proof real rather than catalog-derived:
+
+```text
+SET LOCAL ROLE webapp_ro;
+select current_user, code, dataset_version, ingested_at from semesters where is_active;
+  -> webapp_ro | 26s | null | null            -- reads the new columns
+
+SET LOCAL ROLE webapp_ro;
+update semesters set dataset_version = 'must-not-succeed' where is_active;
+  -> ERROR: permission denied for table semesters
+```
+
+The `GRANT webapp_ro TO neondb_owner` exists only on the throwaway branch. Production
+role membership is unchanged, and `db/roles.sql` is untouched.
+
+## 5. Production untouched
+
+After all of the above, queried against the production default branch:
+
+```text
+phase2_columns_on_production = 0
+semesters = 1
+sessions  = 66846
+```
+
+Neither column exists in production, and no row changed. Production DDL happens at
+Task 11's gate, not here.
+
+## 6. Verification output
+
+```text
+node --test        # tests 10  # pass 10  # fail 0
+git diff --check   (no output)
+```
+
+## 7. Carried forward
+
+1. The disposable branch `phase2-task1-migration-test` (`br-calm-art-as9qjjef`) still
+   exists and holds a full copy of production data plus a role-membership grant that
+   production does not have. **It must be deleted once this task's review is complete** —
+   deletion needs the owner's explicit approval.
+2. The production migration is deferred to Task 11's staged rollout, together with the
+   first atomic ingest that backfills both columns.
+3. `db/roles.sql` needs no amendment: table-level grants already cover columns added
+   later. Worth restating in Task 10's runbook so nobody "fixes" it.
+
+## 8. Task 0 review findings, applied here
+
+The Task 0 independent review returned *approved with minor findings*. All three text
+fixes ride along in this task's commit:
+
+| Finding | Fix |
+|---|---|
+| Spec and plan still said "the drafts remain `Draft — pending review`" in their Review notes, contradicting the approved header | sentence replaced in both files |
+| Task 0's "Expected evidence" said `No tracked commit`, contradicting §1.1's requirement that the ledger be tracked | bullet narrowed to application code/schema/data; logged as **D3** |
+| Report §6 cited spec §14 for the payload ceiling; §14 is the rollout gate list | corrected to §9.2 / §13 criterion 6 |
+
+Marking the spec and plan `Approved` was also logged as **D4**, since it rests on owner
+authorisation no reviewer can verify independently.

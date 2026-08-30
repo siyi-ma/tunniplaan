@@ -37,8 +37,8 @@ blank and are owner-supplied. Credentials never appear in a tracked file.
 
 | Task | Status | Repo | Commits | Notes |
 |---|---|---|---|---|
-| 0 Baselines and ledger | **complete** | both | this commit | no code diff; see task 00 report |
-| 1 Dataset identity columns | pending | webapp | | schema confirmed unchanged from `db/schema.sql` |
+| 0 Baselines and ledger | **complete, reviewed** | both | `7500c2a` (+ 3 text fixes in Task 1's commit) | independent review: *approved with minor findings*, 3 doc-consistency fixes, all applied |
+| 1 Dataset identity columns | **review** | webapp | this commit | migration proven idempotent on disposable branch `br-calm-art-as9qjjef`; production untouched |
 | 2 Producer validation + mapping | pending | scraper | | must add source-dir resolution |
 | 3 Atomic ingest + rollback proof | pending | scraper | | blocks Task 6 |
 | 4 Manifest endpoint | pending | webapp | | needs `NEON_DATABASE_URL` |
@@ -67,6 +67,8 @@ None reached. No DDL, ingest, push, merge, or deploy has been performed in Phase
 | F6 | Live `semesters.scraping_datetime` (`16:43`) disagrees with the source pair (`17:05`) — a real instance of the §7.2.1 hazard | scraper manifest task |
 | F7 | `db/roles.sql` **was** applied: `webapp_ro` holds SELECT only on all four tables (closes handoff finding 7) | resolved |
 | F8 | `npm` is usable here, contradicting the recorded group-policy block; unverified for real installs | informational |
+| F9 | Disposable Neon branch `phase2-task1-migration-test` (`br-calm-art-as9qjjef`) holds a copy of production data and a `GRANT webapp_ro TO neondb_owner` that production lacks. Delete after Task 1's review — needs owner approval | owner, after Task 1 review |
+| F10 | `db/roles.sql` needs no change for the new columns: table-level grants extend to columns added later (verified both by catalog and by acting as the role) | Task 10 runbook |
 
 ## Deviations from the plan
 
@@ -74,6 +76,8 @@ None reached. No DDL, ingest, push, merge, or deploy has been performed in Phase
 |---|---|---|
 | D1 | Task 0's final step named `.superpowers/sdd/phase2-progress.md`; the ledger was created at `docs/superpowers/sdd/` and the plan line corrected | leftover from review pass 1's B2 fix; §1.1 already specified `docs/superpowers/sdd/` |
 | D2 | Neon was inspected through the Neon control plane rather than a `webapp_ro` psql session | `NEON_DATABASE_URL` is not yet available; the queries were read-only `information_schema` and `count(*)` reads, and grants were verified directly. A `webapp_ro` connectivity check is carried into Task 4 |
+| D3 | Task 0's "Expected evidence" said `No tracked commit`, but §1.1 requires the ledger, brief, and report to be tracked and committed with the task. The bullet was corrected to forbid tracked *application-code, schema, or data* commits, which is what Task 0 actually means | same class of leftover as D1; raised by the Task 0 independent reviewer |
+| D4 | Moving the spec and plan from `Draft` to `Approved` is not one of Task 0's enumerated steps | it rests on the owner's authorisation to begin Task 0, which no reviewer can verify independently. Recorded here so the provenance of the status change is explicit. Plan §1.4 gates only branch creation on review, and §1.3 gates push/merge/deploy/DDL/ingest on Task 11 — none of which occurred |
 
 ## Commands run in Task 0
 

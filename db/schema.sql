@@ -7,8 +7,12 @@ CREATE TABLE semesters (
   end_date      date,
   week1_monday  date,
   is_active     boolean NOT NULL DEFAULT false,
-  scraping_datetime text                   -- as-scraped ("16.07.2026 19:48"); informational only
+  scraping_datetime text,                  -- as-scraped ("16.07.2026 19:48"); informational only
+  dataset_version text,                    -- SHA256(unified_courses.json || 0x00 || sessions.json)
+  ingested_at   timestamptz                -- when the transaction that wrote this dataset committed
 );
+-- dataset_version and ingested_at stay nullable: rows written before Phase 2 have
+-- neither, and the first atomic ingest is what backfills them.
 -- Exactly one row has is_active = true; the scraper sets it at ingest.
 
 CREATE TABLE groups (

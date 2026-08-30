@@ -187,8 +187,9 @@ page size 200 → total_pages 6, spec §9.2 envelope:
 ```
 
 **Every figure in the specification reproduces exactly**: 6,687,128 raw, 5,168,251 compact,
-largest page 1,100,773 (1.050 MiB), six pages. Spec §9.2's page-size choice and §14's payload
-criterion are confirmed against the real artifact.
+largest page 1,100,773 (1.050 MiB), six pages. Spec §9.2's page-size choice and its 4.5 MiB
+payload ceiling (spec §9.2, restated as acceptance criterion 6 in §13) are confirmed
+against the real artifact.
 
 The `unified_courses.json` top-level keys are `semester`, `groupToFacultyMap`,
 `scraping_datetime`, `courses`. Note the key is **`groupToFacultyMap`** (camelCase), not the

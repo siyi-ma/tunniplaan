@@ -708,5 +708,5 @@ ingests plus 48 hours or 2026-09-15, and kept published during the window.
 
 ### Still open
 
-Nothing from review passes 1 or 2. The drafts remain `Draft — pending review` pending the
-owner's approval to begin Task 0.
+Nothing from review passes 1 or 2. Both documents were approved by the owner on
+2026-08-30; execution began at Task 0.
