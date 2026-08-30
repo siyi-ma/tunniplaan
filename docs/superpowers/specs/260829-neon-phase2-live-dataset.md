@@ -1,7 +1,7 @@
 # Neon Phase 2 — Live Course Dataset Specification
 
 **Date:** 2026-08-29
-**Status:** Draft — pending review
+**Status:** Approved — 2026-08-30 (owner authorised execution to begin at Task 0)
 **Branch:** dev
 
 ---

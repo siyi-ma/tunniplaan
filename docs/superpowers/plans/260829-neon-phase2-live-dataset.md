@@ -1,7 +1,7 @@
 # Neon Phase 2 — Live Course Dataset Implementation Plan
 
 **Date:** 2026-08-29
-**Status:** Draft — pending review
+**Status:** Approved — 2026-08-30 (owner authorised execution to begin at Task 0)
 **Branch:** dev
 
 > **For downstream agents:** execute this plan through the repository's SDD controller
@@ -253,7 +253,7 @@ every contract run.
 - [ ] Measure current source bytes using a deterministic script: raw JSON, compact
   envelope, largest 200-course page, and source counts. Run it against the resolved source
   directory, not the webapp worktree.
-- [ ] Create `.superpowers/sdd/phase2-progress.md` and attach all evidence.
+- [ ] Create `docs/superpowers/sdd/phase2-progress.md` and attach all evidence.
 
 ### Stop conditions
 
