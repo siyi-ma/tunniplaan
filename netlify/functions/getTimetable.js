@@ -8,12 +8,17 @@ const JSON_HEADERS = {
   'Cache-Control': 'public, max-age=300, stale-while-revalidate=3600',
 };
 
-// A versioned 200 whose body is the session array is content-addressed: the URL
-// names a hash of the source artifacts, so those bytes can never change.
-const IMMUTABLE_HEADERS = {
-  'Content-Type': 'application/json',
-  'Cache-Control': 'public, max-age=31536000, immutable',
-};
+// Shared with the other Phase 2 endpoints. Two copies of one cache policy and
+// one version regex is two things to keep in step; lib/ is a subdirectory
+// precisely so it is not itself deployed as a function.
+//
+// IMMUTABLE_HEADERS applies to a versioned 200 whose body is the session array:
+// the URL names a hash of the source artifacts, so those bytes cannot change.
+const {
+  IMMUTABLE_HEADERS,
+  NO_STORE_HEADERS,
+  isDatasetVersion,
+} = require('./lib/dataset.js');
 
 // limit_exceeded does NOT get that policy. Its content depends on
 // CALENDAR_SESSION_LIMIT, an environment variable that can change without the
@@ -22,13 +27,6 @@ const LIMIT_ENVELOPE_HEADERS = {
   'Content-Type': 'application/json',
   'Cache-Control': 'public, max-age=300',
 };
-
-const NO_STORE_HEADERS = {
-  'Content-Type': 'application/json',
-  'Cache-Control': 'no-store',
-};
-
-const DATASET_VERSION_PATTERN = /^[0-9a-f]{64}$/;
 
 let cachedSql = null;
 function getSql() {
@@ -117,16 +115,17 @@ async function handleRequest(event, sql) {
   // Missing version keeps the existing behaviour, so the frontend deployed
   // today stays compatible through the rollout.
   if (version !== undefined) {
-    if (typeof version !== 'string' || !DATASET_VERSION_PATTERN.test(version)) {
+    if (!isDatasetVersion(version)) {
       return { statusCode: 400, headers: NO_STORE_HEADERS,
         body: JSON.stringify({ error: 'bad_request' }) };
     }
-  }
-
-  if (!coursesParam) {
+  } else if (!coursesParam) {
+    // Legacy shortcut, unchanged. A *versioned* request with no courses does
+    // not take it: the client asked for a pinned answer, so it still gets the
+    // version checked rather than an unpinned empty array cached for a year.
     return { statusCode: 200, headers: JSON_HEADERS, body: JSON.stringify([]) };
   }
-  const courseIds = coursesParam.split(',').map((s) => s.trim()).filter(Boolean);
+  const courseIds = (coursesParam || '').split(',').map((s) => s.trim()).filter(Boolean);
 
   try {
     if (version !== undefined) {
@@ -163,7 +162,8 @@ async function handleRequest(event, sql) {
     return { statusCode: 200, headers: JSON_HEADERS, body: JSON.stringify(rows) };
   } catch (error) {
     console.error('getTimetable query failed:', error);
-    return { statusCode: 500, body: JSON.stringify({ error: 'Error processing timetable data.' }) };
+    return { statusCode: 500, headers: NO_STORE_HEADERS,
+      body: JSON.stringify({ error: 'Error processing timetable data.' }) };
   }
 }
 
@@ -173,7 +173,8 @@ exports.handler = async (event) => {
     sql = getSql();
   } catch (error) {
     console.error('getTimetable configuration error:', error);
-    return { statusCode: 500, body: JSON.stringify({ error: 'Error processing timetable data.' }) };
+    return { statusCode: 500, headers: NO_STORE_HEADERS,
+      body: JSON.stringify({ error: 'Error processing timetable data.' }) };
   }
   return handleRequest(event, sql);
 };

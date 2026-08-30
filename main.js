@@ -1971,6 +1971,10 @@ let calendarConflictHandled = false;
 async function handleCalendarVersionConflict() {
     loadingIndicatorDOM.classList.add('hidden');
     if (calendarConflictHandled) {
+        // The user may have dismissed the notice already. Without this the
+        // calendar would simply never open, with nothing on screen explaining
+        // why -- the worst of both: no calendar and no reason.
+        pendingDatasetVersion = pendingDatasetVersion || DATASET_CHANGED_UNKNOWN;
         renderDatasetNotices();
         return;
     }

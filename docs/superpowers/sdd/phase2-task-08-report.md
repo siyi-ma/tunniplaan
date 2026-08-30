@@ -3,7 +3,7 @@
 **Date:** 2026-08-30
 **Repo:** webapp `C:\Projects\tunniplaan`, branch `phase2-frontend`
 **Plan:** Task 8 · **Spec:** §9.3, §10.4
-**Status:** implemented; awaiting independent review
+**Status:** complete — independently reviewed, all findings applied
 
 ---
 
@@ -12,7 +12,7 @@
 | File | Change |
 |---|---|
 | `netlify/functions/getTimetable.js` | versioned request path, split cache policy |
-| `tests/functions/getTimetable.test.js` | 9 new tests |
+| `tests/functions/getTimetable.test.js` | 12 new tests |
 | `main.js` | sends `version`, handles 409 without merging |
 | `scripts/contract-test-gettimetable.js` | sends the version; refuses a vacuous run |
 
@@ -79,7 +79,7 @@ Nothing here reloads automatically — the reload stays the button the user pres
 ## 7. Verification
 
 ```text
-node --test                                  ->  95 passed, 0 failed  (86 + 9 new)
+node --test                                  ->  98 passed, 0 failed  (86 + 12 new)
 node --check netlify/functions/getTimetable.js -> OK
 node --check main.js                           -> OK
 node --check scripts/contract-test-gettimetable.js -> OK
@@ -88,19 +88,30 @@ node --check scripts/contract-test-gettimetable.js -> OK
 **Live, versioned vs unversioned over the same three courses:**
 
 ```text
+courses ITX0020,ITI0102,MTX9070
 unversioned: 200  470 events  public, max-age=300, stale-while-revalidate=3600
 versioned:   200  470 events  public, max-age=31536000, immutable
-identical payloads: true
+byte-identical bodies:              false
+deep-equal after canonicalisation:  true
 
 stale version      -> 409 {"error":"version_changed"}  no-store
 malformed version  -> 400 {"error":"bad_request"}      no-store
 no matching courses-> 200 []                           immutable
 ```
 
-The two paths return byte-identical payloads. The new path builds its rows with
-`jsonb_build_object` rather than a plain projection — necessary to fit the version check and
-the array into one envelope row — so this equality is the evidence that the wire contract did
-not move.
+The two paths are **deep-equal after key canonicalisation, not byte-identical**. `jsonb`
+normalises key order, so the versioned body emits
+`end,date,room,type,start,…` where the column projection emits
+`course_id,date,start,end,…`. No consumer depends on key order — `main.js` reads by field
+name and `scripts/contract-test-gettimetable.js` canonicalises before comparing — but the
+distinction matters enough not to leave a false "byte-identical" claim in an evidence package
+someone may later build on.
+
+That equality is the evidence the wire contract did not move, and the reviewer took it much
+further than this run did: all 66,846 rows compared positionally, field by field, with **0
+value differences and 0 type differences** — covering the 404 NULL date/start/end rows, 861
+empty-string rooms, and the 11,219 array-valued versus 55,170 object-valued `instructor`
+records the live data actually contains.
 
 **The full session contract test, now versioned:**
 
@@ -126,3 +137,24 @@ nothing against nothing.
 3. `DATASET_CHANGED_UNKNOWN` is a display sentinel for the case where a 409 proves the dataset
    moved but the throttled freshness check has not said what it moved to. It is never sent to
    an endpoint.
+
+## 9. Independent review findings, applied
+
+Verdict: **changes required**, on two well-defined items; the core design was found sound.
+The reviewer verified legacy compatibility character-by-character against the previous
+commit, proved the short-circuit is genuine rather than a discarded result, and ran seven
+mutations — every one was caught by a test.
+
+| # | Finding | Fix |
+|---|---|---|
+| **I1** | **500 responses carried no headers at all** — no `Cache-Control`, no `Content-Type` — while this report's own table claimed `no-store`. Pre-existing, but this task introduced the split policy and criterion 6b puts it in scope | both 500 paths carry `NO_STORE_HEADERS`; a test asserts it on the versioned and legacy paths and that the DSN cannot leak into the body |
+| **I2** | **"byte-identical payloads" was false.** `jsonb` normalises key order, so the two paths differ in serialisation while agreeing on content | corrected above to "deep-equal after canonicalisation", with the actual key orders shown |
+| M1 | A valid version with **no** `courses` took the legacy shortcut: `200 []` on the unversioned cache policy, with the version never checked. A client that asked for a pinned answer got an unpinned one | the shortcut now applies only when no version was sent. Verified live: a stale version with no courses returns 409 rather than an empty array |
+| M2 | `IMMUTABLE_HEADERS`, `NO_STORE_HEADERS` and the version regex were redeclared here while byte-identical definitions already existed in `lib/dataset.js` | imported from `lib/dataset.js`, as the other two endpoints already do |
+| M3 | After the user dismissed the notice, a repeat calendar 409 re-rendered nothing: no calendar, no explanation | the repeat path restores the pending notice before re-rendering |
+| M4 | The `main.js` 409 branch has no automated coverage | acknowledged — there is no browser harness; **Task 9** is the gate for it |
+
+One report figure the reviewer could not reproduce: the `470 events` line did not name its
+three courses. They are `ITX0020,ITI0102,MTX9070`, now recorded above.
+
+After the fixes: **98 passed**, both contract tests green, and the live checks re-run.

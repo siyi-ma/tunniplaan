@@ -249,3 +249,44 @@ test('an unversioned request keeps the old behaviour and the old cache policy', 
   assert.deepStrictEqual(JSON.parse(response.body), [SAMPLE_ROW]);
   assert.strictEqual(response.headers['Cache-Control'], CACHE_CONTROL);
 });
+
+test('a 500 is never cached, on either path', async () => {
+  // Spec 9.3 and acceptance criterion 6b: every 400/409/500 carries no-store.
+  // These two returned no headers at all, so a 500 had neither a cache policy
+  // nor a content type.
+  const boom = new Error('connection to postgresql://u:hunter2@host failed');
+
+  const versioned = await getVersioned(
+    { version: VERSION, courses: 'ITX0020' }, { failWith: boom });
+  assert.strictEqual(versioned.response.statusCode, 500);
+  assert.strictEqual(versioned.response.headers['Cache-Control'], 'no-store');
+  assert.strictEqual(versioned.response.headers['Content-Type'], 'application/json');
+  assert.ok(!versioned.response.body.includes('hunter2'));
+
+  const { sql } = makeFakeSql({ failWith: boom });
+  _resetSemesterCache();
+  const legacy = await handleRequest(
+    { queryStringParameters: { courses: 'ITX0020' } }, sql);
+  assert.strictEqual(legacy.statusCode, 500);
+  assert.strictEqual(legacy.headers['Cache-Control'], 'no-store');
+});
+
+test('a versioned request with no courses is still version-checked', async () => {
+  // The legacy shortcut returns 200 [] before any query. A client that sent a
+  // version asked for a pinned answer, so a stale one must not come back as an
+  // empty array cached for a year.
+  const { response, body } = await getVersioned(
+    { version: VERSION }, { countRow: { version_match: false, count: 0 } });
+  assert.strictEqual(response.statusCode, 409);
+  assert.deepStrictEqual(body, { error: 'version_changed' });
+  assert.strictEqual(response.headers['Cache-Control'], 'no-store');
+});
+
+test('an unversioned request with no courses keeps the legacy shortcut', async () => {
+  const { sql, calls } = makeFakeSql({});
+  const response = await handleRequest({ queryStringParameters: {} }, sql);
+  assert.strictEqual(response.statusCode, 200);
+  assert.deepStrictEqual(JSON.parse(response.body), []);
+  assert.strictEqual(response.headers['Cache-Control'], CACHE_CONTROL);
+  assert.strictEqual(calls.length, 0);
+});
