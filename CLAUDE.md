@@ -57,19 +57,22 @@ Trigger deploys with `curl -X POST -d {} <build-hook-url>`. Build-hook URLs are
 secrets — get them from the Netlify UI (Site configuration → Build & deploy →
 Build hooks); do not commit them to the repo.
 
-### Data Files
+### Data: three different things
 
-Session/event data lives in **Neon Postgres** (`sessions` table, schema in
-[db/schema.sql](db/schema.sql)) and is queried by
-[netlify/functions/getTimetable.js](netlify/functions/getTimetable.js) via the
-`NEON_DATABASE_URL` env var (read-only `webapp_ro` role). It is no longer bundled
-as a JSON file.
+| | What | Where |
+|---|---|---|
+| **Source artifacts** | `unified_courses.json` + `sessions.json` + `metadata.json` | the scraper's data directory (`TUNNIPLAAN_DATA_DIR`), never this repo |
+| **Runtime data** | `semesters`, `groups`, `courses`, `sessions` | Neon Postgres — [db/schema.sql](db/schema.sql) |
+| **Rollback artifact** | committed `unified_courses.json` (~6MB, Git LFS) | this repo, temporarily |
 
-Course metadata still ships as one large JSON file:
-- [unified_courses.json](unified_courses.json) (~6MB) - Course metadata with grouped sessions
+All runtime data is served from Neon through the functions, read with `NEON_DATABASE_URL`
+(read-only `webapp_ro`). **The committed `unified_courses.json` is no longer the load path** —
+it is a recovery artifact used only when the API is unavailable, kept current during the
+observation window and removed at the end of it (Task 12).
 
-`unified_courses.json` is tracked with Git LFS due to its size (moving it to Neon
-is a future Phase 2).
+`sessions.json` is gitignored and absent from this repository.
+
+A routine data refresh is an ingest, not a deploy. See [docs/DATA_REFRESH.md](docs/DATA_REFRESH.md).
 
 ### Git LFS
 
@@ -90,9 +93,13 @@ git lfs ls-files
 
 The application is a single-page application (SPA) built with vanilla JavaScript:
 
-1. **Data Loading** ([index.html](index.html):119-126)
-   - `unified_courses.json` loaded on page load
-   - Contains all course metadata and session groupings
+1. **Data Loading** ([course-data.js](course-data.js), loaded before `main.js`)
+   - Fetches `getDatasetManifest` (`no-store`), then every `getCourses` page, four at a time
+   - Reassembles the `{semester, courses, groupToFacultyMap, scraping_datetime}` envelope
+     `main.js` has always consumed, plus `dataset_version`
+   - Refuses partial data: a missing or duplicated page, a duplicate course, or a count that
+     disagrees with the manifest fails the whole load rather than rendering a short list
+   - Falls back to the committed `unified_courses.json` only when the API is unavailable
 
 2. **Main Application Logic** ([main.js](main.js))
    - State management via global variables
@@ -119,9 +126,24 @@ The application is a single-page application (SPA) built with vanilla JavaScript
 
 ### Backend Architecture
 
-**Serverless Function**: [netlify/functions/getTimetable.js](netlify/functions/getTimetable.js)
+**Functions** (all read-only, `NEON_DATABASE_URL` / `webapp_ro`):
+
+- [getDatasetManifest.js](netlify/functions/getDatasetManifest.js) — semester, group map,
+  course count, `page_size`, `total_pages`, and the active `dataset_version`. Assembled by
+  **one** SQL statement so an ingest cannot split it across two versions. Always `no-store`:
+  its freshness is what invalidates every immutable URL behind it.
+- [getCourses.js](netlify/functions/getCourses.js) — `?version=<sha256>&page=<n>`, 200 courses
+  per page ordered by id. The version is part of the query predicate, not a separate check.
+  200 is `immutable` for a year; 400/404/409/500 are `no-store`.
+- [lib/dataset.js](netlify/functions/lib/dataset.js) — shared constants. In a subdirectory
+  because Netlify would deploy a top-level file as its own endpoint.
+
+**[getTimetable.js](netlify/functions/getTimetable.js)**
 - **Purpose**: Query the `sessions` table in Neon Postgres for the active semester and return the events for the requested courses
-- **Input**: Query parameter `?courses=ID1,ID2,ID3`
+- **Input**: `?courses=ID1,ID2,ID3` and, from the current frontend, `&version=<sha256>`.
+  A versioned request checks the version in **both** the count and the row statement, each
+  from its own snapshot, and returns 409 `version_changed` on a mismatch without querying
+  rows. Missing `version` preserves the old behaviour for the previously deployed frontend.
 - **Output**: Bare JSON array of session events for requested courses. Enforces a server-side session limit (default 4000, env `CALENDAR_SESSION_LIMIT`); when a request exceeds it, returns `{ "error": "limit_exceeded", "count", "limit" }` instead of the array (still HTTP 200). DB failure returns HTTP 500 with an error body.
 - **Why**: Serving from Neon keeps the function payload tiny (fixes the 502 at large course sets) and lets scrapes update the live site without a redeploy
 
@@ -172,11 +194,16 @@ Language switching updates:
 
 ### Data Updates
 
-- Course data is produced by the scraper repo (`C:\Projects\tunniplaanScraping`, [siyi-ma/tunniplaanScraping](https://github.com/siyi-ma/tunniplaanScraping)) and published here via its `publish_to_webapp.py` script, which validates the data and copies both JSON files into this repo root
-- The schema of both files is defined in the scraper repo's `docs/data-contract.md` — fields consumed by [main.js](main.js) and [netlify/functions/getTimetable.js](netlify/functions/getTimetable.js) must not change without a coordinated update on both sides
-- After publishing, ingest the fresh sessions into Neon: `node scripts/seed-sessions-from-json.js` (needs `NEON_SCRAPER_URL`). This replaces the active semester's rows. `sessions.json` is gitignored and **not** committed — only `unified_courses.json` is committed to this repo
-- Commit messages follow pattern: "Update YYYYMMDD unified courses: X groups and Y courses" (the publish script still prints the older "session and unified courses" wording and a `git add sessions.json` — ignore the sessions part, it lives in Neon)
-- Always verify data after updates (e.g. `node scripts/contract-test-gettimetable.js`)
+**A routine refresh does not touch this repository.** Scrape, ingest into Neon atomically,
+verify. No commit, no push, no build hook. The canonical runbook is the scraper's
+`docs/neon-refresh-runbook.md`; the webapp-side summary is
+[docs/DATA_REFRESH.md](docs/DATA_REFRESH.md).
+
+- Data is produced by the scraper repo (`C:\Projects\tunniplaanScraping`, [siyi-ma/tunniplaanScraping](https://github.com/siyi-ma/tunniplaanScraping)) and ingested with `python neon_ingest.py` (needs `NEON_SCRAPER_URL`). One transaction: a failure leaves the previous dataset completely intact.
+- The artifact schema is defined in the scraper's `docs/data-contract.md`, which now also covers `metadata.json` — the ingest consumes it, so its fields are a cross-repo contract too. Fields consumed by [course-data.js](course-data.js), [main.js](main.js) and the functions must not change without a coordinated update on both sides.
+- Verify after every ingest: `node scripts/contract-test-getcourses.js` and `node scripts/contract-test-gettimetable.js`. Both need `NEON_DATABASE_URL` and `TUNNIPLAAN_DATA_DIR`, and both refuse to run against a directory that does not match the ingested dataset.
+- `scripts/seed-sessions-from-json.js` is the **Phase 1** loader: sequential, non-atomic, sessions only. Superseded by `neon_ingest.py`; not the production path.
+- **Only during the observation window:** `python publish_to_webapp.py` copies `unified_courses.json` here to keep the rollback artifact current, and committing it *is* a deploy. Commit message: "Update YYYYMMDD unified courses: X groups and Y courses". `sessions.json` is gitignored and must never be committed.
 
 **School codes are duplicated across the two repos.** The scraper's `FACULTY_INFO`
 (`26s_pipeline.py`) assigns each course a one-letter `school_code`; [main.js](main.js):180-187
@@ -263,6 +290,9 @@ Course cards are dynamically generated. Search for the card rendering function i
 
 ### Testing Changes Locally
 
-1. Use Live Server or any static file server
-2. Ensure `unified_courses.json` is present (use Git LFS to pull)
-3. For calendar view testing, you may need to run Netlify Dev: `netlify dev`
+1. `node scripts/dev-functions-server.js`, then open `http://localhost:8000`. This is the
+   only local mode that serves `/.netlify/functions/*`, and the page loads **all** its data
+   through them now — a static server shows the load error instead.
+2. Needs `NEON_DATABASE_URL` in `.env`.
+3. It is not Netlify: no routing, redirects, payload limits, or edge caching. It proves
+   handler behaviour, not platform behaviour.

@@ -12,14 +12,16 @@ node server.js
 # Use this when netlify-cli is blocked by group policy
 ```
 
-### Option 2: Netlify Dev (required for production-identical calendar testing)
+### Option 2: the local function server (the only mode where the page loads)
 
 ```bash
-npm run dev:netlify
+node scripts/dev-functions-server.js
 # or
 netlify dev
 # App available at http://localhost:8888
-# Runs the actual Netlify serverless function locally
+# Serves the repo statically and dispatches /.netlify/functions/<name> to the
+# real handlers, returning their status, headers and body verbatim.
+# NOT Netlify: no routing, redirects, payload limits, or edge caching.
 ```
 
 ### Option 3: Static-only (card view only — calendar view will fail)
@@ -41,7 +43,9 @@ python -m http.server 8000
 |---|---|---|
 | `CLAUDE_CODE_GIT_BASH_PATH` | Tells Claude Code where `bash.exe` is on Windows | Set to `C:\Program Files\Git\bin\bash.exe` via user env vars (no admin required); see `docs/git_bash_setup.md` |
 
-No runtime environment variables are required by the app itself. Netlify build hooks are in `.vscode/tasks.json` and `CLAUDE.md` (not secrets; they are deploy triggers only).
+`NEON_DATABASE_URL` (read-only `webapp_ro`) is required — every function reads it, and the
+page loads all of its data through them. `TUNNIPLAAN_DATA_DIR` is needed only by the contract
+scripts. Netlify build hooks are in `.vscode/tasks.json` and `CLAUDE.md` (not secrets; they are deploy triggers only).
 
 ---
 
@@ -55,7 +59,9 @@ External scraping scripts (Python, run manually)
   |
   v
 sessions.json        (~42 MB)   individual session events
-unified_courses.json (~6 MB)    course metadata + group_sessions arrays
+unified_courses.json (~6 MB)    ROLLBACK ARTIFACT ONLY -- not the load path.
+                                Runtime course metadata is served from Neon via
+                                getDatasetManifest + getCourses.
   |
   |-- both tracked with Git LFS
   |-- commit triggers Netlify deploy (if source files also changed — see netlify.toml)
@@ -69,7 +75,8 @@ Live site
 
 Data is updated weekly. Commit messages follow: `Update YYYYMMDD session and unified courses: X groups and Y courses`.
 
-> `unified_courses.json` is an authoritative source for course–group–instructor relationships. Do not derive these relationships from `sessions.json` alone — doctoral courses without scheduled sessions are absent from `sessions.json` but present in `unified_courses.json`.
+> The course dataset (now served from Neon, historically this file) is the authoritative
+> source for course–group–instructor relationships. Do not derive these relationships from `sessions.json` alone — doctoral courses without scheduled sessions are absent from `sessions.json` but present in `unified_courses.json`.
 
 ---
 

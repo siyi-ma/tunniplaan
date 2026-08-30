@@ -4,23 +4,25 @@ This file provides repository-specific guidance for coding agents working in `C:
 
 ## Project Overview
 
-TalTech Tunniplaan is a timetable viewer for Tallinn University of Technology. It is a single-page application with a vanilla JavaScript frontend and a Netlify function backend for timetable-session filtering.
+TalTech Tunniplaan is a timetable viewer for Tallinn University of Technology. It is a single-page application with a vanilla JavaScript frontend. Course metadata and
+timetable sessions both come from Neon Postgres through Netlify functions, so a data refresh
+is a database ingest rather than a code deploy.
 
 Primary characteristics:
 
 - around 1000 courses
 - around 395 student groups
 - Estonian-first UI with English translations
-- course metadata loaded from `unified_courses.json`
+- course metadata loaded from a versioned API (manifest + paged courses), not a static file
 - calendar sessions queried from Neon Postgres (`sessions` table) through the backend endpoint
 
 ## Tech Stack
 
 - Frontend: Vanilla JavaScript, HTML, CSS
 - Styling: Tailwind CSS via CDN plus `main.css`
-- Backend: Netlify function in `netlify/functions/getTimetable.js`
+- Backend: Netlify functions in `netlify/functions/` — `getDatasetManifest`, `getCourses`, `getTimetable`
 - Database: Neon Postgres (`sessions` table) for timetable sessions
-- Data storage: Git LFS for `unified_courses.json` (course metadata)
+- Data storage: Neon Postgres. `unified_courses.json` stays in Git LFS as a **rollback artifact only**
 - Hosting: Netlify
 
 ## Files That Matter Most
@@ -34,29 +36,36 @@ Primary characteristics:
 
 ## Local Development Commands
 
-### Full local testing with Netlify function support
+### Supported: the local function server
 
-Use this for anything involving calendar view:
+The page loads all of its data through functions now, so this is the only mode where it works
+at all:
 
 ```bash
-npm run dev:netlify
+node scripts/dev-functions-server.js
 ```
 
-Runs on `http://localhost:8000`.
+Runs on `http://localhost:8000`. Reads `NEON_DATABASE_URL` from `.env`.
 
-### Static frontend only
+**Not Netlify**: no routing, redirects, payload-limit enforcement, or edge caching. It proves
+handler behaviour, not platform behaviour.
 
-Use this only when the backend function is not needed:
+### `npm run dev:netlify` — cannot run here
+
+Expands to `npx netlify dev`; `npx` is blocked by group policy and `netlify-cli` is not
+installed. Listed for environments that permit it.
+
+### `npm run dev` — static only
 
 ```bash
 npm run dev
 ```
 
-Runs on `http://localhost:8000`.
+Serves files but no functions, so the page cannot load its course data and shows the load
+error. Useful only for editing CSS.
 
-This does not serve `/.netlify/functions/getTimetable`, so calendar view will fail in this mode.
-
-Note: `npm run dev:netlify` auto-loads `.env`, so the function reads `NEON_DATABASE_URL` (read-only Neon connection string) to query the `sessions` table. Calendar view needs that variable set.
+Note: `scripts/dev-functions-server.js` loads `.env` itself, so the functions read
+`NEON_DATABASE_URL` (the read-only Neon connection string). Nothing loads without it.
 
 ### Git LFS
 
@@ -114,7 +123,7 @@ The main state lives in `main.js` through module-level variables such as:
 
 ### Data loading
 
-1. `unified_courses.json` is loaded at startup.
+1. `course-data.js` fetches the manifest, then every course page, and assembles the envelope.
 2. Filtering happens client-side.
 3. Opening calendar view triggers a request to `/.netlify/functions/getTimetable?courses=...`.
 4. Returned sessions are merged and rendered in the weekly view.
@@ -129,8 +138,8 @@ The main state lives in `main.js` through module-level variables such as:
 
 When updating docs or scripts, keep these distinctions accurate:
 
-- `npm run dev` is static-only
-- `npm run dev:netlify` is the recommended (and only) local mode for calendar testing; it needs `NEON_DATABASE_URL` in `.env`
+- `npm run dev` is static-only, and the page can no longer load its data at all in that mode
+- `node scripts/dev-functions-server.js` is the supported local mode; it needs `NEON_DATABASE_URL` in `.env`. It is not Netlify and does not verify platform behaviour. `npm run dev:netlify` cannot run here (`npx` is policy-blocked)
 - the VS Code Python task is static-only and not enough for calendar testing
 
 ## Common Change Patterns
@@ -164,7 +173,7 @@ If you add or change scripts in `package.json`, also update:
 
 ## Performance and Safety Notes
 
-- Keep `unified_courses.json` in Git LFS. Session data lives in Neon, not a bundled file.
+- Keep `unified_courses.json` in Git LFS. All runtime data lives in Neon; that file is only the rollback artifact.
 - Be mindful of Netlify function bundle size.
 - Prefer targeted filtering over broader client-side session loading.
 - Preserve existing bilingual behavior.
@@ -176,7 +185,7 @@ Minimum expectations for changes:
 
 - syntax-check `main.js` if modified
 - test search and filter interactions for regressions
-- if calendar code changes, verify in `npm run dev:netlify`
+- if calendar or data-loading code changes, verify with `node scripts/dev-functions-server.js`, then run both contract scripts in `scripts/`
 
 For multi-group calendar work specifically, verify:
 

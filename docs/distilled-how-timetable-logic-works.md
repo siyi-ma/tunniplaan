@@ -3,7 +3,8 @@
 
 ## Core concept
 
-The app renders two views — a card grid and a weekly calendar — over the same course dataset. The card view operates entirely client-side over `unified_courses.json`. The calendar view requires server-side session filtering because `sessions.json` is 42 MB; the Netlify function `getTimetable` accepts a comma-separated list of course IDs and returns only the relevant session events. All filtering, sorting, and UI state are managed through a single global `activeFilters` object in `main.js`.
+The app renders two views — a card grid and a weekly calendar — over the same course dataset. The card view operates client-side over the course dataset, which the browser assembles from
+`getDatasetManifest` plus paged `getCourses` responses. The calendar view requires server-side session filtering because `sessions.json` is 42 MB; the Netlify function `getTimetable` accepts a comma-separated list of course IDs and returns only the relevant session events. All filtering, sorting, and UI state are managed through a single global `activeFilters` object in `main.js`.
 
 ---
 
@@ -13,7 +14,7 @@ The app renders two views — a card grid and a weekly calendar — over the sam
 Page load
   |
   v
-Fetch unified_courses.json
+Fetch manifest, then every getCourses page
   |
   v
 postProcessUnifiedData()
@@ -116,7 +117,8 @@ The app produces no computed scores. The main "outputs" are:
 
 ## What the AI / external service does
 
-Nothing at runtime. The Netlify serverless function (`getTimetable.js`) is a plain file-read and array-filter — no AI or external API calls. The data pipeline (Python scraping scripts) that produces `sessions.json` and `unified_courses.json` runs externally and is not part of this repository.
+Nothing at runtime. The Netlify serverless function (`getTimetable.js`) is a plain file-read and array-filter — no AI or external API calls. The data pipeline (Python scraping scripts) that produces the source artifacts, and the
+atomic Neon ingest that loads them, run externally in the scraper repository.
 
 ---
 

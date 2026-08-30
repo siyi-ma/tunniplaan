@@ -14,13 +14,15 @@ Browser (SPA, vanilla JS)
   |
   |-- index.html + main.js + main.css
   |     |
-  |     |-- unified_courses.json (6 MB, Git LFS)
+  |     |-- unified_courses.json (6 MB, Git LFS) -- rollback artifact only
   |           loaded at startup; drives all filtering and card view
   |
   |-- Calendar view fetch
         |
         v
-  Netlify serverless function  /.netlify/functions/getTimetable
+  Netlify functions  /.netlify/functions/getDatasetManifest
+                     /.netlify/functions/getCourses?version=&page=
+                     /.netlify/functions/getTimetable?version=&courses=
         |
         v
   sessions.json (42 MB, Git LFS, bundled with function)
@@ -64,7 +66,7 @@ Feature status as of 2026-04-21 (last handoff):
 ## What to build next
 
 1. Commit pending `main.js` (prefix bulk-add fix) and `README.md` changes on `dev` after browser verification
-2. Run full browser verification on `dev` using `npm run dev:netlify`: autocomplete, Tab/Enter add, `TVTB*` wildcard, Copy link, reload from URL, calendar open, CSV export
+2. Run full browser verification on `dev` using `node scripts/dev-functions-server.js`: autocomplete, Tab/Enter add, `TVTB*` wildcard, Copy link, reload from URL, calendar open, CSV export
 3. Merge `dev` into `main` and trigger production deployment
 4. Visual polish pass on the group timetable builder UI
 5. Resolve faculty filter deduplication definitively (root cause: inconsistent faculty codes between `unified_courses.json` and mapping data)
