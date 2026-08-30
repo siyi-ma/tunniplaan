@@ -172,7 +172,7 @@ Language switching updates:
 
 ### Data Updates
 
-- Course data is produced by the scraper repo (`C:\Projects\scrape_taltech_tunniplaan`, [siyi-ma/tunniplaanScraping](https://github.com/siyi-ma/tunniplaanScraping)) and published here via its `publish_to_webapp.py` script, which validates the data and copies both JSON files into this repo root
+- Course data is produced by the scraper repo (`C:\Projects\tunniplaanScraping`, [siyi-ma/tunniplaanScraping](https://github.com/siyi-ma/tunniplaanScraping)) and published here via its `publish_to_webapp.py` script, which validates the data and copies both JSON files into this repo root
 - The schema of both files is defined in the scraper repo's `docs/data-contract.md` — fields consumed by [main.js](main.js) and [netlify/functions/getTimetable.js](netlify/functions/getTimetable.js) must not change without a coordinated update on both sides
 - After publishing, ingest the fresh sessions into Neon: `node scripts/seed-sessions-from-json.js` (needs `NEON_SCRAPER_URL`). This replaces the active semester's rows. `sessions.json` is gitignored and **not** committed — only `unified_courses.json` is committed to this repo
 - Commit messages follow pattern: "Update YYYYMMDD unified courses: X groups and Y courses" (the publish script still prints the older "session and unified courses" wording and a `git add sessions.json` — ignore the sessions part, it lives in Neon)

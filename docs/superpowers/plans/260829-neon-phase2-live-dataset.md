@@ -32,16 +32,23 @@ starting and after every context compaction.
 
 ### 1.1 Execution ledger
 
-At execution start, create these untracked controller artifacts under
-`.superpowers/sdd/` without overwriting the Phase 1 files:
+At execution start, create these controller artifacts under `docs/superpowers/sdd/` in
+the webapp repository. There is no `.superpowers/` directory in either repo and no Phase 1
+ledger to preserve; Phase 1 left only a spec and a plan under `docs/superpowers/`.
 
 ```text
-phase2-progress.md
-phase2-task-01-brief.md
-phase2-task-01-report.md
-phase2-review-<base>..<head>.diff
+docs/superpowers/sdd/phase2-progress.md
+docs/superpowers/sdd/phase2-task-01-brief.md
+docs/superpowers/sdd/phase2-task-01-report.md
+docs/superpowers/sdd/phase2-review-<base>..<head>.diff
 ...
 ```
+
+Briefs, reports, and `phase2-progress.md` are **committed**: specification section 15 makes
+them a required evidence package and section 5 of this plan makes them a completion
+criterion, neither of which an untracked file can satisfy. Raw `.diff` captures may stay
+untracked; if they are committed, add `docs/superpowers/sdd/*.diff` to `.gitattributes` as
+`-diff` so they do not distort future review diffs.
 
 `phase2-progress.md` records:
 
@@ -126,8 +133,14 @@ two-stage separation. Record exact branch names and SHAs in the ledger.
 - Production ingest uses one transaction. The existing non-atomic
   `scripts/seed-sessions-from-json.js` is not the production daily path.
 - Test scrape output (`*_test.json`) can never reach production Neon.
+- The source pair (`unified_courses.json` + `sessions.json`) lives in the scraper's data
+  directory. Every producer and contract command takes it as an explicit path; nothing reads
+  a webapp repository-root `sessions.json`.
 - All new user-facing messages have Estonian and English text.
 - No framework, bundler, TypeScript, ORM, or broad formatting rewrite.
+- `npm` and `npx` are blocked by group policy on the owner's devices. Invoke `node`
+  directly (`node --test`, `node --check`, `node scripts/<name>.js`) and never make a
+  verification gate depend on `npm run` or `npx`.
 - Preserve LF in scraper `.py` files and avoid whole-file line-ending churn.
 - Keep `unified_courses.json` deployable as fallback until Task 12's observation gate.
 
@@ -140,13 +153,13 @@ Task 0 baseline
   |       |
   |       +--> Task 2 producer validation + deterministic mapping
   |               |
-  |               +--> Task 3 atomic ingest + rollback proof
-  |
-  +--> Task 4 manifest endpoint
-          |
-          +--> Task 5 paged courses endpoint
-                   |
-                   +--> Task 6 source-vs-API contract gate
+  |               +--> Task 3 atomic ingest + rollback proof ----+
+  |                                                              |
+  +--> Task 4 manifest endpoint                                  | (seeds the test
+          |                                                      |  branch; Task 6
+          +--> Task 5 paged courses endpoint                     |  cannot run before
+                   |                                             |  Task 3 is reviewed)
+                   +--> Task 6 source-vs-API contract gate <-----+
                             |
                             +--> Task 7 frontend loader + sync date
                                      |
@@ -163,6 +176,14 @@ Task 0 baseline
 
 Tasks 2–3 modify the scraper repo. Tasks 1 and 4–12 primarily modify the webapp
 repo, with cross-repo docs in Task 10.
+
+The two arms are **not** fully independent. Tasks 4 and 5 can be written and unit-tested
+against fixtures without the scraper, but Task 6 and everything downstream of it need a
+populated `courses`/`groups` test dataset, and the atomic ingest of Task 3 is the only thing
+that can produce one -- `scripts/seed-sessions-from-json.js` loads sessions only. Task 6 and
+Task 9 therefore require both worktrees checked out at reviewed heads at the same time
+(scraper `phase2-neon-ingest`, webapp `phase2-api`). Record both SHAs in the ledger for
+every contract run.
 
 ---
 
@@ -181,12 +202,16 @@ repo, with cross-repo docs in Task 10.
 
 - [ ] Record `git branch --show-current`, `git rev-parse HEAD`, `git status --short`,
   and `git lfs ls-files` in both repositories.
-- [ ] Record `node --version`, `npm --version`, `python --version`, and
-  `python -m pytest --version`.
+- [ ] Record `node --version`, `python --version`, and `python -m pytest --version`.
+- [ ] Record whether `npm`/`npx` are usable on the executing device. On the owner's
+  machines they are blocked by group policy, so every command in this plan is written as a
+  direct `node` invocation. Where a dependency is missing, vendor it into `node_modules/`
+  from a sibling project holding the lockfile-pinned version instead of running
+  `npm install`; verify the copied `package.json` version matches `package-lock.json`.
 - [ ] Run the webapp baseline:
 
   ```powershell
-  npm test
+  node --test
   node --check main.js
   ```
 
@@ -200,8 +225,18 @@ repo, with cross-repo docs in Task 10.
 - [ ] Through `webapp_ro`, query only column names, active semester code/version, and
   table counts. Do not print the connection string. Record whether `dataset_version`
   and `ingested_at` already exist.
+- [ ] Resolve and record the **source-artifact directory** holding the production
+  `unified_courses.json` and `sessions.json` pair (`DATA_DIRECTORY` in the scraper's
+  `publish_to_webapp.py`). `sessions.json` was removed from the webapp worktree in Phase 1
+  and is gitignored, so no repository-root copy exists. Confirm both files are present,
+  record their byte sizes and mtimes, and confirm they are the production pair rather than
+  `*_test.json`.
+- [ ] Note that `scripts/contract-test-gettimetable.js` currently reads
+  `<repo-root>/sessions.json` and therefore cannot run as committed. Its source path becomes
+  an explicit input in Task 8; do not treat its failure here as a baseline regression.
 - [ ] Measure current source bytes using a deterministic script: raw JSON, compact
-  envelope, largest 200-course page, and source counts.
+  envelope, largest 200-course page, and source counts. Run it against the resolved source
+  directory, not the webapp worktree.
 - [ ] Create `.superpowers/sdd/phase2-progress.md` and attach all evidence.
 
 ### Stop conditions
@@ -246,7 +281,7 @@ repo, with cross-repo docs in Task 10.
 - [ ] Apply the migration to a disposable Neon branch using its admin/test credential.
 - [ ] Apply it a second time; it must succeed without duplicate-column errors.
 - [ ] Verify `webapp_ro` can select the new columns and still cannot update them.
-- [ ] Run `npm test`, `git diff --check`, and inspect the full diff.
+- [ ] Run `node --test`, `git diff --check`, and inspect the full diff.
 - [ ] Commit, for example: `Add Phase 2 dataset identity columns`.
 - [ ] Independent reviewer verifies migration idempotence and role isolation.
 
@@ -268,7 +303,7 @@ repo, with cross-repo docs in Task 10.
 
 ## Task 2: Extract producer validation and deterministic row mapping
 
-**Repository:** `C:\Projects\scrape_taltech_tunniplaan`
+**Repository:** `C:\Projects\tunniplaanScraping`
 
 ### Files
 
@@ -332,7 +367,7 @@ repo, with cross-repo docs in Task 10.
 
 ## Task 3: Implement and prove the atomic Neon ingest
 
-**Repository:** `C:\Projects\scrape_taltech_tunniplaan`
+**Repository:** `C:\Projects\tunniplaanScraping`
 
 ### Files
 
@@ -428,7 +463,7 @@ repo, with cross-repo docs in Task 10.
   statement/snapshot so an ingest cannot split the manifest across versions.
 - [ ] Ensure duplicate group codes cannot silently overwrite conflicting faculty codes;
   return/log an error if the DB invariant is violated.
-- [ ] Run `npm test` and `node --check netlify/functions/getDatasetManifest.js`.
+- [ ] Run `node --test` and `node --check netlify/functions/getDatasetManifest.js`.
 - [ ] Inspect error logs for secret-safe content.
 - [ ] Commit, for example: `Add live dataset manifest endpoint`.
 - [ ] Independent review reruns tests and checks exact cache/error contracts.
@@ -494,7 +529,13 @@ repo, with cross-repo docs in Task 10.
 
 ### Interfaces
 
-- Reads local `unified_courses.json` only as the expected contract fixture.
+- Takes an explicit `--source-dir` (defaulting to the Task 0 resolved directory) and reads
+  `unified_courses.json` from it only as the expected contract fixture. It must not assume a
+  webapp repository-root copy, and it must fail loudly rather than silently pass if the
+  directory or file is missing.
+- Reads `sessions.json` from the same directory when a dataset version has to be recomputed
+  locally, since the version is `SHA256(unified + NUL + sessions)` and cannot be derived from
+  course metadata alone.
 - Calls the manifest and every course page through exported handlers using
   `NEON_DATABASE_URL`.
 - Reassembles the old four-part envelope and requires canonical deep equality.
@@ -571,7 +612,7 @@ Also record session contract output and source/DB row counts.
 - [ ] Run:
 
   ```powershell
-  npm test
+  node --test
   node --check course-data.js
   node --check main.js
   git diff --check
@@ -626,8 +667,9 @@ Also record session contract output and source/DB row counts.
 - [ ] Add `version=${activeDatasetVersion}` to new-frontend calendar requests.
 - [ ] On 409, discard response and present/reuse the reload-new-data path. Limit any
   automatic reload to one attempt.
-- [ ] Extend the session contract script to send the source dataset version and reject a
-  vacuous zero-course test.
+- [ ] Give `scripts/contract-test-gettimetable.js` the same explicit `--source-dir` input so
+  it stops reading a repository-root `sessions.json` that no longer exists, extend it to send
+  the source dataset version, and make it reject a vacuous zero-course test.
 - [ ] Run all unit and both credentialed contract tests.
 - [ ] Commit, for example: `Keep calendar requests on one dataset version`.
 - [ ] Independent reviewer checks legacy compatibility, query short-circuiting, and
@@ -644,19 +686,56 @@ Also record session contract output and source/DB row counts.
 ## Task 9: Local full-stack and browser regression gate
 
 **Repository:** `C:\Projects\tunniplaan`
-**Mutation:** verification artifacts only; no feature code unless a finding creates a
-reviewed fix loop
+**Mutation:** verification artifacts only (`scripts/dev-functions-server.js` plus evidence);
+no feature code unless a finding creates a reviewed fix loop
 
 ### Preconditions
 
 - Test Neon branch contains a source-matching atomic ingest.
-- Local Netlify Dev reads the test branch through a read-only URL.
+- The local function server (below) reads the test branch through a read-only URL.
 - Any temporary `.env` switch is backed up and restored byte-for-byte without printing
   secrets.
 
+### Local function server
+
+`npm run dev:netlify` expands to `npx netlify dev`, which cannot run here: `npx` is blocked
+by group policy and `netlify-cli` is not in `node_modules`. Falling back to `npm run dev` is
+forbidden -- it is static-only and does not serve `/.netlify/functions/*`, so every endpoint
+assertion below would vacuously skip rather than fail.
+
+Instead, create `scripts/dev-functions-server.js`: a small `node:http` server that serves
+the repository root as static files and dispatches `/.netlify/functions/<name>` to the
+matching module's exported `handler`. Every Phase 2 function already exports `handler`
+alongside an injectable `handleRequest` (see `netlify/functions/getTimetable.js`), so no
+production code changes to accommodate it.
+
+Requirements:
+
+- Depends only on Node built-ins. No new package, no `npx`, no bundler.
+- Builds the `event` object the handlers already expect -- at minimum
+  `queryStringParameters` parsed from the URL. Do not invent fields the handlers do not read.
+- Returns the handler's `statusCode`, `headers`, and `body` **verbatim**. Cache-Control and
+  Content-Type assertions are part of the gate, so the server must not add, drop, normalise,
+  or override a single header.
+- Loads `.env` with a few lines of parsing, or documents that the variable is exported into
+  the shell first. Never prints the connection string.
+- Returns 404 for an unknown function name, so a typo in a check fails loudly.
+- Run as `node scripts/dev-functions-server.js` on port 8000, matching the existing
+  `npm run dev` port so no URL in the browser matrix changes.
+
+This is verification tooling, not shipped code. Add unit coverage only for the request/response
+mapping if the gate proves flaky; do not build a Netlify emulator.
+
+**Caveat to record in the report:** this server is not Netlify. It does not reproduce
+Netlify's routing, redirects, buffered-payload limit enforcement, or edge caching. It proves
+handler behavior, not platform behavior. The 4.5 MiB page ceiling must therefore keep being
+asserted on serialized bytes in the Task 6 contract test rather than inferred from a local
+response, and the real cache/CDN behavior is confirmed on the `dev` branch deploy in Task 11
+Stage A.
+
 ### Checks
 
-- [ ] Start `npm run dev:netlify` and verify:
+- [ ] Start `node scripts/dev-functions-server.js` and verify:
   - manifest 200 + `no-store`;
   - every course page 200 + versioned cache policy;
   - no page near 4.5 MiB;
@@ -678,7 +757,7 @@ reviewed fix loop
 - [ ] Confirm successful API load makes no request to `unified_courses.json`.
 - [ ] Record browser console errors; unrelated warnings must be identified, not hidden.
 - [ ] Stop the server and restore temporary environment files exactly.
-- [ ] Run final `npm test`, syntax checks, and both contract scripts.
+- [ ] Run final `node --test`, syntax checks, and both contract scripts.
 
 ### Review loop
 
@@ -740,7 +819,10 @@ hook, or Netlify deploy step.
 - [ ] Document credentials by environment-variable name only.
 - [ ] Document transaction rollback, post-check receipt, stale-tab behavior, cache
   versioning, and recovery through the static fallback.
-- [ ] Preserve `npm run dev` vs `npm run dev:netlify` distinctions.
+- [ ] Document local modes accurately: `npm run dev` is static-only (and `npm`/`npx` are
+  policy-blocked on the owner's devices anyway), `npm run dev:netlify` cannot run there, and
+  `node scripts/dev-functions-server.js` is the supported way to exercise the functions
+  locally. Say plainly that it is not Netlify and does not verify platform behavior.
 - [ ] Grep both repos for stale workflow terms and triage every hit:
 
   ```powershell
@@ -911,6 +993,118 @@ Phase 2 is complete when:
 
 ---
 
+## Amendment log
+
+**2026-08-30 — review pass 1 (in-session review against the live code, not an independent
+agent).** Verdict: **design accepted, documents not executable as written.** The
+architecture, the one-statement version snapshots, the `version_match` envelope row, and the
+injectable-transaction rollback proof are all sound and were left unchanged. Every payload
+figure in the specification was re-measured and is exact: 6,687,128 raw bytes, 5,168,251
+compact, largest 200-course page 1,100,773 bytes (1.050 MiB). The `courses` table covers all
+25 source course fields with no gap. Five factual errors would have stopped or misdirected an
+implementer on day one; they are corrected in the body above. Everything else is recorded
+under Review notes and is a decision for the owner, not a correction.
+
+| ID | Verdict | Amendment | Rationale |
+|---|---|---|---|
+| B1 | Fixed in body | Scraper repo path is `C:\Projects\tunniplaanScraping`, not `C:\Projects\scrape_taltech_tunniplaan` | The old path does not exist on disk. `ls C:\Projects` lists only `tunniplaanScraping`. An implementer following either document literally would have failed at the first `cd`. Dated handoffs under `docs/` keep the old name deliberately -- they are records of what was believed then, not live instructions. |
+| B2 | Fixed in body | Ledger moves from `.superpowers/sdd/` to `docs/superpowers/sdd/`, and briefs/reports/progress are committed rather than untracked | `.superpowers/` exists in neither repo, and the "Phase 1 files" the plan warned against overwriting do not exist; Phase 1 left only a spec and a plan under `docs/superpowers/`. The two documents also contradicted each other: plan section 1.1 called the artifacts untracked while specification section 15 and plan section 5 made the same artifacts required completion evidence. Untracked files cannot satisfy a definition of done, so tracked wins. |
+| B3 | Fixed in body | Producer ingest and both contract tests take an explicit source-artifact directory; Task 0 resolves and records it | `sessions.json` was deleted from the webapp worktree in Phase 1 and is gitignored, yet `scripts/contract-test-gettimetable.js:31` still reads `<repo-root>/sessions.json` -- so the committed session contract test cannot run at all. This compounds in Phase 2 because the dataset version is `SHA256(unified + NUL + sessions)` and cannot be recomputed from course metadata alone. Task 6's original wording ("reads local `unified_courses.json` only") would have shipped a contract gate with no session fixture. |
+| I4 | Resolved by owner decision; specified in plan Task 9 | Task 9 runs a `node:http` router over the functions' exported `handler`s instead of `netlify dev` | `npx netlify dev` cannot run under group policy and `netlify-cli` is not vendored, while the `npm run dev` fallback is static-only and would make every endpoint assertion pass vacuously. Option (b) needs no policy exception and no new dependency because each function already exports `handler` beside its injectable `handleRequest`. Scope is deliberately capped at request/response mapping -- it is not a Netlify emulator, so payload-ceiling and CDN-cache claims stay owned by the Task 6 contract test and the Task 11 Stage A dev deploy. |
+| B5 | Fixed in body + resolved on disk | All `npm test` invocations become `node --test`; device policy recorded in global constraints and Task 0; missing `@neondatabase/serverless` vendored from a sibling project | `npm`/`npx` are blocked by group policy on the owner's devices, so every verification gate in the plan was unrunnable as written, and `npm install` could not remedy the missing lockfile-pinned dependency. Same class of defect as B1-B4: a command that cannot execute. Task 9 remains blocked on `npx netlify dev` and is escalated as review note I4 rather than silently downgraded. |
+| B4 | Fixed in body | Dependency map, global constraints, and Task 6 now show that Task 6 depends on Task 3 across repositories | The map drew two independent arms (`1->2->3` scraper, `4->5->6` webapp), but Task 6's own loop already said "ingest the matching source artifacts into the test branch with Task 3." Nothing else can populate `courses`/`groups` in a test branch -- `scripts/seed-sessions-from-json.js` loads sessions only. As drawn, a controller would have scheduled Task 6 before Task 3 existed and hit an empty-table failure with no owning task. |
+
+No design decision, contract, acceptance criterion, or rollout gate was changed. All five
+amendments are factual corrections to statements that did not match the repositories.
+
 ## Review notes
 
 <!-- Add comments, questions, or change requests here before implementation begins -->
+
+### Open for owner decision — 2026-08-30 review pass 1
+
+These were **not** applied to the body. Each is a judgement call for the owner rather than a
+factual error, and applying them unilaterally would change agreed behavior.
+
+**I1 (Important) — `.gitattributes` will turn every new JSON fixture into an LFS pointer.**
+The rule is unqualified: `*.json filter=lfs diff=lfs merge=lfs -text`. It has already
+swallowed `package.json` and `package-lock.json` (`git lfs ls-files` confirms). Tasks 2, 5, 6
+and 7 all create JSON fixtures; on a fresh clone or in CI without `git lfs pull`,
+`fs.readFileSync` returns a ~130-byte pointer stub and the test fails with an unintelligible
+parse error. The plan discusses LFS only in Task 12, and only about removal. *Proposed:* add
+to Task 0 either a negation rule (`tests/**/*.json -filter -diff -merge text`) or a decision
+to write fixtures as `.js` modules. Not applied because it edits `.gitattributes`, which
+Task 12 explicitly flags as dangerous to touch casually.
+
+**I2 (Important) — Task 11 Stage A will look like a failure when it is correct.**
+Production `courses` and `groups` are almost certainly empty (Phase 1 seeded `sessions`
+only), and `semesters.dataset_version` will be NULL on the `26s` row until the first Phase 2
+ingest. So the moment Stage A promotes the additive APIs, `getDatasetManifest` returns
+**503 `dataset_unavailable`** and `getCourses` returns 404/500 -- by design, until Stage B.
+Stage A's checklist says only "verify old cards/calendar remain unchanged." *Proposed:* add
+an explicit expected-state line to Stage A, so an operator does not roll back a correct
+deploy. Not applied because it touches a production rollout gate.
+
+**I3 (Important) — specification section 16's three open questions are unresolved, but the
+plan already assumes answers.** The plan hard-codes 24-hour `immutable` caching,
+user-triggered reload, and two-week fallback retention. These should be decided and folded
+into the specification body before Task 0, not left as questions under a plan that treats
+them as settled.
+
+**M1 (Minor) — the section 9.1 example is fabricated.** It shows
+`"start_date": "2026-08-27"`; the real dataset has `2026-08-24`. Real values belong in a
+document that will be read as a contract.
+
+**M2 (Minor) — the 24-hour `immutable` cache on course pages is worth less than it reads.**
+Because `dataset_version` hashes sessions as well as courses, every scrape invalidates all
+six course pages (~4.9 MiB) even when course metadata is byte-identical. That coupling *is*
+the atomicity guarantee and should stay -- but section 6.1 presents long-lived caching as a
+benefit without noting it rarely survives a refresh. This is effectively the answer to open
+question 1.
+
+**M3 (Minor) — `no-store` manifest plus five-minute visibility polling** means one Neon query
+per visible tab per five minutes indefinitely. `max-age=60, must-revalidate` would be
+functionally identical for freshness at lower cost.
+
+**B5 (Blocking, resolved) — `npm`/`npx` are blocked by group policy; the baseline suite
+could not run.** `node --test` failed with `Cannot find module '@neondatabase/serverless'`:
+the package is pinned at 1.1.0 in `package-lock.json` and declared in `package.json`, but
+absent from `node_modules`, which held only the `http-server` tree (48 entries). `npm install`
+is not an available remedy on this device. **Resolved 2026-08-30** by vendoring the
+lockfile-exact tree from a sibling project (`C:\Projects\sar-reader`, v1.1.0, zero
+dependencies) into `node_modules/@neondatabase/`; `node --test` now reports **7 pass, 0 fail**
+(Node v22.17.0). `node_modules/` is gitignored, so nothing was committed. Every `npm test` in
+the plan body was rewritten to `node --test`, and the constraint is now recorded in the global
+constraints and Task 0.
+
+**I4 (Important, resolved by owner decision 2026-08-30) — Task 9's local full-stack gate
+cannot use Netlify Dev.** `npm run dev:netlify` expands to `npx netlify dev`; `npx` is
+policy-blocked and `netlify-cli` is absent from `node_modules`. `npm run dev` is static-only,
+so falling back to it would make every endpoint assertion in Task 9 vacuously pass instead of
+fail. **Owner chose option (b):** a small `node:http` router over the handlers the functions
+already export. Now specified in Task 9 under "Local function server"; the other options
+considered were vendoring `netlify-cli`, running Task 9 on an unrestricted device, or moving
+the gate to the `dev` branch deploy.
+
+Two consequences carried into the plan body rather than left here:
+
+- The router proves **handler** behavior, not **platform** behavior. It does not reproduce
+  Netlify routing, redirects, buffered-payload limit enforcement, or edge caching. The
+  4.5 MiB ceiling therefore stays asserted on serialized bytes in the Task 6 contract test,
+  and real cache/CDN semantics are confirmed on the `dev` deploy in Task 11 Stage A.
+- The router must pass `statusCode`, `headers`, and `body` through verbatim. Task 9 asserts
+  exact `Cache-Control` and `Content-Type` values, so a server that helpfully normalises
+  headers would silently invalidate the gate it exists to run.
+
+**M4 (Minor) — Task 1's role check is too narrow.** It verifies `webapp_ro` against the new
+`semesters` columns only. `db/roles.sql:10` does grant SELECT on all four tables, but whether
+that file was ever applied to production is unverified. Task 0 should query
+`information_schema.role_table_grants` for `courses` and `groups` explicitly, since
+acceptance criterion 9 depends on it and Task 5 fails opaquely without it.
+
+### Unanswered questions
+
+1. Confirm ledger location and tracked status as amended under B2.
+2. Confirm the source-artifact directory resolved in Task 0 (B3).
+3. Resolve specification section 16's three open questions (I3).
+4. Decide the `.gitattributes` fixture strategy (I1).
