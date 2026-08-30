@@ -14,3 +14,6 @@ deno.lock
 # The scraper may still copy sessions.json here until its ingest plan lands;
 # this guard keeps that stray copy from being re-committed.
 sessions.json
+
+# SDD review diffs are regenerable from the commit range recorded in each report.
+docs/superpowers/sdd/*.diff

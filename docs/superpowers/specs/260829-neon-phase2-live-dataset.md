@@ -155,6 +155,60 @@ recognized as the same dataset.
 
 The version must match `^[0-9a-f]{64}$` before database mutation begins.
 
+### 7.2.1 The version does not prove the pair is self-consistent
+
+`sessions.json` is a flat array with no wrapper object, so unlike `unified_courses.json` it
+carries no `scraping_datetime`. The hash therefore proves *which two files* were ingested,
+but not that they came from the same scrape. Pairing a fresh `unified_courses.json` with a
+stale `sessions.json` yields a well-formed, unique, brand-new version for an internally
+inconsistent dataset -- and the entire version-coherence mechanism would then faithfully
+guarantee that every client sees the same wrong data.
+
+The producer must close this. In increasing order of strength:
+
+1. **Orphan sessions are an error, not a warning,** in the production ingest path. A session
+   whose `course_id` is absent from `courses` aborts the run. (`publish_to_webapp.py` may keep
+   treating it as a warning; that script has a different job.) A stale-sessions pairing almost
+   always produces orphans, so this catches the common case cheaply.
+2. **Coverage assertion.** The proportion of courses with zero sessions must stay within a
+   stated band of the previous ingest. This catches the case orphan-checking misses -- new
+   courses that have no sessions because the sessions file predates them.
+3. **A scrape manifest sidecar,** which is the actual fix. The pipeline writes
+   `scrape_manifest.json` beside the two artifacts:
+
+   ```json
+   {
+     "scrape_id": "20260824T170500",
+     "scraping_datetime": "24.08.2026 17:05",
+     "unified_sha256": "<64 hex>",
+     "sessions_sha256": "<64 hex>"
+   }
+   ```
+
+   The ingest recomputes both hashes from the files it actually loaded and aborts on any
+   mismatch. This is additive, breaks no existing consumer, and converts “these two files
+   belong together” from an assumption into a checked precondition. It must land before the
+   first production ingest.
+
+### 7.2.2 Locating the source artifacts
+
+No command may assume a repository-root copy of either file, and no path may be hardcoded to
+one device. Resolution order, identical in both repositories:
+
+```text
+--source-dir <path>       explicit flag, wins
+  -> TUNNIPLAAN_DATA_DIR  per-device, from .env
+    -> configured default  the current DATA_DIRECTORY constant
+```
+
+The environment variable is what makes this work across machines: the current hardcoded
+default embeds a username, a semester code, and a non-ASCII OneDrive path, and OneDrive
+Files On-Demand can leave an artifact as an unhydrated placeholder that reads as empty.
+
+Every run resolves the directory to an absolute real path and prints it, with each file's
+size, modification time, and SHA-256 prefix, before doing anything else. Ingesting the wrong
+file is the most common failure mode of a pipeline like this one, and it is silent.
+
 ### 7.3 Existing table mapping
 
 The current `courses` table remains the storage contract. The source fields map as
@@ -189,12 +243,15 @@ take an explicit source directory rather than assuming a repository-root file.
 
 Before opening a write transaction, the command must:
 
-1. Load both artifacts from an explicit or configured source directory.
+1. Load both artifacts from the source directory resolved per section 7.2.2, and print the
+   resolved path with per-file size, mtime, and hash prefix.
 2. Run the existing data-contract validation.
 3. Require non-empty `semester.code`, `courses`, `groupToFacultyMap`, and sessions.
 4. Require unique course IDs and valid group map keys/values.
 5. Require every non-null `session_status` to be `online`, `offline`, or `hybrid`.
-6. Count orphan session course IDs and preserve the existing warning behavior.
+6. Reject orphan session course IDs as an error, and assert session coverage against the
+   previous ingest, per section 7.2.1. Verify the scrape manifest hashes match the loaded
+   files.
 7. Compute and print the dataset version, scrape date, semester code, and all row
    counts without printing credentials.
 8. In `--dry-run` mode, stop here with no database connection or mutation.
@@ -303,9 +360,15 @@ with the same name, type, and null semantics.
 Required headers for HTTP 200:
 
 ```text
-Cache-Control: public, max-age=86400, immutable
+Cache-Control: public, max-age=31536000, immutable
 Content-Type: application/json
 ```
+
+The URL is content-addressed: `version` is a SHA-256 of the source artifacts and page
+boundaries are deterministic, so the bytes behind a given URL can never change. This is the
+same model as a bundler's `[contenthash]` filename, and it takes the same one-year
+`immutable` policy. A shorter lifetime buys nothing -- on expiry the browser refetches bytes
+that by definition are identical.
 
 Failure cases:
 
@@ -314,6 +377,10 @@ Failure cases:
   `{ "error": "version_changed" }`;
 - page outside `0 <= page < total_pages`: HTTP 404;
 - query failure: HTTP 500.
+
+Every non-200 response must carry `Cache-Control: no-store`. A cached 409 is actively
+harmful: it would outlive the ingest that resolved it and pin a client to a permanent
+version-mismatch loop.
 
 The implementation must measure serialized response bytes in its contract test and
 fail if any page reaches 4.5 MiB. This project-level ceiling preserves margin below
@@ -349,11 +416,17 @@ the old deployed frontend remains compatible. This compatibility path may remain
 cutover; the new frontend always sends a version.
 
 The successful session array and `limit_exceeded` envelope remain unchanged.
-Versioned 200 responses may use:
+A versioned 200 **whose body is the session array** uses:
 
 ```text
-Cache-Control: public, max-age=86400, immutable
+Cache-Control: public, max-age=31536000, immutable
 ```
+
+The `limit_exceeded` envelope does **not** get that policy. Its content depends on
+`CALENDAR_SESSION_LIMIT`, an environment variable that can change without the dataset
+version changing, so that response is not content-addressed. It keeps a short lifetime
+(`public, max-age=300`). All 400/409/500 responses use `no-store`, for the reason given in
+section 9.2.
 
 Unversioned compatibility responses keep the current short-lived policy.
 
@@ -399,10 +472,19 @@ not claim a newer timestamp than the cards/calendar currently loaded.
 ### 10.3 Long-lived tabs
 
 On `visibilitychange` when the page becomes visible, and no more often than once every
-five minutes, fetch the manifest. If its version differs from
-`activeDatasetVersion`, show a bilingual non-blocking notice with a reload action.
-Reloading preserves the current URL filters. Do not silently replace application state
-while a user is reading or building a timetable.
+five minutes, fetch the manifest. If its version differs from `activeDatasetVersion`, show a
+bilingual non-blocking notice with a reload action.
+
+**The reload is always user-triggered. The page must never reload itself, on a timer or
+otherwise.** The core task here is assembling and comparing timetables; discarding that work
+because a scrape landed is not a trade worth making for data that is never safety-critical.
+The notice is non-modal and dismissible, and once dismissed for a given version it does not
+reappear for that version.
+
+Reloading preserves only the filters that are in the URL. Today `main.js` round-trips
+`group`, `search`, `searchField`, `faculty`, and `institutecode` -- but **not** the EAP,
+teaching-language, or calendar-view state, which are lost on reload. Either extend the URL
+sync to cover them or state the limitation in the notice; do not claim reload is lossless.
 
 ### 10.4 Calendar consistency
 
@@ -417,13 +499,21 @@ manifest/course API is unavailable. The fallback must:
 
 - load the static file as one complete envelope;
 - show its own `scraping_datetime`;
-- emit a visible bilingual “backup data” notice;
+- emit a visible bilingual “backup data” notice that states the file's **age**, not merely
+  that it is backup data. A silently stale fallback is worse than no fallback;
 - disable calendar retrieval with a bilingual explanation, because the active Neon
   sessions may no longer match the older static course metadata;
 - log the API failure without exposing secrets.
 
 The fallback is for migration safety, not the normal daily workflow. It is removed only
 after the production observation gate in section 14.
+
+`unified_courses.json` continues to be published to this repository on every scrape for the
+duration of the observation window. That is a Git commit, and therefore a deploy -- a
+deliberate transitional cost, not a regression against the deployment-free goal. The
+*routine* refresh path is deploy-free from the first production ingest; keeping the rollback
+artifact current is a separate, temporary obligation. A recovery artifact that has drifted
+weeks from production is not a recovery artifact.
 
 ## 12. Security and operational constraints
 
@@ -452,6 +542,11 @@ The phase is accepted only when all statements below have evidence:
    never a mixed response.
 6. **Payload safety:** every serialized course-page response is below 4.5 MiB; current
    pages should be near 1 MiB or less.
+6a. **Pair consistency:** an ingest pairing mismatched source artifacts is rejected before
+   any mutation, evidenced by a deliberate stale-`sessions.json` attempt against a
+   non-production branch (section 7.2.1).
+6b. **Cache correctness:** a 200 page carries the one-year immutable policy, and every
+   409/400/404/500 carries `no-store` (sections 9.2 and 9.3).
 7. **Sync accuracy:** the top-right value equals the manifest scrape date and changes
    after the next successful ingest without deployment.
 8. **Behavior parity:** card filters, one-group and multi-group calendar views, URL
@@ -472,8 +567,10 @@ The phase is accepted only when all statements below have evidence:
 5. Switch the `dev` frontend to the Neon loader and complete browser regression checks.
 6. Production merge/deploy requires an explicit user checkpoint in the implementation
    plan.
-7. Keep `unified_courses.json` and the old publish path available through at least two
-   successful production ingests and 48 hours of observation.
+7. Keep `unified_courses.json` and the old publish path available until **the later of**
+   (two successful production ingests plus 48 hours of observation) **or 2026-09-15**. The
+   semester began 2026-08-24; that date clears the add/drop period with a margin. A named
+   date is enforceable in a way that “the two-week high-change period” is not.
 8. If rollback is needed, restore the static loader in one deploy. Database rows remain
    intact and may be diagnosed independently.
 9. Only after the observation gate may a separate cleanup remove the LFS file and retire
@@ -496,16 +593,30 @@ artifacts live under `docs/superpowers/`):
   and calendar rendering;
 - a final daily-refresh runbook that does not include Git or Netlify commands.
 
-## 16. Open review questions
+## 16. Resolved review questions
 
-These are review questions, not permission for an implementation agent to improvise:
+All three questions raised in the 2026-08-29 draft were settled on 2026-08-30 and folded
+into the sections above. They are recorded here so the reasoning is not lost, not as
+remaining permission for an implementation agent to improvise.
 
-1. Is a 24-hour immutable cache for versioned page/session URLs acceptable, given that
-   every new ingest creates a new URL and the manifest is `no-store`?
-2. Should the “new data available” notice reload automatically after a short delay, or
-   remain user-triggered? This draft specifies user-triggered reload to preserve work.
-3. Should `unified_courses.json` remain as a fallback for the full two-week high-change
-   period even if the first two ingests pass? This draft recommends yes.
+1. **Cache lifetime for versioned page/session URLs — one year, not 24 hours.** These URLs
+   are content-addressed, so the standard content-hash policy applies (section 9.2). The
+   accompanying conditions matter as much as the number: the `limit_exceeded` envelope is
+   excluded because it depends on `CALENDAR_SESSION_LIMIT` rather than the dataset, and every
+   error response is `no-store` so a 409 cannot outlive the ingest that resolved it.
+2. **The “new data available” notice stays user-triggered; the page never reloads itself.**
+   The work at risk is a partly assembled timetable, the data is never safety-critical, and
+   reload is not even lossless today -- EAP, language, and calendar-view state are absent from
+   the URL (section 10.3).
+3. **`unified_courses.json` stays through the high-change period, with a named end date.**
+   Removal is gated on the later of two successful ingests plus 48 hours, or 2026-09-15
+   (section 14). It also keeps being published during the window, because a rollback artifact
+   that has drifted from production is not one (section 11).
+
+The manifest deliberately stays `no-store`. Collapsing bursts with a short `s-maxage` would
+trade the one property this phase exists to deliver -- an ingest being visible immediately --
+for an optimization no measurement has yet called for. Revisit only if function-invocation
+volume proves it necessary.
 
 ---
 
@@ -530,97 +641,63 @@ under Review notes and is a decision for the owner, not a correction.
 | B5 | Fixed in body + resolved on disk | All `npm test` invocations become `node --test`; device policy recorded in global constraints and Task 0; missing `@neondatabase/serverless` vendored from a sibling project | `npm`/`npx` are blocked by group policy on the owner's devices, so every verification gate in the plan was unrunnable as written, and `npm install` could not remedy the missing lockfile-pinned dependency. Same class of defect as B1-B4: a command that cannot execute. Task 9 remains blocked on `npx netlify dev` and is escalated as review note I4 rather than silently downgraded. |
 | B4 | Fixed in body | Dependency map, global constraints, and Task 6 now show that Task 6 depends on Task 3 across repositories | The map drew two independent arms (`1->2->3` scraper, `4->5->6` webapp), but Task 6's own loop already said "ingest the matching source artifacts into the test branch with Task 3." Nothing else can populate `courses`/`groups` in a test branch -- `scripts/seed-sessions-from-json.js` loads sessions only. As drawn, a controller would have scheduled Task 6 before Task 3 existed and hit an empty-table failure with no owning task. |
 
-No design decision, contract, acceptance criterion, or rollout gate was changed. All five
-amendments are factual corrections to statements that did not match the repositories.
+No design decision, contract, acceptance criterion, or rollout gate was changed by pass 1.
+All five amendments are factual corrections to statements that did not match the repositories.
+
+**2026-08-30 — review pass 2 (owner decisions applied).** The four questions left open by
+pass 1 were decided and applied. Unlike pass 1 these *do* change agreed behavior, on the
+owner's instruction: cache lifetimes (section 9.2, 9.3), reload policy (10.3), fallback
+retention and its end date (11, 14), and a new pair-consistency precondition (7.2.1) with its
+source-resolution contract (7.2.2). Two new acceptance criteria (6a, 6b) were added so the new
+gates have owners. Section 16 changed from open questions to recorded reasoning. The
+`.gitattributes` fix landed as its own commit ahead of the Phase 2 branches. Details and
+rationale per item are under Review notes.
 
 ## Review notes
 
 <!-- Add comments, questions, or change requests here before implementation begins -->
 
-### Open for owner decision — 2026-08-30 review pass 1
+### Resolved — 2026-08-30 review pass 2
 
-These were **not** applied to the body. Each is a judgement call for the owner rather than a
-factual error, and applying them unilaterally would change agreed behavior.
+All four questions carried out of review pass 1 were decided by the owner and applied.
 
-**I1 (Important) — `.gitattributes` will turn every new JSON fixture into an LFS pointer.**
-The rule is unqualified: `*.json filter=lfs diff=lfs merge=lfs -text`. It has already
-swallowed `package.json` and `package-lock.json` (`git lfs ls-files` confirms). Tasks 2, 5, 6
-and 7 all create JSON fixtures; on a fresh clone or in CI without `git lfs pull`,
-`fs.readFileSync` returns a ~130-byte pointer stub and the test fails with an unintelligible
-parse error. The plan discusses LFS only in Task 12, and only about removal. *Proposed:* add
-to Task 0 either a negation rule (`tests/**/*.json -filter -diff -merge text`) or a decision
-to write fixtures as `.js` modules. Not applied because it edits `.gitattributes`, which
-Task 12 explicitly flags as dangerous to touch casually.
+**I1 — `.gitattributes`. Fixed in a standalone commit, ahead of Task 0.** This was a live
+defect, not a fixture question: the unqualified `*.json` glob had already put `package.json`
+and `package-lock.json` into LFS, so a clone without `git lfs pull` got 130-byte pointers
+where `package.json` should be, `package-lock.json` could not be merged, and any future CI
+would need `lfs: true` to build. The rule now names `unified_courses.json` alone; `git lfs
+ls-files` returns exactly one file. Kept out of the Phase 2 branches deliberately -- a Phase 2
+rollback must not revert an unrelated fix. With a narrow rule, JSON fixtures are ordinary
+files and need no `.js` workaround.
 
-**I2 (Important) — Task 11 Stage A will look like a failure when it is correct.**
-Production `courses` and `groups` are almost certainly empty (Phase 1 seeded `sessions`
-only), and `semesters.dataset_version` will be NULL on the `26s` row until the first Phase 2
-ingest. So the moment Stage A promotes the additive APIs, `getDatasetManifest` returns
-**503 `dataset_unavailable`** and `getCourses` returns 404/500 -- by design, until Stage B.
-Stage A's checklist says only "verify old cards/calendar remain unchanged." *Proposed:* add
-an explicit expected-state line to Stage A, so an operator does not roll back a correct
-deploy. Not applied because it touches a production rollout gate.
+**B2 — ledger tracked, review diffs not.** Briefs, reports and `phase2-progress.md` are
+committed; `docs/superpowers/sdd/*.diff` is gitignored. The multi-device workflow decided
+this: an untracked ledger disappears exactly when a handoff matters. Correction to review
+pass 1, which had suggested a `.gitattributes -diff` rule -- gitignore is the right tool,
+since a committed diff makes every later diff unreadable and is regenerable from the recorded
+commit range anyway.
 
-**I3 (Important) — specification section 16's three open questions are unresolved, but the
-plan already assumes answers.** The plan hard-codes 24-hour `immutable` caching,
-user-triggered reload, and two-week fallback retention. These should be decided and folded
-into the specification body before Task 0, not left as questions under a plan that treats
-them as settled.
+**B3 — source directory, plus a real gap it exposed.** Resolution is now
+`--source-dir` > `TUNNIPLAAN_DATA_DIR` > configured default, identical in both repos, with
+`.env.example` added to each. The existing default embeds a username, a semester code and a
+non-ASCII OneDrive path, and Files On-Demand can serve an unhydrated placeholder.
 
-**M1 (Minor) — the section 9.1 example is fabricated.** It shows
-`"start_date": "2026-08-27"`; the real dataset has `2026-08-24`. Real values belong in a
-document that will be read as a contract.
+The gap: `sessions.json` is a flat array carrying no `scraping_datetime`, so the dataset
+version proves *which pair* was ingested but not that the pair came from one scrape. A fresh
+`unified_courses.json` against a stale `sessions.json` yields a well-formed new version for an
+inconsistent dataset -- and the version machinery would then guarantee everyone sees the same
+wrong data. Closed by specification section 7.2.1: orphan sessions become an error, session
+coverage is asserted against the previous ingest, and a `scrape_manifest.json` sidecar makes
+pairing a checked precondition. The sidecar is additive and must land before the first
+production ingest.
 
-**M2 (Minor) — the 24-hour `immutable` cache on course pages is worth less than it reads.**
-Because `dataset_version` hashes sessions as well as courses, every scrape invalidates all
-six course pages (~4.9 MiB) even when course metadata is byte-identical. That coupling *is*
-the atomicity guarantee and should stay -- but section 6.1 presents long-lived caching as a
-benefit without noting it rarely survives a refresh. This is effectively the answer to open
-question 1.
+**I3 — all three specification questions settled** and folded into the body; section 16 now
+records the reasoning rather than asking. One-year `immutable` on content-addressed URLs with
+`no-store` on every error and a short policy for the non-content-addressed `limit_exceeded`
+envelope; user-triggered reload only, never a timer; fallback retained until the later of two
+ingests plus 48 hours or 2026-09-15, and kept published during the window.
 
-**M3 (Minor) — `no-store` manifest plus five-minute visibility polling** means one Neon query
-per visible tab per five minutes indefinitely. `max-age=60, must-revalidate` would be
-functionally identical for freshness at lower cost.
+### Still open
 
-**B5 (Blocking, resolved) — `npm`/`npx` are blocked by group policy; the baseline suite
-could not run.** `node --test` failed with `Cannot find module '@neondatabase/serverless'`:
-the package is pinned at 1.1.0 in `package-lock.json` and declared in `package.json`, but
-absent from `node_modules`, which held only the `http-server` tree (48 entries). `npm install`
-is not an available remedy on this device. **Resolved 2026-08-30** by vendoring the
-lockfile-exact tree from a sibling project (`C:\Projects\sar-reader`, v1.1.0, zero
-dependencies) into `node_modules/@neondatabase/`; `node --test` now reports **7 pass, 0 fail**
-(Node v22.17.0). `node_modules/` is gitignored, so nothing was committed. Every `npm test` in
-the plan body was rewritten to `node --test`, and the constraint is now recorded in the global
-constraints and Task 0.
-
-**I4 (Important, resolved by owner decision 2026-08-30) — Task 9's local full-stack gate
-cannot use Netlify Dev.** `npm run dev:netlify` expands to `npx netlify dev`; `npx` is
-policy-blocked and `netlify-cli` is absent from `node_modules`. `npm run dev` is static-only,
-so falling back to it would make every endpoint assertion in Task 9 vacuously pass instead of
-fail. **Owner chose option (b):** a small `node:http` router over the handlers the functions
-already export. Now specified in Task 9 under "Local function server"; the other options
-considered were vendoring `netlify-cli`, running Task 9 on an unrestricted device, or moving
-the gate to the `dev` branch deploy.
-
-Two consequences carried into the plan body rather than left here:
-
-- The router proves **handler** behavior, not **platform** behavior. It does not reproduce
-  Netlify routing, redirects, buffered-payload limit enforcement, or edge caching. The
-  4.5 MiB ceiling therefore stays asserted on serialized bytes in the Task 6 contract test,
-  and real cache/CDN semantics are confirmed on the `dev` deploy in Task 11 Stage A.
-- The router must pass `statusCode`, `headers`, and `body` through verbatim. Task 9 asserts
-  exact `Cache-Control` and `Content-Type` values, so a server that helpfully normalises
-  headers would silently invalidate the gate it exists to run.
-
-**M4 (Minor) — Task 1's role check is too narrow.** It verifies `webapp_ro` against the new
-`semesters` columns only. `db/roles.sql:10` does grant SELECT on all four tables, but whether
-that file was ever applied to production is unverified. Task 0 should query
-`information_schema.role_table_grants` for `courses` and `groups` explicitly, since
-acceptance criterion 9 depends on it and Task 5 fails opaquely without it.
-
-### Unanswered questions
-
-1. Confirm ledger location and tracked status as amended under B2.
-2. Confirm the source-artifact directory resolved in Task 0 (B3).
-3. Resolve specification section 16's three open questions (I3).
-4. Decide the `.gitattributes` fixture strategy (I1).
+Nothing from review passes 1 or 2. The drafts remain `Draft — pending review` pending the
+owner's approval to begin Task 0.
