@@ -24,7 +24,7 @@ Every implementation task belongs on its own branch:
 | webapp `dev` | — | Task 0 only | `7500c2a` |
 | webapp `phase2-api` | `dev` @ `7500c2a` | Tasks 1, 4, 5, 6 | created 2026-08-30 |
 | webapp `phase2-frontend` | `phase2-api` head | Tasks 7, 8, 9 | not yet created |
-| scraper `phase2-neon-ingest` | scraper `dev` | Tasks 2, 3 | not yet created |
+| scraper `phase2-neon-ingest` | scraper `dev` @ `30a0ad8` | manifest prerequisite, Tasks 2, 3 | created 2026-08-30 |
 
 Task 1 was first committed to `dev` by mistake and its independent review caught it
 (finding I1). Since nothing had been pushed — `origin/dev` was still at `4e17958` — the
@@ -54,6 +54,7 @@ blank and are owner-supplied. Credentials never appear in a tracked file.
 |---|---|---|---|---|
 | 0 Baselines and ledger | **complete, reviewed** | both | `7500c2a` (+ 3 text fixes in Task 1's commit) | independent review: *approved with minor findings*, 3 doc-consistency fixes, all applied |
 | 1 Dataset identity columns | **complete, reviewed** | webapp `phase2-api` | `ffce930` + this fix commit | review: *changes required* → all findings applied. Migration proven idempotent on disposable branch `br-calm-art-as9qjjef`; production untouched |
+| — Scraper manifest prerequisite | **review** | scraper `phase2-neon-ingest` | `9182c49` | `metadata.json` gains an `artifacts` block + `verify_artifacts()`; blocks Task 2 |
 | 2 Producer validation + mapping | pending | scraper | | must add source-dir resolution |
 | 3 Atomic ingest + rollback proof | pending | scraper | | blocks Task 6 |
 | 4 Manifest endpoint | pending | webapp | | needs `NEON_DATABASE_URL` |
@@ -92,6 +93,7 @@ None reached. No DDL, ingest, push, merge, or deploy has been performed in Phase
 | D1 | Task 0's final step named `.superpowers/sdd/phase2-progress.md`; the ledger was created at `docs/superpowers/sdd/` and the plan line corrected | leftover from review pass 1's B2 fix; §1.1 already specified `docs/superpowers/sdd/` |
 | D2 | Neon was inspected through the Neon control plane rather than a `webapp_ro` psql session | `NEON_DATABASE_URL` is not yet available; the queries were read-only `information_schema` and `count(*)` reads, and grants were verified directly. A `webapp_ro` connectivity check is carried into Task 4 |
 | D3 | Task 0's "Expected evidence" said `No tracked commit`, but §1.1 requires the ledger, brief, and report to be tracked and committed with the task. The bullet was corrected to forbid tracked *application-code, schema, or data* commits, which is what Task 0 actually means | same class of leftover as D1; raised by the Task 0 independent reviewer |
+| D5 | The scraper's manifest prerequisite (spec §7.2.1, scraper `docs/260830-scrape-manifest-task.md`) was executed **before** plan Task 2, which the plan lists first | Task 2's `check_pair_consistency` consumes the manifest, and the scraper task states it "must land first". Its brief/report live in the scraper repo beside the code they describe, per §1.1's rule that evidence reverts with its task; this ledger keeps the cross-repo narrative and its live copy follows the active implementation branch rather than `dev`, so there is one lineage to merge |
 | D4 | Moving the spec and plan from `Draft` to `Approved` is not one of Task 0's enumerated steps | it rests on the owner's authorisation to begin Task 0, which no reviewer can verify independently. Recorded here so the provenance of the status change is explicit. Plan §1.4 gates only branch creation on review, and §1.3 gates push/merge/deploy/DDL/ingest on Task 11 — none of which occurred |
 
 ## Commands run in Task 0
