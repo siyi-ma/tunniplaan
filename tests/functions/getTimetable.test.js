@@ -94,3 +94,158 @@ test('handler returns 500 envelope when NEON_DATABASE_URL is missing', async () 
   assert.strictEqual(res.statusCode, 500);
   assert.ok(JSON.parse(res.body).error);
 });
+
+// --- Versioned requests (spec 9.3) -----------------------------------------
+// The calendar must stay on the dataset version the tab loaded. Sessions from a
+// newer ingest merged into older course objects is the exact mixture the whole
+// version-pinning design exists to prevent.
+
+const VERSION = 'a'.repeat(64);
+const IMMUTABLE = 'public, max-age=31536000, immutable';
+
+// Routes by the shape of the statement rather than by call order, so a test
+// cannot pass because the queries happened to run in the expected sequence.
+function makeVersionedSql({ countRow, rowsRow, failWith } = {}) {
+  const calls = [];
+  const sql = async (strings, ...values) => {
+    const text = strings.join('?');
+    calls.push({ text, values });
+    if (failWith) throw failWith;
+    if (text.includes('jsonb_agg')) return [rowsRow];
+    return [countRow];
+  };
+  return { sql, calls };
+}
+
+async function getVersioned(query, options) {
+  const { sql, calls } = makeVersionedSql(options);
+  const response = await handleRequest({ queryStringParameters: query }, sql);
+  return { response, calls, body: JSON.parse(response.body) };
+}
+
+test('a versioned request returns the session array with immutable caching', async () => {
+  const { response, body } = await getVersioned(
+    { version: VERSION, courses: 'ITX0020' },
+    {
+      countRow: { version_match: true, count: 1 },
+      rowsRow: { version_match: true, sessions: [SAMPLE_ROW] },
+    },
+  );
+  assert.strictEqual(response.statusCode, 200);
+  assert.deepStrictEqual(body, [SAMPLE_ROW]);
+  assert.strictEqual(response.headers['Cache-Control'], IMMUTABLE);
+});
+
+test('a versioned empty result is a normal 200, not a 409', async () => {
+  const { response, body } = await getVersioned(
+    { version: VERSION, courses: 'NOPE0000' },
+    {
+      countRow: { version_match: true, count: 0 },
+      rowsRow: { version_match: true, sessions: [] },
+    },
+  );
+  assert.strictEqual(response.statusCode, 200);
+  assert.deepStrictEqual(body, []);
+});
+
+test('a stale version is 409 and never queries session rows', async () => {
+  const { response, body, calls } = await getVersioned(
+    { version: VERSION, courses: 'ITX0020' },
+    { countRow: { version_match: false, count: 0 } },
+  );
+  assert.strictEqual(response.statusCode, 409);
+  assert.deepStrictEqual(body, { error: 'version_changed' });
+  assert.strictEqual(response.headers['Cache-Control'], 'no-store');
+  assert.strictEqual(calls.length, 1, 'the row query must not run');
+  assert.ok(!calls[0].text.includes('jsonb_agg'), 'the one query run was the count');
+});
+
+test('an ingest between the count and the row query is a 409, not a false empty success', async () => {
+  // The row statement carries its own version check from its own snapshot, so a
+  // dataset replaced in between cannot come back as a plausible empty array.
+  const { response, body } = await getVersioned(
+    { version: VERSION, courses: 'ITX0020' },
+    {
+      countRow: { version_match: true, count: 3 },
+      rowsRow: { version_match: false, sessions: [] },
+    },
+  );
+  assert.strictEqual(response.statusCode, 409);
+  assert.deepStrictEqual(body, { error: 'version_changed' });
+});
+
+test('a malformed version is 400 and queries nothing', async () => {
+  for (const version of ['', 'nope', 'A'.repeat(64), 'a'.repeat(63), 'a'.repeat(65)]) {
+    const { response, body, calls } = await getVersioned(
+      { version, courses: 'ITX0020' },
+      { countRow: { version_match: true, count: 0 } },
+    );
+    assert.strictEqual(response.statusCode, 400, JSON.stringify(version));
+    assert.strictEqual(body.error, 'bad_request');
+    assert.strictEqual(response.headers['Cache-Control'], 'no-store');
+    assert.strictEqual(calls.length, 0);
+  }
+});
+
+test('a versioned limit_exceeded is short-lived, not immutable', async () => {
+  // Its content depends on CALENDAR_SESSION_LIMIT, an environment variable that
+  // can change without the dataset version changing, so it is not
+  // content-addressed and must never be cached as if it were.
+  const { response, body } = await getVersioned(
+    { version: VERSION, courses: 'BIG0001' },
+    { countRow: { version_match: true, count: 99999 } },
+  );
+  assert.strictEqual(response.statusCode, 200);
+  assert.strictEqual(body.error, 'limit_exceeded');
+  assert.strictEqual(response.headers['Cache-Control'], 'public, max-age=300');
+  assert.notStrictEqual(response.headers['Cache-Control'], IMMUTABLE);
+});
+
+test('a versioned request binds the version into both statements', async () => {
+  const { calls } = await getVersioned(
+    { version: VERSION, courses: 'ITX0020' },
+    {
+      countRow: { version_match: true, count: 1 },
+      rowsRow: { version_match: true, sessions: [SAMPLE_ROW] },
+    },
+  );
+  assert.strictEqual(calls.length, 2);
+  for (const call of calls) {
+    assert.ok(call.values.includes(VERSION), 'each statement checks the version itself');
+    assert.match(call.text, /dataset_version/);
+  }
+});
+
+test('a versioned request never uses the warm-lambda semester cache', async () => {
+  // getTimetable caches the active semester code for five minutes. Serving a
+  // versioned request from that cache could answer for a semester that is no
+  // longer active, under a version the client trusts.
+  const first = await getVersioned({ version: VERSION, courses: 'ITX0020' }, {
+    countRow: { version_match: true, count: 1 },
+    rowsRow: { version_match: true, sessions: [SAMPLE_ROW] },
+  });
+  const second = await getVersioned({ version: VERSION, courses: 'ITX0020' }, {
+    countRow: { version_match: false, count: 0 },
+  });
+  assert.strictEqual(first.response.statusCode, 200);
+  assert.strictEqual(second.response.statusCode, 409,
+    'the second request must re-resolve the semester, not reuse a cached code');
+  for (const call of first.calls) {
+    assert.ok(!/SELECT code FROM semesters WHERE is_active = true LIMIT 1/.test(call.text));
+  }
+});
+
+test('an unversioned request keeps the old behaviour and the old cache policy', async () => {
+  // The deployed frontend still sends no version during rollout.
+  const { sql } = makeFakeSql({
+    semesterRows: [{ code: '26s' }],
+    countRows: [{ count: 1 }],
+    sessionRows: [SAMPLE_ROW],
+  });
+  _resetSemesterCache();
+  const response = await handleRequest(
+    { queryStringParameters: { courses: 'ITX0020' } }, sql);
+  assert.strictEqual(response.statusCode, 200);
+  assert.deepStrictEqual(JSON.parse(response.body), [SAMPLE_ROW]);
+  assert.strictEqual(response.headers['Cache-Control'], CACHE_CONTROL);
+});

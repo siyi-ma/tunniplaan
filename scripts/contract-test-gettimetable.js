@@ -80,6 +80,23 @@ async function main() {
   const courseIds = [...new Set(allEvents.map((e) => e.course_id))].sort();
   console.log(`${allEvents.length} events, ${courseIds.length} distinct courses`);
 
+  // A zero-course run would compare nothing against nothing and print
+  // "CONTRACT OK". That is the failure mode a contract test must not have.
+  if (allEvents.length === 0 || courseIds.length === 0) {
+    throw new Error('the source file has no sessions; there is nothing to verify');
+  }
+
+  // The version covers both artifacts, so unified_courses.json is read too --
+  // this test is about sessions, but the identifier is not.
+  const unifiedPath = path.join(sourceDir, 'unified_courses.json');
+  if (!fs.existsSync(unifiedPath)) throw new Error(`${unifiedPath} does not exist`);
+  const datasetVersion = crypto.createHash('sha256')
+    .update(fs.readFileSync(unifiedPath))
+    .update(Buffer.from([0]))
+    .update(fs.readFileSync(sessionsPath))
+    .digest('hex');
+  console.log(`  dataset_version: ${datasetVersion}`);
+
   // Group courses into batches whose total event count stays under the handler's
   // session limit, so every batch returns an array (not limit_exceeded). Data grows
   // denser over time, so size by session count rather than a fixed course count.
@@ -108,8 +125,20 @@ async function main() {
     const legacy = allEvents.filter((e) => batchSet.has(e.course_id));
 
     _resetSemesterCache();
-    const res = await handleRequest({ queryStringParameters: { courses: batch.join(',') } }, sql);
+    // Versioned, like the new frontend. A 409 here would mean the database no
+    // longer holds the dataset this source directory describes -- which is a
+    // real failure of this test, not something to retry around.
+    const res = await handleRequest({
+      queryStringParameters: { courses: batch.join(','), version: datasetVersion },
+    }, sql);
+    if (res.statusCode === 409) {
+      throw new Error(
+        `batch ${i}: the database no longer holds dataset ${datasetVersion.slice(0, 12)}…; `
+        + 'ingest these artifacts before running the contract test');
+    }
     assert.strictEqual(res.statusCode, 200, `batch ${i}: status ${res.statusCode} body ${res.body}`);
+    assert.strictEqual(res.headers['Cache-Control'], 'public, max-age=31536000, immutable',
+      `batch ${i}: a versioned session array must be immutable`);
     const fresh = JSON.parse(res.body);
     assert.ok(Array.isArray(fresh), `batch ${i}: expected array, got ${res.body.slice(0, 200)}`);
 

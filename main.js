@@ -987,7 +987,20 @@ async function toggleCalendarView() {
             throw new Error("No courses selected.");
         }
 
-        const response = await fetch(`/.netlify/functions/getTimetable?courses=${courseIds}`);
+        // Pin the calendar to the dataset this tab loaded. Without it the
+        // endpoint would answer from whatever is active now, and sessions from a
+        // newer ingest would be merged into older course objects.
+        const versionParam = activeDatasetVersion
+            ? `&version=${encodeURIComponent(activeDatasetVersion)}` : '';
+        const response = await fetch(
+            `/.netlify/functions/getTimetable?courses=${courseIds}${versionParam}`);
+        if (response.status === 409) {
+            // The dataset moved under this tab. Never merge the new sessions
+            // into the course objects already rendered; offer a reload instead,
+            // reusing the same notice the freshness check raises.
+            handleCalendarVersionConflict();
+            return;
+        }
         if (!response.ok) {
             const error = new Error(`Server returned status ${response.status}`);
             error.status = response.status;
@@ -1848,6 +1861,10 @@ const STATIC_FALLBACK_ENABLED = true;
 // not dismissed it. Never acted on automatically.
 let pendingDatasetVersion = null;
 
+// Stands in when a calendar 409 proves the dataset moved but the throttled
+// freshness check has not told us what it moved to.
+const DATASET_CHANGED_UNKNOWN = 'dataset-changed';
+
 const datasetNoticeTexts = {
     fallbackTitle: {
         et: 'Varuandmed',
@@ -1944,6 +1961,31 @@ function buildNotice({ tone, title, body, actionLabel, onAction, dismissLabel, o
         wrapper.appendChild(button);
     }
     return wrapper;
+}
+
+// A 409 from the calendar means an ingest landed while this tab was open. One
+// automatic recovery attempt only: re-checking is cheap, but a loop of reload
+// prompts on a tab that keeps racing an ingest is worse than one clear notice.
+let calendarConflictHandled = false;
+
+async function handleCalendarVersionConflict() {
+    loadingIndicatorDOM.classList.add('hidden');
+    if (calendarConflictHandled) {
+        renderDatasetNotices();
+        return;
+    }
+    calendarConflictHandled = true;
+    // Ask the manifest what the version actually is now, so the notice names a
+    // real new dataset rather than just "something changed".
+    let version = null;
+    if (freshnessChecker) {
+        try { version = await freshnessChecker.check(activeDatasetVersion); } catch (e) { /* offline */ }
+    }
+    // The check is throttled, so it often declines to answer. The 409 is proof
+    // enough that the dataset moved; the sentinel just means "we know it changed
+    // but not to what".
+    pendingDatasetVersion = version || DATASET_CHANGED_UNKNOWN;
+    renderDatasetNotices();
 }
 
 // Checks only when the tab becomes visible, at most once every five minutes,
