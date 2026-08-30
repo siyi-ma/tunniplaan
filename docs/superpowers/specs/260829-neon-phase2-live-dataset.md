@@ -173,22 +173,29 @@ The producer must close this. In increasing order of strength:
 2. **Coverage assertion.** The proportion of courses with zero sessions must stay within a
    stated band of the previous ingest. This catches the case orphan-checking misses -- new
    courses that have no sessions because the sessions file predates them.
-3. **A scrape manifest sidecar,** which is the actual fix. The pipeline writes
-   `scrape_manifest.json` beside the two artifacts:
+3. **Artifact hashes stamped into the producer's manifest,** which is the actual fix. No new
+   sidecar file is needed: `26s_pipeline.py` already writes `metadata.json` beside the two
+   artifacts, already carrying `scraping_datetime`, a `mode` of `TEST` or `PRODUCTION`, and
+   `statistics.total_courses` / `total_sessions`. It gains an `artifacts` block:
 
    ```json
    {
-     "scrape_id": "20260824T170500",
-     "scraping_datetime": "24.08.2026 17:05",
-     "unified_sha256": "<64 hex>",
-     "sessions_sha256": "<64 hex>"
+     "artifacts": {
+       "unified_courses": { "sha256": "<64 hex>", "bytes": 6687128 },
+       "sessions":        { "sha256": "<64 hex>", "bytes": 53200000 },
+       "dataset_version": "<64 hex>"
+     }
    }
    ```
 
-   The ingest recomputes both hashes from the files it actually loaded and aborts on any
-   mismatch. This is additive, breaks no existing consumer, and converts “these two files
-   belong together” from an assumption into a checked precondition. It must land before the
-   first production ingest.
+   The ingest recomputes both hashes plus the combined version from the files it actually
+   loaded, requires an exact match, refuses any manifest whose `mode` is not `PRODUCTION`,
+   and cross-checks the statistics against the loaded counts. This is additive, breaks no
+   existing consumer, and converts “these two files belong together” from an assumption into
+   a checked precondition. `metadata.json` thereby becomes part of the cross-repo contract.
+
+   Specified in the scraper repo as `docs/260830-scrape-manifest-task.md`. It must land
+   before the first production ingest.
 
 ### 7.2.2 Locating the source artifacts
 
@@ -250,8 +257,8 @@ Before opening a write transaction, the command must:
 4. Require unique course IDs and valid group map keys/values.
 5. Require every non-null `session_status` to be `online`, `offline`, or `hybrid`.
 6. Reject orphan session course IDs as an error, and assert session coverage against the
-   previous ingest, per section 7.2.1. Verify the scrape manifest hashes match the loaded
-   files.
+   previous ingest, per section 7.2.1. Verify the producer manifest per section 7.2.1: `mode` is `PRODUCTION`, both
+   artifact hashes and the dataset version match, and the statistics match the loaded counts.
 7. Compute and print the dataset version, scrape date, semester code, and all row
    counts without printing credentials.
 8. In `--dry-run` mode, stop here with no database connection or mutation.
@@ -687,9 +694,11 @@ version proves *which pair* was ingested but not that the pair came from one scr
 `unified_courses.json` against a stale `sessions.json` yields a well-formed new version for an
 inconsistent dataset -- and the version machinery would then guarantee everyone sees the same
 wrong data. Closed by specification section 7.2.1: orphan sessions become an error, session
-coverage is asserted against the previous ingest, and a `scrape_manifest.json` sidecar makes
-pairing a checked precondition. The sidecar is additive and must land before the first
-production ingest.
+coverage is asserted against the previous ingest, and artifact hashes stamped into the
+producer's existing `metadata.json` make pairing a checked precondition. No new sidecar is
+needed -- `26s_pipeline.py` already writes that file with `scraping_datetime`, a TEST/PRODUCTION
+mode, and per-run statistics; it only lacks the hashes. Specified in the scraper repo as
+`docs/260830-scrape-manifest-task.md`, and it must land before the first production ingest.
 
 **I3 — all three specification questions settled** and folded into the body; section 16 now
 records the reasoning rather than asking. One-year `immutable` on content-addressed URLs with

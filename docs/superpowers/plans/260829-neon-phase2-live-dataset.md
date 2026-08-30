@@ -339,10 +339,12 @@ every contract run.
   SHA-256 + NUL contract.
 - `resolve_source_dir(cli_arg, env, default)` implements the section 7.2.2 precedence and
   returns an absolute path; it does no I/O beyond existence checks.
-- `check_pair_consistency(unified, sessions, manifest=None)` implements section 7.2.1:
-  orphan session course IDs are an **error**, session coverage is asserted against a supplied
-  baseline, and, when a `scrape_manifest.json` is present, both recomputed hashes must match
-  it.
+- `check_pair_consistency(unified, sessions, manifest)` implements section 7.2.1: orphan
+  session course IDs are an **error**, session coverage is asserted against a supplied
+  baseline, and the producer's `metadata.json` must verify -- `mode` is `PRODUCTION`, both
+  artifact hashes and the combined dataset version match the loaded bytes, and the statistics
+  match the loaded counts. The producer half is specified in the scraper repo as
+  `docs/260830-scrape-manifest-task.md` and must land first.
 - Pure row builders convert the source envelope into semester, group, course, and
   session database rows without connecting to Neon.
 
@@ -352,8 +354,8 @@ every contract run.
 - [ ] **Red:** Add tests for missing top-level keys, duplicate course IDs, bad status,
   production/test filename rejection, bare group keys, and deterministic versioning.
 - [ ] **Red:** Add tests for pair consistency -- a stale `sessions.json` producing orphan
-  course IDs must raise, a manifest hash mismatch must raise, and a coverage collapse must
-  raise. These are the tests that stop a coherently versioned inconsistent dataset.
+  course IDs must raise, a manifest hash or dataset-version mismatch must raise, a `TEST`-mode
+  manifest must be refused, and a coverage collapse must raise. These are the tests that stop a coherently versioned inconsistent dataset.
 - [ ] Move/refactor validation from `publish_to_webapp.py` without changing messages or
   warning/error classification unless the spec strengthens it.
 - [ ] Implement pure mapping functions. Assert exact field coverage against fixture
@@ -1102,9 +1104,11 @@ version proves *which pair* was ingested but not that the pair came from one scr
 `unified_courses.json` against a stale `sessions.json` yields a well-formed new version for an
 inconsistent dataset -- and the version machinery would then guarantee everyone sees the same
 wrong data. Closed by specification section 7.2.1: orphan sessions become an error, session
-coverage is asserted against the previous ingest, and a `scrape_manifest.json` sidecar makes
-pairing a checked precondition. The sidecar is additive and must land before the first
-production ingest.
+coverage is asserted against the previous ingest, and artifact hashes stamped into the
+producer's existing `metadata.json` make pairing a checked precondition. No new sidecar is
+needed -- `26s_pipeline.py` already writes that file with `scraping_datetime`, a TEST/PRODUCTION
+mode, and per-run statistics; it only lacks the hashes. Specified in the scraper repo as
+`docs/260830-scrape-manifest-task.md`, and it must land before the first production ingest.
 
 **I3 — all three specification questions settled** and folded into the body; section 16 now
 records the reasoning rather than asking. One-year `immutable` on content-addressed URLs with
