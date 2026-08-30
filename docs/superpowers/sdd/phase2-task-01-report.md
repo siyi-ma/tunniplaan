@@ -2,7 +2,8 @@
 
 **Date:** 2026-08-30
 **Repository:** webapp `C:\Projects\tunniplaan`, branch `dev`
-**Status:** implemented; awaiting independent review
+**Status:** complete — independently reviewed, all findings applied
+**Branch:** `phase2-api` (plan §1.4), based on `dev` @ `7500c2a`
 
 ---
 
@@ -63,7 +64,9 @@ row, and the real roles.
 
 **Before:** query for the two columns returned `[]` — neither existed.
 
-**First apply** (both statements in one transaction): success. Resulting `semesters`:
+**First apply**, both statements through the Neon control plane's multi-statement
+transactional endpoint (deviation D2 — no `webapp_ro`/admin connection string is available
+locally yet): success. Resulting `semesters`:
 
 ```text
  1 code              text                      NOT NULL
@@ -85,6 +88,14 @@ Both new columns are nullable with no default, as the plan requires. Column orde
 **Second apply:** the identical transaction ran again and **succeeded with no
 duplicate-column error**; the table still reports 11 columns. Idempotence proven.
 
+Note the migration's own documented apply path,
+`node scripts/run-sql.js db/migrations/…`, is **not** transactional:
+`scripts/run-sql.js:24-32` splits on `;` and issues each statement as its own autocommit
+HTTP call. That is harmless for this migration — both statements are additive and
+idempotent, so a partial apply is simply re-run — but the runbook must not describe that
+path as atomic. Task 3's ingest, which genuinely needs one transaction, cannot use
+`run-sql.js`.
+
 ## 4. Role isolation
 
 Two independent checks on the same branch.
@@ -99,9 +110,14 @@ so `db/roles.sql` needed no change:
 | `webapp_ro` INSERT / DELETE on `semesters` | false / false |
 | `scraper_rw` UPDATE `dataset_version` / `ingested_at` | true / true |
 
-**Empirical, acting as the role.** `neondb_owner` could not `SET ROLE webapp_ro`
-(`permission denied to set role "webapp_ro"`), so membership was granted **on the
-disposable branch only** to make the proof real rather than catalog-derived:
+**Empirical, acting as the role.** A first attempt failed with
+`permission denied to set role "webapp_ro"`, which was misread as missing membership;
+`GRANT webapp_ro TO neondb_owner` was then issued **on the disposable branch only**. The
+review established that production *already* grants that membership (via `cloud_admin`,
+with `admin_option`), so the grant was redundant and the real cause of the first failure
+was the execution channel — each statement travels as its own HTTP call, so a bare
+`SET ROLE` does not survive into the next one. Issuing `SET LOCAL ROLE` inside a
+multi-statement transaction is what actually made it work:
 
 ```text
 SET LOCAL ROLE webapp_ro;
@@ -113,8 +129,8 @@ update semesters set dataset_version = 'must-not-succeed' where is_active;
   -> ERROR: permission denied for table semesters
 ```
 
-The `GRANT webapp_ro TO neondb_owner` exists only on the throwaway branch. Production
-role membership is unchanged, and `db/roles.sql` is untouched.
+The extra membership row exists only on the throwaway branch. Production role membership is
+unchanged, and `db/roles.sql` is untouched.
 
 ## 5. Production untouched
 
@@ -160,3 +176,18 @@ fixes ride along in this task's commit:
 
 Marking the spec and plan `Approved` was also logged as **D4**, since it rests on owner
 authorisation no reviewer can verify independently.
+
+## 9. Task 1 review findings, applied
+
+Verdict: **changes required**, on process rather than engineering. The reviewer independently
+reproduced every technical claim — including six mutation tests proving the new schema test
+is not a tautology — and confirmed production was never migrated.
+
+| # | Finding | Fix |
+|---|---|---|
+| I1 | The commit landed on `dev`, not the `phase2-api` branch plan §1.4 mandates. Left alone until Tasks 7–9 also landed there, the two-stage rollout would have needed the cherry-picking §1.4 exists to avoid | commit moved to `phase2-api`; `dev` reset to `7500c2a`. Nothing was pushed, so no visible history changed. Topology table added to the ledger |
+| M2 | Ledger F9 claimed the throwaway branch's role grant was something production lacked; production already had that membership via `cloud_admin` | F9 reworded; §4's rationale corrected — the `SET ROLE` failure came from the per-statement HTTP channel, not from missing membership |
+| M3 | §3 claimed "one transaction", but the migration's documented `run-sql.js` path issues autocommit statements | corrected, and the limitation recorded for Task 3, which genuinely needs atomicity |
+| M4 | `stripComments()` missed `/* … */`, so a block-comment rewrite of the "do not add NOT NULL" warning would have failed the build for no reason | block comments now stripped; the remaining string-literal assumption is stated in the code |
+| M5 | The ledger recorded no commands or worktree state for Task 1, which §1.1 requires | "Commands run in Task 1" section added |
+| M6 | The ledger said "this commit" self-referentially | resolved to `ffce930` |

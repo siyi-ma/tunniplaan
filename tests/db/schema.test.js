@@ -19,8 +19,10 @@ const PHASE2_COLUMNS = [
 
 // Constraint assertions must read statements, not prose: a comment saying
 // "do not add NOT NULL here" is not a NOT NULL constraint.
+// Assumes DDL free of string literals — a '--' inside one would swallow the rest
+// of its line. True of both files here; revisit if either grows a literal.
 function stripComments(sql) {
-  return sql.replace(/--.*$/gm, '');
+  return sql.replace(/\/\*[\s\S]*?\*\//g, '').replace(/--.*$/gm, '');
 }
 
 function semestersBlock(sql) {
