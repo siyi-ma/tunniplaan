@@ -24,12 +24,50 @@ function fingerprints(events) {
   return events.map((e) => JSON.stringify(canonicalize(e))).sort();
 }
 
+function loadDotEnv(file) {
+  if (!fs.existsSync(file)) return;
+  for (const line of fs.readFileSync(file, 'utf-8').split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eq = trimmed.indexOf('=');
+    if (eq < 1) continue;
+    const key = trimmed.slice(0, eq).trim();
+    if (process.env[key] === undefined) process.env[key] = trimmed.slice(eq + 1).trim();
+  }
+}
+
+// Phase 1 deleted sessions.json from this repository and gitignored it, so the
+// old `<repo root>/sessions.json` read could not run at all. The source pair
+// lives in the scraper's data directory: --source-dir > TUNNIPLAAN_DATA_DIR,
+// with no repo-root fallback, because a silent fallback is how a contract test
+// passes against the wrong data. (Spec 7.2.2. Task 8 owns adding dataset
+// version support here; this is only the source path.)
+function resolveSourceDir() {
+  const argv = process.argv.slice(2);
+  const flag = argv.indexOf('--source-dir');
+  const inline = argv.find((a) => a.startsWith('--source-dir='));
+  const cli = flag !== -1 ? argv[flag + 1] : (inline ? inline.slice(14) : undefined);
+  for (const [value, origin] of [[cli, '--source-dir'],
+    [process.env.TUNNIPLAAN_DATA_DIR, 'TUNNIPLAAN_DATA_DIR']]) {
+    if (!value) continue;
+    if (!fs.existsSync(value) || !fs.statSync(value).isDirectory()) {
+      throw new Error(`${origin} points at ${value}, which is not a directory`);
+    }
+    return path.resolve(value);
+  }
+  throw new Error('No source directory. Pass --source-dir or set TUNNIPLAAN_DATA_DIR.');
+}
+
 async function main() {
+  loadDotEnv(path.resolve(__dirname, '..', '.env'));
   if (!process.env.NEON_DATABASE_URL) throw new Error('Set NEON_DATABASE_URL');
   const sql = neon(process.env.NEON_DATABASE_URL);
 
-  const root = path.resolve(__dirname, '..');
-  const allEvents = JSON.parse(fs.readFileSync(path.join(root, 'sessions.json'), 'utf-8'));
+  const sourceDir = resolveSourceDir();
+  const sessionsPath = path.join(sourceDir, 'sessions.json');
+  if (!fs.existsSync(sessionsPath)) throw new Error(`${sessionsPath} does not exist`);
+  console.log(`Source: ${sourceDir}`);
+  const allEvents = JSON.parse(fs.readFileSync(sessionsPath, 'utf-8'));
   const courseIds = [...new Set(allEvents.map((e) => e.course_id))].sort();
   console.log(`${allEvents.length} events, ${courseIds.length} distinct courses`);
 
