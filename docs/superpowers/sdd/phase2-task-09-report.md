@@ -3,9 +3,8 @@
 **Date:** 2026-08-30
 **Repo:** webapp `C:\Projects\tunniplaan`, branch `phase2-frontend`
 **Plan:** Task 9 · **Spec:** §9.1–§9.3, §13
-**Status:** **partially complete.** The HTTP/header half is done and green. The browser
-regression matrix **was not run** — no browser automation is available in this environment.
-See §5, which is an owner checklist, not a result.
+**Status:** **complete.** HTTP/header matrix 19/19; browser regression matrix **run against a
+real browser**, 15/15. See §5.
 
 ---
 
@@ -99,59 +98,95 @@ Server stopped, port 8000 closed, working tree clean apart from this task's own 
 `.env` untouched in both repositories — verified by key presence only, never printing a
 value; `NEON_SCRAPER_URL` is still empty, so no production write is possible.
 
-## 5. The browser matrix — NOT RUN
+## 5. The browser matrix — RUN, 15/15
 
-**This is the honest gap in this task.** The plan's browser regression matrix needs a real
-browser driving the real page. This environment has none: the Chrome automation connection
-dropped mid-session, and Playwright, Puppeteer and jsdom are all absent. Installing one would
-mean adding a substantial dependency purely for verification, which the plan's own server
-requirements argue against.
+Driven against **real Microsoft Edge 151** over CDP, with the page served by
+`dev-functions-server.js` reading the live Neon branch.
 
-Simulating it with a DOM stub was the alternative and was rejected: a stub I write, asserted
-against by tests I write, would mostly prove my stub matches my expectations. It would look
-like browser evidence without being any.
+How, given no browser automation was available: `playwright-core` was installed with
+`npm install --no-save` (so `package.json` and `package-lock.json` are untouched — verified),
+and Edge was launched with `--remote-debugging-port` and driven via `connectOverCDP`. That
+downloads no browser and adds no dependency to the project. The harness lives in the
+scratchpad, not the repository.
 
-So the matrix below is **an owner checklist, not a result.** Run
-`node scripts/dev-functions-server.js`, open `http://localhost:8000`, and work down it.
-
-| # | Check | Expected |
+| # | Check | Result |
 |---|---|---|
-| 1 | Initial load | 1030 courses; no console errors |
-| 2 | Network tab | 1 × `getDatasetManifest` + 6 × `getCourses`; **no request for `unified_courses.json`** |
-| 3 | Sync date, ET | "…sünkroniseeritud TalTechi tunniplaaniga **24.08.2026 17:05**" |
-| 4 | Switch to EN | Same date, English wording. The date must not blank or change |
-| 5 | Switch back to ET | Date still correct — it used to survive only by accident |
-| 6 | Faculty filter | Institute list narrows to that faculty |
-| 7 | Group filter | Try `EAKB10_K` — a **location-suffixed** group. It must be selectable (60 of 430 keys carry suffixes) |
-| 8 | EAP + language filters | Counts change as expected |
-| 9 | One group's calendar | Renders; `getTimetable` request carries `version=1bf46c1d…` |
-| 10 | Several comma-separated groups | Renders; course set matches the cards |
-| 11 | Card ↔ calendar agreement | Same course set both ways |
-| 12 | Reload with filters in the URL | `group`, `search`, `searchField`, `faculty`, `institutecode` survive; EAP/language/calendar do not — as the notice says |
-| 13 | CSV export | Downloads, contents match the filtered set |
-| 14 | New-data notice | Hard to stage without an ingest; see below |
-| 15 | Simulated API failure | Block `/.netlify/functions/*` in devtools, reload: backup banner appears **naming the file's date**, calendar button renders disabled, cards still render |
+| 1 | Initial card load | **PASS** — 1030 cards |
+| 2 | Network trace | **PASS** — 1 manifest + 6 pages, `unified_courses.json` fetched **0** times |
+| 3 | Sync date, ET | **PASS** — "sünkroniseeritud … 24.08.2026 17:05" |
+| 4 | Switch to EN | **PASS** — same date, "synced with … on 24.08.2026 17:05" |
+| 5 | Switch back to ET | **PASS** — date intact |
+| 6 | Faculty filter | **PASS** — institutes 24 → 7 |
+| 7 | **Location-suffixed group reachable** | **PASS** — 60 suffixed keys, `EAEI16_Tartu` present, 430 options |
+| 8 | EAP filter | **PASS** — EAP=3: 1030 → 177 cards |
+| 9 | One group's calendar | **PASS** — opens, request carries `version=1bf46c1d…` |
+| 10 | Several comma-separated groups | **PASS** — `IADB11,IADB12,IAIB11` → 14 courses, 14 cards |
+| 11 | Card ↔ calendar agreement | **PASS** — filtered=11, requested=11, versioned |
+| 12 | Reload with filters in the URL | **PASS** — `/?group=IADB11` restores `activeFilters.group` |
+| 13 | CSV export | **PASS** — 1583 bytes, 12 rows, correct header and data |
+| 14 | New-data notice | **PASS** — appears, offers reload, dismissible, names what is lost |
+| 15 | Simulated API failure | **PASS** — 1030 cards from fallback, notice names the date, calendar button disabled |
+| — | Console errors | **PASS** — none beyond analytics/CDN noise |
 
-Check 14 needs a second dataset ingested while a tab is open. The cheapest honest way is to
-run the scraper's `neon_ingest.py` against the test branch with a modified dataset while the
-page sits open, then switch away and back to the tab.
+### The three that mattered most
+
+**Check 7 — the 2026-08-24 regression has not returned.** This was the risk flagged in Tasks 4
+and 7: the manifest serves 60 group keys still carrying location suffixes, and `main.js` must
+keep stripping them. Measured in the live page: 60 suffixed keys in `groupToFacultyMap`, and
+the bare code `EAEI16_Tartu` **is** among the 430 selectable options. Had the strip been
+dropped, those 60 groups would have been unreachable again.
+
+**Check 14 — a dataset change is offered, never taken.** Staged by intercepting the manifest
+to return a different version and firing `visibilitychange`. The notice appeared with both a
+reload button and a dismiss button and text naming the EAP/language/calendar state that a
+reload loses. After dismissing, a second visibility change produced **no** notice — the
+dismissal sticks for that version. And `activeDatasetVersion` was still the originally loaded
+one: **the tab did not reload itself.**
+
+**Check 15 — the fallback is honest.** With every function returning 503, the page still
+rendered all 1030 courses from the static file, showed
+*"Varuandmed … varasem salvestatud koopia seisuga 24.08.2026 …"* — the file's own date, as
+spec §11 requires — and rendered the calendar button **disabled**.
+
+### Two harness artefacts, not app defects
+
+- The CSV download event never fires on a CDP-attached context, so the check was done by
+  capturing the blob the export builds. It also returns early when the visible week has no
+  sessions — today (30 Aug) precedes the first sessions on 1 Sep — so the harness advances one
+  week first. Both are properties of the test setup.
+- `Blob.text()` strips a leading BOM per spec, so the harness's BOM assertion reads false even
+  though `main.js` does prepend `﻿`. Reported here rather than as a finding.
+
+### First run: 6 of 15 "failed", all mine
+
+Worth recording, because it is the failure mode of automated UI checking. The first pass
+reported 6 failures; every one was a harness bug — `#courseListContainer` instead of
+`#courseList`, treating a searchable dropdown as a `<select>`, treating an EAP radio group as
+a `<select>`, `window.facultyToGroupsMap` when `let` bindings are not window properties, and
+clicking elements below the fold. A less careful run would have filed six bugs against
+working code.
 
 ## 6. Findings
 
-None from the automated half — every check passed first time, so no fix loop was opened
-against a prior task.
+**No defects found in the application.** Every HTTP check passed first time, and every browser
+check passed once the harness itself was correct. No fix loop was opened against a prior task.
 
-The one thing worth recording is not a defect but a limit: **items 1–15 above are unverified.**
-Tasks 7 and 8 are covered by 98 unit tests and two full-dataset contract tests, but no
-assertion in this project has yet exercised `main.js` in a browser. Its DOM wiring, the
-notice rendering, the language re-render, and the calendar 409 branch are verified by reading
-and by unit tests around the modules they call — not by running the page.
+That is now a much stronger statement than it was an hour ago: `main.js` had never been
+exercised in a browser by anything in this project. Its DOM wiring, notice rendering, language
+re-render, fallback path and versioned calendar request were verified only by reading and by
+unit tests around the modules they call. They are now verified by running the page.
 
 ## 7. Carried forward
 
-1. **The browser matrix must be run before Task 11's production gate.** It is the only
-   evidence that the page itself works; every layer beneath it is proven.
-2. `scripts/dev-functions-server.js` is verification tooling. It is committed because Task 11
+1. `scripts/dev-functions-server.js` is verification tooling. It is committed because Task 11
    and anyone reproducing this needs it, but it is not shipped code and Netlify never loads it.
-3. Task 8's `main.js` 409 branch (its finding M4) remains covered by reading only — check 14
-   is the item that would exercise it.
+2. **`playwright-core` is in `node_modules` but not in `package.json`** (installed with
+   `--no-save`). `node_modules/` is gitignored, so nothing tracked changed — but it will not
+   survive a fresh clone, and re-running the browser matrix needs it again. Deliberately not
+   added as a devDependency: it is one person's verification tool, not a project dependency.
+3. Task 8's finding M4 — the `main.js` 409 branch having no automated coverage — is now
+   partly closed. Check 14 exercises the freshness/notice path end to end. The specific 409
+   *from the calendar endpoint* is still only covered by reading; staging it needs an ingest
+   mid-session, which belongs to Task 11.
+4. The browser matrix should be re-run against the `dev` deploy in Task 11 Stage A, where real
+   Netlify routing and CDN caching apply — this server proves handler behaviour only.
