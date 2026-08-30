@@ -131,7 +131,10 @@ test('never runs more than four requests at once', async () => {
   });
 
   await CourseData.loadCourseData({ fetchImpl, tracker });
-  assert.ok(peak <= CourseData.MAX_CONCURRENCY, `peak concurrency was ${peak}`);
+  // The literal, not CourseData.MAX_CONCURRENCY: reading the bound from the
+  // module under test means raising the limit also raises the assertion, and
+  // the test passes no matter what the value becomes.
+  assert.ok(peak <= 4, `peak concurrency was ${peak}`);
   assert.ok(peak > 1, 'requests should overlap at all');
 });
 
@@ -256,9 +259,10 @@ test('fallback data carries no dataset version', async () => {
 test('the fallback sync date is the static file own date, never the manifest', async () => {
   // Showing the manifest's newer timestamp over older static cards would be a
   // lie about what the user is looking at.
+  // The manifest is valid and loads; a page is genuinely unavailable. That is
+  // the case the fallback exists for, and the case where showing the manifest's
+  // newer date over older static cards would be the lie.
   const { fetchImpl } = makeFetch({
-    manifests: [manifest({ course_count: 99 })],   // manifest loads, pages fail
-    pages: {},
     failPages: { 0: { status: 500, body: { error: 'courses_unavailable' } } },
     fallback: STATIC,
   });
@@ -323,4 +327,109 @@ test('the checker never triggers a reload itself', () => {
     require('node:path').resolve(__dirname, '..', '..', 'course-data.js'), 'utf-8');
   assert.ok(!/location\s*\.\s*reload/.test(source), 'course-data.js must not reload the page');
   assert.ok(!/setInterval/.test(source), 'no timer may drive a reload');
+});
+
+// --- findings from the Task 7 review ---------------------------------------
+
+test('the concurrency limit holds across a retry, not just within one attempt', async () => {
+  // A rejection used to abort Promise.all while the sibling workers kept
+  // pulling pages, so the retry started on top of requests still in flight and
+  // the peak reached 7 -- overshooting the limit exactly when the database is
+  // already struggling.
+  let inFlight = 0;
+  let peak = 0;
+  const tracker = {
+    start() { inFlight++; peak = Math.max(peak, inFlight); },
+    finish() { inFlight--; },
+  };
+  let attempt = 0;
+  const fetchImpl = async (url) => {
+    if (url.includes('getDatasetManifest')) {
+      attempt++;
+      return jsonResponse(manifest({
+        course_count: 12, page_size: 1, total_pages: 12,
+        dataset_version: attempt === 1 ? VERSION : NEW_VERSION,
+      }));
+    }
+    const pageNumber = Number(new URL(url, 'http://x').searchParams.get('page'));
+    await new Promise((r) => setTimeout(r, 5));
+    if (attempt === 1 && pageNumber === 0) {
+      return { ok: false, status: 409, json: async () => ({ error: 'version_changed' }) };
+    }
+    return jsonResponse(page(pageNumber, [`P${pageNumber}`], NEW_VERSION, 12));
+  };
+
+  const data = await CourseData.loadCourseData({ fetchImpl, tracker });
+  assert.strictEqual(data.courses.length, 12);
+  assert.ok(peak <= 4, `peak concurrency across the retry was ${peak}`);
+});
+
+test('a page with no version is malformed, not a race, and burns no retry', async () => {
+  let manifestCalls = 0;
+  const fetchImpl = async (url) => {
+    if (url.includes('getDatasetManifest')) { manifestCalls++; return jsonResponse(manifest()); }
+    const pageNumber = Number(new URL(url, 'http://x').searchParams.get('page'));
+    if (pageNumber === 1) {
+      return jsonResponse({ page: 1, page_size: 2, total_pages: 3, courses: [] });
+    }
+    return jsonResponse(DEFAULT_PAGES[pageNumber]);
+  };
+  await assert.rejects(() => CourseData.loadCourseData({ fetchImpl }),
+    /has no usable dataset_version/);
+  assert.strictEqual(manifestCalls, 1, 'a malformed page must not cost a retry');
+});
+
+test('an entry that is not a course is rejected rather than assembled', async () => {
+  for (const junk of ['oops', null, 42, { name_et: 'no id' }, { id: '' }]) {
+    const { fetchImpl } = makeFetch({
+      pages: {
+        ...DEFAULT_PAGES,
+        1: { ...page(1, ['B1']), courses: [course('B1'), junk] },
+      },
+    });
+    await assert.rejects(() => CourseData.loadCourseData({ fetchImpl }),
+      /is not a course|not a course/, JSON.stringify(junk));
+  }
+});
+
+test('the fallback is for unavailability, not for a wrong answer', async () => {
+  // A consistency failure means the API answered and the answer was wrong.
+  // Serving an old file instead would hide a broken ingest behind
+  // stale-but-plausible data.
+  const inconsistent = makeFetch({
+    pages: { ...DEFAULT_PAGES, 2: page(2, []) },   // count mismatch
+    fallback: STATIC,
+  });
+  await assert.rejects(
+    () => CourseData.loadCourseData({ fetchImpl: inconsistent.fetchImpl, allowFallback: true }),
+    /assembled 4 courses/);
+
+  const empty = makeFetch({
+    manifests: [manifest({ course_count: 0, total_pages: 0 })], fallback: STATIC,
+  });
+  await assert.rejects(
+    () => CourseData.loadCourseData({ fetchImpl: empty.fetchImpl, allowFallback: true }),
+    /dataset is empty/);
+});
+
+test('an unreachable manifest does fall back', async () => {
+  for (const status of [404, 500, 503]) {
+    const fetchImpl = async (url) => {
+      if (url.includes('getDatasetManifest')) {
+        return { ok: false, status, json: async () => ({ error: 'nope' }) };
+      }
+      return jsonResponse(STATIC);
+    };
+    const data = await CourseData.loadCourseData({ fetchImpl, allowFallback: true });
+    assert.strictEqual(data.source, 'fallback', `status ${status}`);
+  }
+});
+
+test('a dead network falls back', async () => {
+  const fetchImpl = async (url) => {
+    if (url.includes('getDatasetManifest')) throw new TypeError('Failed to fetch');
+    return jsonResponse(STATIC);
+  };
+  const data = await CourseData.loadCourseData({ fetchImpl, allowFallback: true });
+  assert.strictEqual(data.source, 'fallback');
 });

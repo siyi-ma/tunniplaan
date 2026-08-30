@@ -3,7 +3,7 @@
 **Date:** 2026-08-30
 **Repo:** webapp `C:\Projects\tunniplaan`, branch `phase2-frontend` (from `phase2-api` @ `773fd4f`)
 **Plan:** Task 7 · **Spec:** §10.1–§10.4
-**Status:** implemented; awaiting independent review
+**Status:** complete — independently reviewed, all findings applied
 
 ---
 
@@ -12,7 +12,7 @@
 | File | Change |
 |---|---|
 | `course-data.js` | new — the loader |
-| `tests/frontend/course-data.test.js` | new — 23 tests |
+| `tests/frontend/course-data.test.js` | new — 29 tests |
 | `index.html` | loads `course-data.js`; the inline second fetch is gone; a notices container added |
 | `main.js` | loads through `CourseData`; dataset state; sync text from stored state; fallback and update notices; freshness watch; two duplicate listeners removed |
 | `main.css` | notice styling |
@@ -21,10 +21,14 @@
 
 The page used to fetch `unified_courses.json` **twice**: once in `initializeApp`, and again
 from an inline script at the bottom of `index.html` whose entire purpose was to fill in the
-sync date. Roughly 13.4 MB of transfer for a 6.7 MB file, on every load.
+sync date: 2 x 6,687,128 = 13,374,256 bytes of JSON per load for a 6.7 MB file.
 
-It now makes 7 requests totalling about 5.17 MB — one uncached manifest plus six immutable
-course pages, the latter cacheable for a year:
+All figures here are uncompressed body bytes. Netlify compresses both the old file and the
+new responses, so this is a like-for-like comparison of payload, not of what a browser
+actually moves over the wire.
+
+It now makes 7 requests totalling 5,172,664 bytes — one uncached manifest plus six
+immutable course pages, the latter cacheable for a year:
 
 ```text
 getDatasetManifest   [cache: no-store]
@@ -54,8 +58,8 @@ recovery. A second race surfaces as a load error.
 ## 4. Bounded concurrency
 
 Four requests at once, measured rather than asserted — the test tracks in-flight count and
-fails if the peak exceeds four, and the live trace shows a peak of exactly 4 across six
-pages. Enough to hide latency, few enough not to stampede a 0.25 CU database from every tab
+fails if the peak exceeds the literal 4, and the live trace shows a peak of exactly 4 across
+six pages. It holds across a retry too, which it did not at first: see §10. Enough to hide latency, few enough not to stampede a 0.25 CU database from every tab
 that opens at 08:00.
 
 ## 5. Sync text has one source now
@@ -111,7 +115,7 @@ and does not change filter behaviour on the way to a rollout.
 ## 8. Verification
 
 ```text
-node --test          ->  80 passed, 0 failed   (57 existing + 23 new)
+node --test          ->  86 passed, 0 failed   (57 existing + 29 new)
 node --check course-data.js   -> OK
 node --check main.js          -> OK
 ```
@@ -125,11 +129,16 @@ semester 26s / 2026/2027 sügis, scraping_datetime 24.08.2026 17:05
 dataset_version 1bf46c1d…6c8da14, source api
 
 against the file it replaces:
-  courses identical: true
+  courses identical: true      (under Task 6's null-is-absent canonicalisation)
   groupToFacultyMap identical: true
   semester identical: true
   scraping_datetime identical: true
 ```
+
+The courses comparison uses the same canonicalisation Task 6 established and measured: 157
+of the 1030 courses carry `school_name_en: null` from the API where the source file omits
+the key, because no SQL column can distinguish absent from null. Raw deep-equality is
+873/1030; under the documented rule it is 1030/1030.
 
 The 60 location-suffixed group keys are **passed through untouched**, which is ledger finding
 F13. `main.js` strips them where it builds `facultyToGroupsMap`; stripping in the loader too
@@ -149,3 +158,34 @@ unreachable in the dropdown again — the regression fixed on 2026-08-24. There 
    plan's bilingual requirement applies to new messages, and rewriting it is Task 9/10's call
    if the local end-to-end run shows it mattering.
 4. `STATIC_FALLBACK_ENABLED` is the flag Task 12 removes at the end of the observation window.
+
+## 10. Independent review findings, applied
+
+Verdict: **approved with minor findings**. The reviewer confirmed all four things the plan
+names for this review — partial-data rejection, fallback honesty, language behaviour, and
+removal of the duplicate fetch — attacking the loader with seven constructed response
+sequences and simulating a full ET↔EN switch against a DOM stub. It also confirmed the two
+removed listeners were genuinely redundant: `currentLanguage` is assigned in exactly two
+places, and `updateDynamicTitle` is still reached on every language change.
+
+Three findings were real defects, and the first was in the very property this task claims:
+
+| # | Finding | Fix |
+|---|---|---|
+| **I1** | **The concurrency bound was violated on the retry path.** When a page rejected, `Promise.all` rejected immediately but the sibling workers kept pulling pages, so the retry began on top of requests still in flight. Measured peak: **7**, against a limit of 4 — overshooting exactly when the database is already struggling | `mapWithConcurrency` now stops pulling on first failure and awaits the whole group before propagating. A test drives a 12-page retry and asserts the peak across *both* attempts |
+| **I2** | **The concurrency test could not detect a concurrency regression.** It asserted `peak <= CourseData.MAX_CONCURRENCY`, reading the bound from the module under test — doubling the constant to 8 left all 23 tests green | asserts the literal `4` |
+| **I3** | **The fallback notice did not state the file's age**, which spec §11 requires explicitly: "states the file's age, not merely that it is backup data. A silently stale fallback is worse than no fallback." | the notice interpolates the date in both languages, with a named fallback if it is somehow missing |
+| M1 | A page missing `dataset_version` entirely was classified as a version race, burning the single retry — a second manifest and up to six more pages — on a response that would be just as malformed next time | checked for presence separately; a test asserts only one manifest fetch |
+| M2 | A non-object entry in `courses` (`'oops'`, `42`) assembled into the course list; `null` threw a raw `TypeError` rather than a `DatasetError` | entries are type-checked; five junk shapes covered |
+| M3 | The fallback triggered on **any** error, including consistency failures. Spec §11 scopes it to "when the manifest/course API is unavailable" — serving an old file after a count mismatch would hide a broken ingest behind stale-but-plausible data | gated on genuine unavailability: an unreachable manifest, a 5xx, or a dead network. Consistency failures now surface as load errors |
+| M4 | The calendar was blocked by an `alert()` while the button still rendered enabled — in a file whose own CSS argues against modal interruption | the button renders disabled with the reason beside it, in the same shape the session-limit case already uses. The entry-point guard stays, because the group builder also reaches `toggleCalendarView` |
+| M5 | `lastSyncDate` was interpolated into `innerHTML`; the code it replaced used `textContent` | the span is filled with `textContent` |
+| M6 | The reload notice under-claimed, naming only group and search when `faculty` and `institutecode` also round-trip | both languages list all four |
+
+Three report inaccuracies, corrected above: the byte figures are now exact and labelled as
+uncompressed payload rather than "transfer"; and the "courses identical" claim now carries
+the canonicalisation qualifier it needed — raw deep-equality is 873/1030, and 1030/1030 only
+under Task 6's documented null-is-absent rule.
+
+After the fixes: **86 passed**, and the live trace unchanged at 7 requests, peak 4, no static
+fetch, 1030 courses.

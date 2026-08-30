@@ -87,18 +87,31 @@
   }
 
   // Runs at most `limit` jobs concurrently. Written out rather than pulled in:
-  // a dependency for twelve lines would be its own kind of cost.
+  // a dependency for twenty lines would be its own kind of cost.
+  //
+  // On the first rejection every worker stops pulling new items, and the whole
+  // group is awaited before the error propagates. Without both halves,
+  // Promise.all would reject on the first failure while the siblings kept
+  // issuing fetches, and a retry would start on top of requests still in
+  // flight -- overshooting the concurrency limit precisely when the database is
+  // already having a bad time.
   async function mapWithConcurrency(items, limit, worker, onStart) {
     const results = new Array(items.length);
     let next = 0;
+    let failure = null;
     async function run() {
-      while (next < items.length) {
+      while (next < items.length && !failure) {
         const index = next++;
         if (onStart) onStart();
-        results[index] = await worker(items[index], index);
+        try {
+          results[index] = await worker(items[index], index);
+        } catch (error) {
+          if (!failure) failure = error;   // keep the first, it caused the rest
+        }
       }
     }
     await Promise.all(Array.from({ length: Math.min(limit, items.length) }, run));
+    if (failure) throw failure;
     return results;
   }
 
@@ -112,6 +125,13 @@
         body = await fetchJson(fetchImpl, url);
       } finally {
         if (tracker) tracker.finish();
+      }
+      // A page with no version at all is malformed, not a race. Calling it a
+      // race would burn the single retry -- another manifest and another full
+      // set of pages — on a response that will be just as malformed next time.
+      if (!VERSION_PATTERN.test(body.dataset_version || '')) {
+        throw new DatasetError(
+          `page ${page} has no usable dataset_version: ${body.dataset_version}`);
       }
       if (body.dataset_version !== manifest.dataset_version) {
         throw new DatasetError(
@@ -138,6 +158,14 @@
       }
       seenPages.add(page.page);
       for (const course of page.courses) {
+        // A string or a null in the array would otherwise assemble into the
+        // course list and only fail much later, in a render.
+        if (!course || typeof course !== 'object' || typeof course.id !== 'string'
+            || !course.id) {
+          throw new DatasetError(
+            `page ${page.page} contains an entry that is not a course: `
+            + `${JSON.stringify(course)}`);
+        }
         if (seenIds.has(course.id)) {
           throw new DatasetError(`course ${course.id} appears on more than one page`);
         }
@@ -163,8 +191,18 @@
   }
 
   async function loadFromApi(fetchImpl, tracker) {
-    const manifest = validateManifest(
-      await fetchJson(fetchImpl, MANIFEST_URL, { cache: 'no-store' }));
+    let manifestBody;
+    try {
+      manifestBody = await fetchJson(fetchImpl, MANIFEST_URL, { cache: 'no-store' });
+    } catch (error) {
+      // Not reaching the manifest at all -- a 404 because the function is not
+      // deployed, a 503 because no dataset is active, a dead network -- is the
+      // unavailability the fallback exists for. A manifest that arrives and is
+      // wrong is not, and validateManifest below keeps its own error kind.
+      error.kind = 'api_unavailable';
+      throw error;
+    }
+    const manifest = validateManifest(manifestBody);
     const pages = await fetchAllPages(fetchImpl, manifest, tracker);
     return assemble(manifest, pages);
   }
@@ -174,6 +212,19 @@
    * mid-load is normal, two in a row while one tab loads six pages is not, and
    * retrying forever would be a loop rather than a recovery.
    */
+  // Spec 11 scopes the fallback to "when the manifest/course API is
+  // unavailable". A consistency failure -- a count mismatch, a duplicate course,
+  // an empty dataset -- means the API answered and the answer was wrong. Serving
+  // an old file instead would hide a broken ingest behind stale-but-plausible
+  // data, which is the failure mode this whole phase exists to prevent.
+  function isUnavailable(error) {
+    if (!error) return false;
+    if (error.kind === 'api_unavailable' || error.kind === 'no_fetch') return true;
+    if (typeof error.status === 'number') return error.status >= 500;
+    // A raw throw from fetch itself: no status, no kind. That is the network.
+    return error.kind === undefined && !(error instanceof DatasetError);
+  }
+
   async function loadCourseData(options) {
     const settings = options || {};
     const fetchImpl = settings.fetchImpl || defaultFetch();
@@ -185,7 +236,7 @@
       } catch (error) {
         const isRace = error.kind === 'version_changed';
         if (isRace && attempt === 0) continue;   // discard everything, start over
-        if (settings.allowFallback) {
+        if (settings.allowFallback && isUnavailable(error)) {
           return loadStaticFallback(fetchImpl, error);
         }
         throw error;

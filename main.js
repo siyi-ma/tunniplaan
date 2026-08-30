@@ -150,6 +150,7 @@ const uiTexts = {
     noCoursesFound: { et: 'Vastavaid aineid ei leitud.', en: 'No matching courses found.' },
     resultsFound: { et: (n) => `Leitud ${n} ainet`, en: (n) => `Found ${n} courses` },
     calendarLimitExceeded: { et: (n, limit) => `Leitud ${n} sessiooni. Kalendrivaate kuvamiseks (max ${limit}) kitsenda valikut.`, en: (n, limit) => `Found ${n} sessions. Please narrow your search to display the calendar view (max ${limit}).` },
+    calendarUnavailableOnFallback: { et: 'Kalendrivaade pole varuandmete puhul saadaval.', en: 'Calendar view is unavailable while showing backup data.' },
     showCalendarView: { et: 'Kalendrivaade', en: 'Calendar View' },
     backToCourses: { et: 'Tagasi ainete juurde', en: 'Back to Courses' },
     exportCsv: { et: 'Ekspordi CSV', en: 'Export CSV' },
@@ -969,9 +970,11 @@ async function toggleCalendarView() {
     // the calendar would be querying today's sessions against however old the
     // fallback course metadata is. Showing that silently is worse than not
     // showing it; the banner already explains why the view is unavailable.
+    // Belt and braces: updateViewToggleButton already renders the button
+    // disabled on the fallback, but toggleCalendarView is also reachable from
+    // the group builder, so the guard lives at the entry point too.
     if (datasetSource === 'fallback') {
         renderDatasetNotices();
-        alert(noticeText('fallbackBody'));
         return;
     }
 
@@ -1056,6 +1059,12 @@ function updateViewToggleButton() {
     let buttonHTML = '';
     if (isCalendarViewVisible) {
         buttonHTML = `<button id="toggleViewBtn" class="px-3 py-1 rounded text-sm font-medium bg-tt-magenta text-white hover:bg-opacity-80"><i class="fas fa-arrow-left mr-1"></i> ${uiTexts.backToCourses[currentLanguage]}</button>`;
+    } else if (datasetSource === 'fallback') {
+        // The same shape the session-limit case uses: visibly disabled with the
+        // reason beside it, rather than a button that looks live and then
+        // interrupts with a dialog. The banner above carries the full
+        // explanation; this is the one-line version.
+        buttonHTML = `<div class="flex flex-col items-end"><button class="px-3 py-1 rounded text-sm font-medium bg-gray-400 text-white cursor-not-allowed" disabled><i class="fas fa-calendar-week mr-1"></i> ${uiTexts.showCalendarView[currentLanguage]}</button><p class="text-xs text-red-600 mt-1 text-right">${uiTexts.calendarUnavailableOnFallback[currentLanguage]}</p></div>`;
     } else if (totalFilteredSessions > calendarSessionLimit) {
         buttonHTML = `<div class="flex flex-col items-end"><button class="px-3 py-1 rounded text-sm font-medium bg-gray-400 text-white cursor-not-allowed" disabled><i class="fas fa-calendar-week mr-1"></i> ${uiTexts.showCalendarView[currentLanguage]}</button><p class="text-xs text-red-600 mt-1 text-right">${uiTexts.calendarLimitExceeded[currentLanguage](totalFilteredSessions, calendarSessionLimit)}</p></div>`;
     } else {
@@ -1844,24 +1853,33 @@ const datasetNoticeTexts = {
         et: 'Varuandmed',
         en: 'Backup data',
     },
+    // Spec 11 requires this to state the file's AGE, not merely that it is
+    // backup data: a silently stale fallback is worse than no fallback.
     fallbackBody: {
-        et: 'Ainete andmebaasiga ei saanud ühendust, seega on kuvatud varasem salvestatud koopia. Kalendrivaade on välja lülitatud, sest tunniplaani ajad ei pruugi nende ainetega kokku sobida.',
-        en: 'The course database could not be reached, so an earlier saved copy is shown. Calendar view is turned off, because session times may not match these courses.',
+        et: (date) => `Ainete andmebaasiga ei saanud ühendust, seega on kuvatud varasem salvestatud koopia seisuga ${date}. Kalendrivaade on välja lülitatud, sest tunniplaani ajad ei pruugi nende ainetega kokku sobida.`,
+        en: (date) => `The course database could not be reached, so a saved copy from ${date} is shown. Calendar view is turned off, because session times may not match these courses.`,
     },
     updateTitle: {
         et: 'Uued andmed on saadaval',
         en: 'New data is available',
     },
     updateBody: {
-        et: 'Tunniplaani on pärast selle lehe avamist uuendatud. Lehe värskendamine säilitab rühma ja otsingu, kuid EAP, õppekeele ja kalendrivaate valikud lähevad kaotsi.',
-        en: 'The timetable has been updated since this page was opened. Reloading keeps the group and search filters, but the EAP, teaching-language and calendar-view selections are lost.',
+        et: () => 'Tunniplaani on pärast selle lehe avamist uuendatud. Lehe värskendamine säilitab rühma, otsingu, teaduskonna ja instituudi valiku, kuid EAP, õppekeele ja kalendrivaate valikud lähevad kaotsi.',
+        en: () => 'The timetable has been updated since this page was opened. Reloading keeps the group, search, faculty and institute filters, but the EAP, teaching-language and calendar-view selections are lost.',
     },
     updateAction: { et: 'Värskenda', en: 'Reload' },
     dismiss: { et: 'Peida', en: 'Dismiss' },
 };
 
-function noticeText(key) {
-    return datasetNoticeTexts[key][currentLanguage] || datasetNoticeTexts[key].et;
+function noticeText(key, ...args) {
+    const value = datasetNoticeTexts[key][currentLanguage] || datasetNoticeTexts[key].et;
+    return typeof value === 'function' ? value(...args) : value;
+}
+
+// What the fallback file's date should be called when it is missing entirely.
+function fallbackAgeLabel() {
+    if (lastSyncDate) return lastSyncDate;
+    return currentLanguage === 'et' ? 'teadmata kuupäev' : 'an unknown date';
 }
 
 function renderDatasetNotices() {
@@ -1873,7 +1891,7 @@ function renderDatasetNotices() {
         host.appendChild(buildNotice({
             tone: 'warning',
             title: noticeText('fallbackTitle'),
-            body: noticeText('fallbackBody'),
+            body: noticeText('fallbackBody', fallbackAgeLabel()),
         }));
     }
     if (pendingDatasetVersion) {
@@ -1955,7 +1973,13 @@ function updateSyncInfoText() {
     if (!syncInfoDOM) return;
     const taltechUrl = 'https://tunniplaan.taltech.ee/#/public';
     const shown = lastSyncDate || (semesterInfo && semesterInfo.label) || '...';
-    const textEt = `See leht on sünkroniseeritud <a href="${taltechUrl}" target="_blank" rel="noopener noreferrer" class="underline text-tt-magenta">TalTechi tunniplaaniga</a> <span id="syncDate">${shown}</span>`;
-    const textEn = `This site was synced with <a href="${taltechUrl}" target="_blank" rel="noopener noreferrer" class="underline text-tt-magenta">TalTech Timetable</a> on <span id="syncDate">${shown}</span>`;
-    syncInfoDOM.innerHTML = currentLanguage === 'et' ? textEt : textEn;
+    const linkEt = `<a href="${taltechUrl}" target="_blank" rel="noopener noreferrer" class="underline text-tt-magenta">TalTechi tunniplaaniga</a>`;
+    const linkEn = `<a href="${taltechUrl}" target="_blank" rel="noopener noreferrer" class="underline text-tt-magenta">TalTech Timetable</a>`;
+    syncInfoDOM.innerHTML = currentLanguage === 'et'
+        ? `See leht on sünkroniseeritud ${linkEt} <span id="syncDate"></span>`
+        : `This site was synced with ${linkEn} on <span id="syncDate"></span>`;
+    // The date is dataset-derived, so it goes in as text rather than as markup.
+    // The removed inline script used textContent; interpolating it into
+    // innerHTML would have been a new injection surface for a scraped value.
+    syncInfoDOM.querySelector('#syncDate').textContent = shown;
 }
