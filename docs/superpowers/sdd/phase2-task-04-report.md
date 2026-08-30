@@ -3,7 +3,7 @@
 **Date:** 2026-08-30
 **Repo:** webapp `C:\Projects\tunniplaan`, branch `phase2-api`
 **Plan:** Task 4 · **Spec:** §9.1
-**Status:** implemented; awaiting independent review
+**Status:** complete — independently reviewed, findings applied
 
 ---
 
@@ -118,3 +118,53 @@ fixed on 2026-08-24.
 2. **Task 7 must strip location suffixes from the manifest's group map** — see §3.
 3. `getTimetable.js` still uses its own five-minute semester cache. Task 8 owns making a
    versioned calendar request bypass it.
+4. **`db/migrations/20260830_one_active_semester.sql` is not applied anywhere yet** and
+   needs the table owner — see §5. Task 11 applies it alongside the Phase 2 column migration.
+5. **A null `scraping_datetime` is served as null, deliberately.** Task 7's sync indicator
+   must fall back to the semester label rather than rendering `null` — decided here so Task 7
+   inherits a decision rather than a discovery.
+6. **`total_pages: 0` is a legal manifest** meaning the dataset has no courses. Task 5 must
+   404 page 0 in that state (its own `0 <= page < total_pages` rule already says so), and
+   Task 7 must treat it as "empty dataset, show the fallback" rather than fetching page 0.
+
+## 5. Independent review findings, applied
+
+Verdict: **approved with minor findings** — no Critical or Important. The reviewer confirmed
+the central correctness claim by reasoning through PostgreSQL snapshot semantics: a single
+statement in READ COMMITTED takes one snapshot at statement start, and the CTE and both
+correlated subqueries share it, so no ingest committing mid-query can split the manifest
+across two datasets. It also proved the tests are not tautological by mutating the
+implementation six ways — removing the version guard, weakening `no-store`, making the group
+fold last-write-wins, dropping the numeric coercion, adding a module-level cache, and
+neutering the date normaliser — each of which failed the expected tests.
+
+| # | Finding | Resolution |
+|---|---|---|
+| M1 | `scraping_datetime` passed through unvalidated and can be null, while every other field has a normaliser or guard | **Decided, no code change.** A valid `dataset_version` means a real ingest happened; a cosmetic timestamp gap must not 503 the whole site. Recorded as an explicit obligation on Task 7 (carried forward 5) |
+| M2 | `total_pages: 0` is a silent dead end downstream | recorded for Tasks 5 and 7 (carried forward 6) |
+| M3 | "Exactly one active semester" was a comment, not a constraint. Both `getDatasetManifest` and `getTimetable` pick it with an **unordered `LIMIT 1`**, so two active rows could resolve differently per request and hand two clients two different `dataset_version`s | `db/schema.sql` and a new migration add `CREATE UNIQUE INDEX semesters_one_active ON semesters ((true)) WHERE is_active` |
+| M4 | The missing-env test passed only because no earlier test had connected — the memoised client would have made it vacuous | `lib/dataset.js` exports `_resetSql()`; the test calls it |
+| M5 | `makeFakeSql` recorded the SQL text but nothing asserted on it, so dropping `WHERE is_active = true` or the group `ORDER BY` would have left all tests green | the single-query test now asserts those invariants and the absence of `;` |
+| M6 | `IMMUTABLE_HEADERS` is unused until Task 5 | acknowledged; its value is byte-identical to spec §9.2 |
+
+### A finding of its own: DDL needs an owner role
+
+Applying the new index to the test branch failed:
+
+```text
+psycopg.errors.InsufficientPrivilege: must be owner of table semesters
+```
+
+`semesters` is owned by `neondb_owner`. **Neither of the two roles this project uses can run
+DDL** — `webapp_ro` is read-only by design and `scraper_rw` has table privileges but not
+ownership. Task 1's migration worked only because it was applied through the Neon control
+plane, which acts as the owner.
+
+So the migration is committed and **deliberately unapplied**, marked as such in its own
+header. This is a real operational constraint for Task 11: the production rollout needs an
+owner credential for the two DDL migrations, separate from the `scraper_rw` credential the
+ingest uses, and Task 10's runbook has to say so. Better to surface it now than to discover
+it during a production window.
+
+The invariant currently holds on the test branch (exactly one active semester), so the index
+will apply cleanly when an owner runs it.

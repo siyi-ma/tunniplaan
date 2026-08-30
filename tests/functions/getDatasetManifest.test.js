@@ -78,6 +78,16 @@ test('the manifest is never cached', async () => {
 test('the whole manifest comes from a single query', async () => {
   const { calls } = await get([manifestRow()]);
   assert.strictEqual(calls.length, 1, 'more than one read can straddle an ingest commit');
+
+  // Constrain the SQL itself, not just how many times it runs. Without this a
+  // regression could drop the active-semester predicate or the deterministic
+  // group ordering and leave every test green.
+  const text = calls[0].text;
+  assert.match(text, /is_active = true/, 'must select the active semester');
+  assert.match(text, /FROM semesters/i);
+  assert.match(text, /FROM courses/i);
+  assert.match(text, /ORDER BY g\.code/, 'group order must be deterministic');
+  assert.ok(!text.includes(';'), 'one statement, so it cannot straddle an ingest commit');
 });
 
 test('does not reuse the legacy five-minute semester cache', async () => {
@@ -179,6 +189,10 @@ test('a query failure returns 500 without leaking the error', async () => {
 test('a missing NEON_DATABASE_URL returns 500 rather than throwing', async () => {
   const saved = process.env.NEON_DATABASE_URL;
   delete process.env.NEON_DATABASE_URL;
+  // Without this the test would pass for the wrong reason the moment any earlier
+  // test connects successfully: getSql() would return the memoised client and
+  // never throw.
+  require('../../netlify/functions/lib/dataset.js')._resetSql();
   try {
     const response = await handler({});
     assert.strictEqual(response.statusCode, 500);

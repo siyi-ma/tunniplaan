@@ -83,6 +83,9 @@ function foldGroupMap(pairs) {
 }
 
 module.exports = {
+  // Tests that assert configuration failures need the memoised client cleared,
+  // or they pass for the wrong reason as soon as an earlier test connects once.
+  _resetSql: () => { cachedSql = null; },
   PAGE_SIZE,
   NO_STORE_HEADERS,
   IMMUTABLE_HEADERS,

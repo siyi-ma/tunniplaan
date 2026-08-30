@@ -13,7 +13,12 @@ CREATE TABLE semesters (
 );
 -- dataset_version and ingested_at stay nullable: rows written before Phase 2 have
 -- neither, and the first atomic ingest is what backfills them.
--- Exactly one row has is_active = true; the scraper sets it at ingest.
+-- Exactly one row has is_active = true; the scraper sets it at ingest. Enforced,
+-- not merely asserted: both getDatasetManifest and getTimetable pick the active
+-- semester with an unordered LIMIT 1, so if two rows were ever active they could
+-- resolve differently per request and hand different clients different
+-- dataset_versions.
+CREATE UNIQUE INDEX semesters_one_active ON semesters ((true)) WHERE is_active;
 
 CREATE TABLE groups (
   semester_code text NOT NULL REFERENCES semesters(code),
