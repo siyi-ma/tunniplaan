@@ -73,23 +73,48 @@ a conflicting duplicate group rejected, an agreeing duplicate tolerated, no acti
 a null/empty/undefined/malformed version, a query failure that must not leak its DSN, and a
 missing `NEON_DATABASE_URL`.
 
-### Live response
+### Live response against the full dataset
 
-Run against the disposable Neon branch through the real driver, the function returned
-HTTP 200 with `Cache-Control: no-store`, a 64-hex `dataset_version`, ISO semester dates, a
-folded `groupToFacultyMap`, and consistent `course_count` / `page_size` / `total_pages`.
+Through the real driver against the disposable branch holding the production dataset that
+Task 3 ingested:
 
-The sample was taken while the Task 3 reviewer was mid-run against that branch, so it
-reflects the integration suite's own small semester rather than the production dataset.
-**A sample against the 1030-course dataset is re-taken below once the branch settles** — the
-numbers that matter for Task 5 are `course_count: 1030`, `page_size: 200`,
-`total_pages: 6`.
+```text
+status 200 | {"Content-Type":"application/json","Cache-Control":"no-store"}
+7259 bytes | 256 ms
+{
+  "dataset_version": "1bf46c1d14e3d474ac97396a77645e7f54657bbc4463bda9767a5a4d56c8da14",
+  "scraping_datetime": "24.08.2026 17:05",
+  "semester": { "label": "2026/2027 sügis", "code": "26s", "name_et": "sügis 2026",
+                "name_en": "autumn 2026", "start_date": "2026-08-24",
+                "end_date": "2027-01-15", "week1_monday": "2026-08-31" },
+  "groupToFacultyMap": <430 entries>,
+  "course_count": 1030, "page_size": 200, "total_pages": 6
+}
+sample entries: {"AAVM11":"E","AAVM12":"E","AAVM31":"E","AAVM32":"E"}
+```
+
+The `dataset_version` is the one the Python producer computed for the same pair, so the
+contract closes end to end: producer stamps it, ingest stores it, manifest serves it. All
+430 groups fold without a conflict, and 7.3 KB is small enough that `no-store` costs nothing.
+
+### One thing the live run exposed
+
+**60 of the 430 group keys still carry a location suffix** — `EAKB10_K (Saaremaa vald)`
+rather than `EAKB10_K` — because the committed `unified_courses.json` predates the scraper's
+`strip_group_location_suffix()`. They flow through the ingest into `groups` and out through
+this manifest verbatim.
+
+That is correct behaviour here: the manifest reports what the dataset contains. But it means
+**Task 7 must keep applying `stripGroupLocationSuffix()` to the manifest's map**, exactly as
+`main.js` does today for the bundled file. Dropping it because "the data comes from the
+database now" would make 60 groups unreachable in the dropdown again — the precise regression
+fixed on 2026-08-24.
 
 ## 4. Carried forward
 
 1. `lib/dataset.js` already carries `IMMUTABLE_HEADERS` and `isDatasetVersion`, which Task 5
    needs; `PAGE_SIZE` now has exactly one definition, so the manifest and the course endpoint
    cannot disagree about it.
-2. The live sample against the full dataset is pending — see §3.
+2. **Task 7 must strip location suffixes from the manifest's group map** — see §3.
 3. `getTimetable.js` still uses its own five-minute semester cache. Task 8 owns making a
    versioned calendar request bypass it.
