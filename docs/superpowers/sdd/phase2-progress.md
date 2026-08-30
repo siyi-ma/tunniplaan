@@ -23,7 +23,7 @@ Every implementation task belongs on its own branch:
 |---|---|---|---|
 | webapp `dev` | — | Task 0 only | `7500c2a` |
 | webapp `phase2-api` | `dev` @ `7500c2a` | Tasks 1, 4, 5, 6 | created 2026-08-30 |
-| webapp `phase2-frontend` | `phase2-api` head | Tasks 7, 8, 9 | not yet created |
+| webapp `phase2-frontend` | `phase2-api` head | Tasks 7, 8, 9, webapp half of Task 10 | `a4c9d76`; Tasks 7–9 complete, Task 10 review pending |
 | scraper `phase2-neon-ingest` | scraper `dev` @ `30a0ad8` | manifest prerequisite, Tasks 2, 3 | created 2026-08-30 |
 
 Task 1 was first committed to `dev` by mistake and its independent review caught it
@@ -61,10 +61,10 @@ so a production ingest cannot be run by accident. Credentials never appear in a 
 | 4 Manifest endpoint | **complete, reviewed** | webapp `phase2-api` | `c78ca7e`, `7982d18`, `01ea187` | one statement, one snapshot; `no-store` on every path |
 | 5 Paged courses endpoint | **complete, reviewed** | webapp `phase2-api` | `bada03c`, `57ff694` | 6 pages, largest 1.050 MiB, all 1030 courses deep-equal to source |
 | 6 Source→Neon→API contract gate | **complete, reviewed** | webapp `phase2-api` | `cbd831b` + fixes | reviewer attacked it 26 ways, 24 caught; the 2 misses were the disclosed null rule, one a real counter blind spot, now fixed |
-| 7 Frontend loader + sync date | pending | webapp | | |
-| 8 Versioned calendar | pending | webapp | | owns contract-test source path |
-| 9 Local E2E | pending | webapp | | function server still unspecified |
-| 10 Docs / runbook | pending | both | | |
+| 7 Frontend loader + sync date | **complete, reviewed** | webapp `phase2-frontend` | `77e149d`, `ddbe817` | loader, fallback, freshness notice, and sync-date fixes; 86 tests pass |
+| 8 Versioned calendar | **complete, reviewed** | webapp `phase2-frontend` | `5e3cc64`, `0ac0c64` | version pinning, 409 handling, cache split, and contract coverage |
+| 9 Local E2E | **complete, reviewed** | webapp `phase2-frontend` | `097f901`, `a4c9d76` | HTTP matrix and real-browser matrix pass; 15/15 browser checks |
+| 10 Docs / runbook | implemented; independent review pending | both | `4a2556a`, `ef1d92f`, `867950d` | cold-operator findings applied; final independent review still required |
 | 11 Staged rollout | pending | both | | explicit user gate |
 | 12 Gated cleanup | pending | webapp | | not before 2026-09-15 |
 
