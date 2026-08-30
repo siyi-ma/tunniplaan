@@ -1,3 +1,32 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:025c61dd015b6df224b115b1390d6858b20c9ba9e692e8543df778847dd3326f
-size 707
+{
+  "name": "tunniplaan",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "npx http-server . -p 8000 -c-1",
+    "dev:netlify": "npx netlify dev -p 8000",
+    "test": "node --test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/siyi-ma/tunniplaan.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/siyi-ma/tunniplaan/issues"
+  },
+  "homepage": "https://github.com/siyi-ma/tunniplaan#readme",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0"
+  }
+}

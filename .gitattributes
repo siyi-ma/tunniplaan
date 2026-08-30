@@ -1,1 +1,7 @@
-*.json filter=lfs diff=lfs merge=lfs -text
+# Only the large generated dataset belongs in LFS. Never glob a structured-text
+# extension: an unqualified *.json rule previously swallowed package.json and
+# package-lock.json, so a clone without `git lfs pull` got 130-byte pointers.
+unified_courses.json filter=lfs diff=lfs merge=lfs -text
+
+# Everything else is ordinary text.
+*.json text eol=lf
