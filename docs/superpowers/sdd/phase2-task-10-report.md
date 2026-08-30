@@ -143,3 +143,25 @@ ignore that part of the output; the note is gone because the output is now corre
 2. The runbook's step 3 timing (~140 min) is from records, not measured this session.
 3. Task 12 deletes the rollback artifact, `STATIC_FALLBACK_ENABLED`, and the appendices that
    describe them.
+
+## 10. One-time line-ending normalisation (read the diffs with this in mind)
+
+Two files show a whole-file diff that is **not** a whole-file content rewrite:
+
+| File | Blob before | Blob after | Content lines actually edited |
+|---|---|---|---|
+| webapp `CLAUDE.md` | CRLF (266) | LF (298) | ~60 |
+| scraper `README.md` | CRLF (427) | LF (449) | ~45 |
+
+Both were the sole CRLF-stored text files in their repositories — every other tracked text
+file, including all the `.py` files, already stored LF — and both repos have
+`core.autocrlf=true`, which normalises on commit. Writing to them at all was enough to
+convert them.
+
+I tried to preserve the CRLF blobs (`git -c core.autocrlf=false add`) rather than churn the
+diff, and it did not take. Rather than add a `.gitattributes` rule to protect two outliers,
+the normalisation stands: it aligns them with the other ~40 tracked text files. The plan's
+actual constraint — "preserve LF in scraper `.py` files" — holds: `publish_to_webapp.py` was
+LF before and after, and no `.py` file changed line endings.
+
+`git diff -w` or a diff tool set to ignore line endings shows the real change in both files.
