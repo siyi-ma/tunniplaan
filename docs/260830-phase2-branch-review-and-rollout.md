@@ -65,6 +65,22 @@ report still says independent review is pending. The ledger deliberately keeps t
 status visible; it is a prerequisite for the frontend cutover, not a reason to mix
 the frontend commits into the additive API stage.
 
+## Execution record
+
+The agreed first stage was executed after this review:
+
+- `phase2-api` was published as `origin/phase2-api` at `773fd4f`;
+- `phase2-frontend` was published as `origin/phase2-frontend` at `671c8c1`;
+- `dev` was fast-forwarded from `7500c2a` to `773fd4f` and pushed to
+  `origin/dev`;
+- the API-stage Node test suite passed: 4 test files, 0 failures;
+- no production DDL, production ingest, `main` merge, or frontend merge was done.
+
+The next gate is verification of the additive API deployment and the old frontend,
+followed by the approved Neon migration/ingest and production contract checks. The
+frontend branch must remain separate until those checks and Task 10's independent
+cold-operator review are complete.
+
 ## Recovery path
 
 Both merges are fast-forward-only. Before each push, verify the target branch and
