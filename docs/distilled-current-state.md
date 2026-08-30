@@ -12,24 +12,35 @@ TalTech Tunniplaan is a course timetable viewer for Tallinn University of Techno
 ```
 Browser (SPA, vanilla JS)
   |
-  |-- index.html + main.js + main.css
-  |     |
-  |     |-- unified_courses.json (6 MB, Git LFS) -- rollback artifact only
-  |           loaded at startup; drives all filtering and card view
+  |-- index.html + course-data.js + main.js + main.css
   |
-  |-- Calendar view fetch
+  |-- page load
+  |     |-- GET /.netlify/functions/getDatasetManifest        (no-store)
+  |     |     -> semester, groupToFacultyMap, course_count, dataset_version
+  |     `-- GET /.netlify/functions/getCourses?version=&page= (immutable 1y)
+  |           -> 6 pages x 200 courses, fetched 4 at a time, reassembled
+  |              into the envelope main.js consumes. Drives all filtering
+  |              and the card view.
+  |
+  |-- calendar view
+  |     `-- GET /.netlify/functions/getTimetable?version=&courses=
+  |           -> session array for those courses, pinned to the same version
+  |
+  `-- API unavailable only
+        `-- ./unified_courses.json  (6 MB, Git LFS) -- ROLLBACK ARTIFACT
+              complete envelope, its own older date shown, calendar disabled
         |
         v
-  Netlify functions  /.netlify/functions/getDatasetManifest
-                     /.netlify/functions/getCourses?version=&page=
-                     /.netlify/functions/getTimetable?version=&courses=
-        |
-        v
-  sessions.json (42 MB, Git LFS, bundled with function)
-        returns filtered session array for selected course IDs
+  Neon Postgres: semesters, groups, courses, sessions
 ```
 
-Users access the live site on Netlify. Deployment is triggered by pushing to `main` (production) or `dev` (preview) branch; builds are skipped unless `index.html`, `main.js`, `main.css`, `netlify/`, `sessions.json`, `unified_courses.json`, or `package.json` change.
+Users access the live site on Netlify. Deployment is triggered by pushing to `main`
+(production) or `dev` (preview).
+
+**A data refresh is not a deployment.** Refreshing the timetable is a scrape plus an atomic
+Neon ingest — no commit, no push, no build hook. See `docs/DATA_REFRESH.md`. A deploy is
+needed only for code changes, or to keep the rollback artifact current during the observation
+window.
 
 ---
 
@@ -47,7 +58,8 @@ Feature status as of 2026-04-21 (last handoff):
 - Group-based instructor display: course cards show only instructors assigned to the active group when a group filter is set
 - Tooltip logic: bilingual labels for mandatory / elective groups; conditional time/room display (hidden for online-only sessions)
 - Session status border colors: online = pink, hybrid = blue, offline = gray; null status treated as online
-- `netlify.toml`: build ignore logic prevents unnecessary deploys on doc-only commits
+- No `netlify.toml`: it was removed once the Neon backend was verified in production, so no
+  build-ignore rule applies. A data refresh produces no commit at all — it is an ingest
 
 ---
 

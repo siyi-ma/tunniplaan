@@ -144,7 +144,7 @@ ignore that part of the output; the note is gone because the output is now corre
 3. Task 12 deletes the rollback artifact, `STATIC_FALLBACK_ENABLED`, and the appendices that
    describe them.
 
-## 10. One-time line-ending normalisation (read the diffs with this in mind)
+## 10. Line-ending normalisation (read the diffs with this in mind)
 
 Two files show a whole-file diff that is **not** a whole-file content rewrite:
 
@@ -153,15 +153,74 @@ Two files show a whole-file diff that is **not** a whole-file content rewrite:
 | webapp `CLAUDE.md` | CRLF (266) | LF (298) | ~60 |
 | scraper `README.md` | CRLF (427) | LF (449) | ~45 |
 
-Both were the sole CRLF-stored text files in their repositories — every other tracked text
-file, including all the `.py` files, already stored LF — and both repos have
-`core.autocrlf=true`, which normalises on commit. Writing to them at all was enough to
-convert them.
+Both repos have `core.autocrlf=true`, which normalises on commit, so writing to either file at
+all was enough to convert it. I tried to preserve the CRLF blobs
+(`git -c core.autocrlf=false add`) and it did not take.
 
-I tried to preserve the CRLF blobs (`git -c core.autocrlf=false add`) rather than churn the
-diff, and it did not take. Rather than add a `.gitattributes` rule to protect two outliers,
-the normalisation stands: it aligns them with the other ~40 tracked text files. The plan's
-actual constraint — "preserve LF in scraper `.py` files" — holds: `publish_to_webapp.py` was
-LF before and after, and no `.py` file changed line endings.
+**A first version of this section justified that by claiming these were the only CRLF-stored
+text files in their repositories. That was false, and the Task 10 reviewer caught it.**
+Measured at the commits' parents:
 
-`git diff -w` or a diff tool set to ignore line endings shows the real change in both files.
+- **webapp: 3 CRLF blobs** — `main.js` (2031), `CLAUDE.md` (266), `main.css` (186)
+- **scraper: 25 CRLF blobs** — including `archive/25s_pipeline.py` (834),
+  `docs/archive/reference-sources/repo_agents.md` (514), `README.md` (427)
+
+So the two largest source files in the webapp (`main.js`, `main.css`) remain CRLF, and the
+repositories are *mixed*, not uniformly LF. The normalisation of these two files is therefore
+incidental — a side effect of editing them under `autocrlf=true` — not an alignment with a
+convention.
+
+It stands because reverting it would mean adding `.gitattributes` rules to pin two files
+against the repo's own commit filter, which is more machinery than the problem deserves. The
+plan's actual constraint holds: **`publish_to_webapp.py` was LF before and after, and no `.py`
+file changed line endings.** `git diff -w` shows the real change in both files.
+
+## 11. Cold-operator review findings, applied
+
+Verdict: **changes required**. The reviewer executed the runbook as a stranger would, ran
+every read-only and dry-run step, and produced a step-by-step followability table. Four steps
+were not followable as written. The routine flow's deploy-freedom passed in substance, which
+was the one thing this task most needed to get right.
+
+### Critical
+
+| # | Finding | Fix |
+|---|---|---|
+| **F1** | **`docs/data-contract.md` — a file the plan names as a Task 10 deliverable — was never touched.** It still said the webapp consumes two files published to its repo root, routed the operator to the superseded non-atomic `seed-sessions-from-json.js`, described the 1–2 minute partial-data window as current, and presented commit-and-push as part of a data refresh. Both scraper `README.md` and `CLAUDE.md` point at it as the reference | rewritten: artifacts are ingest inputs, `neon_ingest.py` is the refresh, the rollback copy is separated and marked temporary, and the Phase 1 loader is labelled superseded |
+| **F2** | The runbook's credential table put `NEON_DATABASE_URL` in the scraper `.env`, where it does not exist. Worse, `neon_ingest.py` silently fell back to the **write** connection for the post-commit re-read — so the "separate read-only connection" both the runbook and `CLAUDE.md` claimed was not happening | the ingest now prints which connection it verified on, and says plainly when it is not independent; `.env.example` gains the variable; the runbook documents it as optional-but-recommended |
+| **F3** | `docs/distilled-current-state.md` still drew the static file as "loaded at startup; drives all filtering", with the manifest hanging off calendar view and terminating at a 42 MB `sessions.json` "bundled with function" — a file that is not in the repo. Report §3 claimed no such statement remained | architecture redrawn: page load → manifest → paged courses → Neon; calendar → versioned timetable; static file only on API failure |
+
+### Important
+
+| # | Finding | Fix |
+|---|---|---|
+| F4 | `docs/distilled-how-to-run.md` described `netlify.toml` `included_files` bundling and a build-ignore rule. **There is no `netlify.toml`** — removed in `4190a72`. The same file also committed two live Netlify build-hook URLs, which `CLAUDE.md` declares secrets | corrected; hook URLs redacted, and the two unmasked copies in `docs/archive/` masked to match the convention a later doc in that folder already used |
+| F5 | The runbook told the operator the publish script "still mentions" `git add sessions.json` — a thing this very task had already fixed | removed |
+| F6 | Report §10's line-ending justification was false: it claimed these were the only CRLF-stored files. Measured: the webapp had 3 (including `main.js`), the scraper 25 | §10 rewritten with the real counts and an honest reason |
+| F7 | `--dry-run` did not print the per-file hash prefixes that three documents promised — and "check you are ingesting the right bytes" is the entire point of that line | `describe_source()` now prints them; the runbook shows the real output |
+| F8 | `DATA_REFRESH.md` claimed both contract tests name both hashes on a mismatch; the timetable one named only the source | the timetable test now reports the database's active version too |
+
+### Minor
+
+F9 (receipt shown wrapped, is one line), F10 (`max_page_bytes` pinned as an expected value
+when it is dataset-dependent), F11 (benign `WARNING:` lines undocumented, so an operator could
+read one as failure), F12/F13 (naming and a missing consumer in the credential table), F14
+(the cache table conflated versioned and legacy `limit_exceeded` policies) — all applied.
+
+### Cold-operator gaps, applied
+
+The runbook gained a **Before you start** section it was missing entirely: which repository
+each step runs in, both repo paths, the required toolchain (Python, `psycopg`, Edge +
+WebDriver, Node, and the `node_modules` caveat given that `npm` is policy-blocked), network
+and data-directory prerequisites, and a per-repo environment table. Steps 1–6 now state their
+working directory, their expected output, and what to do on failure — including a copy-pasteable
+check that `failed_groups` is 0 before ingesting.
+
+### One thing left as-is
+
+Spec §11 requires the fallback notice to state the file's **age**; the notice states its
+**date**. The docs describe the code accurately, so this is a Task 7 wording question rather
+than a Task 10 defect — recorded here so it is a decision rather than an oversight.
+
+After the fixes: webapp 98 tests pass and both contract gates are green; scraper 172 tests
+pass and `py_compile` is clean.

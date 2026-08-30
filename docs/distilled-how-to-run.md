@@ -63,12 +63,12 @@ unified_courses.json (~6 MB)    ROLLBACK ARTIFACT ONLY -- not the load path.
                                 Runtime course metadata is served from Neon via
                                 getDatasetManifest + getCourses.
   |
-  |-- both tracked with Git LFS
-  |-- commit triggers Netlify deploy (if source files also changed — see netlify.toml)
+  |-- sessions.json is NOT in the webapp repo (gitignored); its data is ingested
+  |     into Neon and served by the functions
+  |-- unified_courses.json is committed via Git LFS as the rollback artifact only
   v
-Netlify build
-  |-- sessions.json bundled into the serverless function (netlify.toml: included_files)
-  |-- unified_courses.json served as a static asset
+Neon Postgres  <- python neon_ingest.py, one transaction, no deploy
+  |-- getDatasetManifest / getCourses / getTimetable read from it
   v
 Live site
 ```
@@ -83,11 +83,15 @@ Data is updated weekly. Commit messages follow: `Update YYYYMMDD session and uni
 ## Build and deploy
 
 ```bash
-# Deploy to production (main branch)
-curl -X POST -d {} https://api.netlify.com/build_hooks/6980b6f3e6f1a66c892e33ab
+# Build-hook URLs are secrets: anyone holding one can trigger a deploy.
+# Get them from Netlify (Site configuration -> Build & deploy -> Build hooks).
+# Do not commit them.
 
-# Deploy to development preview (dev branch)
-curl -X POST -d {} https://api.netlify.com/build_hooks/6980b7cb2f57c96b40fd08ab
+# Deploy to production (main branch)
+curl -X POST -d {} <build-hook-url>
+
+# Deploy to development preview (dev branch)  -- this hook was revoked; push to dev instead
+curl -X POST -d {} <build-hook-url>
 
 # Skip CI (documentation-only commits)
 git commit -m "Your message [skip ci]"
@@ -95,7 +99,9 @@ git commit -m "Your message [skip ci]"
 
 Via VS Code: `Ctrl+Shift+P` → "Run Task" → select deployment task. Or `Ctrl+Shift+B` to start the local server.
 
-Netlify build ignores commits that do not touch `index.html`, `main.js`, `main.css`, `netlify/`, `sessions.json`, `unified_courses.json`, or `package.json`.
+There is no `netlify.toml` in the repo — it was removed once the Neon backend was verified in
+production, so no build-ignore rule applies. Note that a data refresh does not produce a
+commit at all: it is an ingest, not a deploy.
 
 ---
 

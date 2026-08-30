@@ -132,9 +132,19 @@ async function main() {
       queryStringParameters: { courses: batch.join(','), version: datasetVersion },
     }, sql);
     if (res.statusCode === 409) {
+      // Name both sides, like the course gate does. "Your version is wrong"
+      // without saying what the database actually holds sends the operator
+      // hunting for the answer the failing process already had.
+      let active = '(unknown: the manifest could not be read)';
+      try {
+        const manifest = await require('../netlify/functions/getDatasetManifest.js').handler({});
+        active = JSON.parse(manifest.body).dataset_version || active;
+      } catch (e) { /* the version mismatch is the story, not this */ }
       throw new Error(
-        `batch ${i}: the database no longer holds dataset ${datasetVersion.slice(0, 12)}…; `
-        + 'ingest these artifacts before running the contract test');
+        `batch ${i}: the database holds a different dataset than the source directory.\n`
+        + `       source:   ${datasetVersion}\n`
+        + `       database: ${active}\n`
+        + '       Ingest these artifacts first (scraper: neon_ingest.py).');
     }
     assert.strictEqual(res.statusCode, 200, `batch ${i}: status ${res.statusCode} body ${res.body}`);
     assert.strictEqual(res.headers['Cache-Control'], 'public, max-age=31536000, immutable',

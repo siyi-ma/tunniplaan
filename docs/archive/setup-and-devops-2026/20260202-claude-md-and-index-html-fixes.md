@@ -62,10 +62,10 @@ python -m http.server 8000
 **Netlify Deployments**:
 ```bash
 # Deploy to production (main branch)
-curl -X POST -d {} https://api.netlify.com/build_hooks/6980b6f3e6f1a66c892e33ab
+curl -X POST -d {} https://api.netlify.com/build_hooks/[MASKED]
 
 # Deploy to development (dev branch)
-curl -X POST -d {} https://api.netlify.com/build_hooks/6980b7cb2f57c96b40fd08ab
+curl -X POST -d {} https://api.netlify.com/build_hooks/[MASKED]
 ```
 
 **Data Files**:
