@@ -1,7 +1,7 @@
 # Handoff Document — TalTech Tunniplaan
 
 **Date**: 2026-08-31
-**Branch**: webapp `dev` @ `e8d4ae4`; scraper `phase2-neon-ingest` @ `d53254e`
+**Branch**: webapp `dev`; scraper `phase2-neon-ingest`
 **Repos**: https://github.com/siyi-ma/tunniplaan · https://github.com/siyi-ma/tunniplaanScraping
 **Live**: https://taltech-tunniplaan.netlify.app · dev: https://dev--taltech-tunniplaan.netlify.app
 
@@ -16,9 +16,10 @@
 - ✓ Verify the migrations read-only and prove them idempotent in production.
 - ✓ Unblock the production scrape (an AppLocker publisher policy, not a missing driver).
 - ✓ Diagnose the daily-view tab timeout that lost 22 of 269 groups.
-- x Complete a full production scrape. The 2026-08-30 run reached group 269/429 and was
-  killed; it wrote no artifacts and the pipeline has no resume.
-- x Run the atomic production ingest, the contract gates, or the API-mode browser matrix.
+- ✓ Complete a full production scrape. 429 groups, 133 minutes, 0 failed groups.
+- ✓ Run the atomic production ingest and both contract gates.
+- x API-mode browser matrix against the `dev` URL.
+- x Refresh the committed `unified_courses.json` rollback artifact (this is a deploy).
 - x Task 10 final independent review; merge to `main`; Task 12 cleanup.
 
 ---
@@ -37,16 +38,32 @@
   `scraper_rw`, `webapp_ro`, all on `ep-lively-cherry-as4w8a51-pooler`.
 - **`scripts/run-sql.js` now loads `.env`** through the same helper as
   `contract-test-getcourses.js` and `dev-functions-server.js`.
-- **Scrape unblocked.** The pipeline resolves `TUNNIPLAAN_DATA_DIR`, drives Edge through an
-  explicit Microsoft-signed `msedgedriver.exe`, and retries failed groups in a second pass.
+- **Scrape unblocked.** The pipeline resolves `TUNNIPLAAN_DATA_DIR` and drives Edge through
+  an explicit Microsoft-signed `msedgedriver.exe`.
 - **Baseline snapshot** of the 24.08 dataset taken before any scrape could overwrite it.
+
+### The scrape and ingest (2026-08-31)
+
+- Full scrape: 429 groups, 133 minutes, **0 failed groups**. 27 failed the main pass; the
+  pipeline's own retry (`26s_pipeline.py:1057`) recovered 23, then the last 4.
+- Baseline comparison before ingesting: +48 sessions, +1 course. Five group codes vanished,
+  all explained: four are the source-side location-suffix strip
+  (`EAKB50_Kuressaare`→`EAKB50_K`, `SDSR30A/50A/70A`→`SDSR30/50/70`) with sessions intact;
+  `TVTB12` was delisted by TalTech and is absent from the live structure tree.
+- One atomic ingest, 4.3s, `INGEST OK` with an independent post-commit re-read.
+- Production now: `dataset_version` `3aaa3367…f2fc0ad`, `ingested_at` 2026-08-31T08:48:34Z,
+  `scraping_datetime` `31.08.2026 11:45`, 1,031 courses / 429 groups / 66,894 sessions.
+- Live `dev`: manifest **200** `no-store`; `getCourses` page 0 200
+  `public,max-age=31536000,immutable`; versioned `getTimetable` 200; both contract tests pass
+  with all 66,894 events deep-equal.
 
 ### Known working
 
-- Production Neon carries the Phase 2 schema with `dataset_version` still NULL.
-- The deployed `dev` manifest returns `503 dataset_unavailable` with `Cache-Control:
-  no-store`; the unversioned `getTimetable` still returns 200 for its legacy consumer.
-- The site renders in fallback mode from the committed `unified_courses.json`.
+- Production Neon carries the Phase 2 schema and the 31.08 dataset.
+- The deployed `dev` manifest returns **200** with `Cache-Control: no-store`; the
+  unversioned `getTimetable` still returns 200 for its legacy consumer.
+- The site loads through the API. The committed `unified_courses.json` remains the fallback
+  and is now a week stale — see Incomplete Item 2.
 - Headless Edge drives the live timetable site from this device.
 - 172 scraper tests pass; 98 webapp tests pass (`node --test` from the repo root — passing
   `tests/` as an argument fails with MODULE_NOT_FOUND).
@@ -107,7 +124,11 @@ every function process would receive it in its environment.
    fully populated timetables, and 6 of 6 retested groups scraped normally later. Successful
    groups take a uniform 13s (max 17s over 246), so a failure is a total absence of the tab,
    not a slow response — raising the timeout would change nothing. Both back-to-back attempts
-   land in the same bad window. Hence the deferred second pass (`d53254e`).
+   land in the same bad window. **The pipeline already handled this** at
+   `26s_pipeline.py:1057` — up to two further passes over the failed set — which the
+   2026-08-30 run never reached because it was killed at group 269. A redundant second pass
+   was added in `d53254e` and reverted in `5cf9f5f`. The 2026-08-31 run confirmed the
+   built-in retry: 27 failed, 23 recovered on pass 1, the last 4 on pass 2.
 3. **`CONSECUTIVE_FAIL_LIMIT` is 12** (`26s_pipeline.py:86`) and the largest observed cluster
    was 4. A longer burst would abort a 2.5-hour scrape outright. Left unchanged on one run's
    evidence; watch it.
@@ -128,21 +149,17 @@ every function process would receive it in its environment.
 
 ## 5. Incomplete Items (priority order)
 
-1. Run a full production scrape from the operator's own shell:
-   `cd C:\Projects\tunniplaanScraping && py -3.13 26s_pipeline.py --headless`. ~2.5 hours.
-   The second pass is committed but **has never been exercised on a real run**.
-2. Compare the result against the 24.08 baseline: 66,846 sessions, 1,030 courses, 819
-   distinct group codes in sessions, 432 groups referenced by courses. Per-group session
-   counts and the full course ID list are needed to identify what a shortfall dropped.
-3. `py -3.13 neon_ingest.py --dry-run`; record path, mtimes, hash prefixes, dataset version,
-   scrape date, counts, failed groups, coverage.
-4. One atomic production ingest; retain `INGEST OK` and an independent read-only receipt.
-5. `node scripts/contract-test-getcourses.js` and `contract-test-gettimetable.js`, Netlify
-   cache checks, and the API-mode browser matrix against the `dev` URL.
-6. Update the ledger, complete Task 10's final independent review, obtain separate approval
-   before any `main` merge.
-7. Scraper `README.md` / `CLAUDE.md` driver documentation (updated this session — verify it
-   matches `resolve_edge_service()` before relying on it).
+1. Run the API-mode browser matrix against the `dev` URL. The site now loads through the
+   API rather than the fallback, and that path has never been exercised in a real browser
+   against production data.
+2. Refresh the committed `unified_courses.json` rollback artifact with
+   `python publish_to_webapp.py`. It is still the 24.08 copy, so a fallback today would
+   serve a week-old timetable. **Committing it is a deploy** (CLAUDE.md), so it needs its
+   own decision, not a fold-in.
+3. Complete Task 10's final independent review and obtain separate approval before any
+   `main` merge.
+4. Task 12 cleanup: remove the committed `unified_courses.json` at the end of the
+   observation window (not before 2026-09-15).
 
 ---
 

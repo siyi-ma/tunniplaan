@@ -65,7 +65,7 @@ so a production ingest cannot be run by accident. Credentials never appear in a 
 | 8 Versioned calendar | **complete, reviewed** | webapp `phase2-frontend` | `5e3cc64`, `0ac0c64` | version pinning, 409 handling, cache split, and contract coverage |
 | 9 Local E2E | **complete, reviewed** | webapp `phase2-frontend` | `097f901`, `a4c9d76` | HTTP matrix and real-browser matrix pass; 15/15 browser checks |
 | 10 Docs / runbook | implemented; independent review pending | both | `4a2556a`, `ef1d92f`, `867950d` | cold-operator findings applied; final independent review still required |
-| 11 Staged rollout | **in progress — code deployed to `dev`, production DDL applied** | both | webapp closeout commit | both migrations applied to production 2026-08-30 and verified; the ingest is blocked on F16 (no scrape possible on this device). Review and `main` gates remain |
+| 11 Staged rollout | **production data live on `dev`** | both | webapp closeout commit | migrations applied 2026-08-30; fresh scrape and atomic ingest 2026-08-31. Manifest serves 200, both contract tests pass. Task 10 review and the `main` merge gate remain |
 | 12 Gated cleanup | pending | webapp | | not before 2026-09-15 |
 
 ## Production checkpoints
@@ -74,6 +74,27 @@ The webapp code rollout to `dev` was completed on 2026-08-30. After the initial 
 push, the owner explicitly directed `phase2-frontend` to be fast-forwarded into `dev` and
 both remote feature refs to be removed. No production DDL, production ingest, merge to
 `main`, or Task 12 cleanup has been performed.
+
+**Production dataset live 2026-08-31.** A full scrape (429 groups, 133 minutes, 0 failed
+after the pipeline's own two retry passes recovered 27) produced a certified artifact triple,
+and one atomic ingest committed it in 4.3s with an independent post-commit re-read.
+
+| | Before | After |
+|---|---|---|
+| `dataset_version` | NULL | `3aaa3367…f2fc0ad` |
+| `ingested_at` | NULL | 2026-08-31T08:48:34Z |
+| `scraping_datetime` | `24.08.2026 16:43` | `31.08.2026 11:45` |
+| courses / groups / sessions | 0 / 0 / 66,846 | 1,031 / 429 / 66,894 |
+| deployed manifest | `503 dataset_unavailable` | **`200`**, `no-store` |
+
+`getCourses` page 0 returns 200 `public,max-age=31536000,immutable`; the versioned
+`getTimetable` returns 200; both contract tests pass, all 66,894 events deep-equal.
+
+Compared against the 24.08 baseline before ingesting: +48 sessions, +1 course. Five group
+codes disappeared and all five were explained — `EAKB50_Kuressaare`→`EAKB50_K` and
+`SDSR30A/50A/70A`→`SDSR30/50/70` are the scraper's source-side suffix strip, sessions intact;
+`TVTB12` was delisted by TalTech itself and is absent from the live structure tree. The 69
+`group_sessions` with null `session_status` are identical to the 24.08 dataset, not new.
 
 **Production DDL applied 2026-08-30.** Both migrations were run with `NEON_ADMIN_URL`
 (`neondb_owner`) after a read-only baseline was captured, and re-applied once to prove
@@ -108,9 +129,9 @@ The deployment gate has two halves and only one has passed:
 | F1 | ~~`NEON_*` blank~~ **closed 2026-08-30.** Test-branch credentials generated from the Neon control plane at the owner's instruction and written to both `.env` files (gitignored). `webapp_ro` connectivity confirmed against `br-calm-art-as9qjjef`: reads 66,846 sessions and both Phase 2 columns. ~~**`NEON_SCRAPER_URL` (production write) remains deliberately unset**~~ **all three production credentials configured 2026-08-30** by the owner, in both `.env` files: `neondb_owner`, `scraper_rw` and `webapp_ro` on `ep-lively-cherry-as4w8a51-pooler`. The webapp's `NEON_DATABASE_URL` now points at **production**, not the disposable branch, so the local contract tests are no longer sandboxed | closed |
 | F2 | ~~Hardcoded `DATA_DIRECTORY` embeds username `siyima`; unusable on this device~~ **closed 2026-08-30 in the pipeline itself.** Task 2 taught the ingest and publish scripts `TUNNIPLAAN_DATA_DIR` but left `26s_pipeline.py:35` hardcoded, so the first attempt at Task 11's scrape died on `PermissionError: Access is denied: 'C:\Users\siyima'` before any network call. `ensure_directories()` now resolves the artifact directory from `TUNNIPLAAN_DATA_DIR` via the repo's own `load_env_file`, with the root as its parent; 172 scraper tests still pass | closed |
 | F3 | ~~`contract-test-gettimetable.js` reads a deleted repo-root `sessions.json`~~ **closed in Task 6.** It resolves `--source-dir` > `TUNNIPLAAN_DATA_DIR` now and passes: 66,846 events deep-equal, its first successful run since Phase 1 | closed |
-| F4 | `groups` and `courses` are empty **in production** (0 rows). The disposable branch is now fully populated by Task 3, which is what unblocked Task 6; production stays empty until Task 11 | Task 11 |
+| F4 | ~~`groups` and `courses` are empty **in production** (0 rows)~~ **closed 2026-08-31** by the Task 11 ingest: 1,031 courses and 429 groups in production | closed |
 | F5 | The map key is `groupToFacultyMap` (camelCase), not snake_case | Task 4 |
-| F6 | ~~Live `semesters.scraping_datetime` (`16:43`) disagreed with the source pair (`17:05`)~~ **closed on the test branch by Task 3's ingest**, which writes `17:05`. Production still shows `16:43` until Task 11 | Task 11 |
+| F6 | ~~Live `semesters.scraping_datetime` (`16:43`) disagreed with the source pair~~ **closed in production 2026-08-31.** The ingest writes `31.08.2026 11:45`, matching the fresh scrape | closed |
 | F7 | `db/roles.sql` **was** applied: `webapp_ro` holds SELECT only on all four tables (closes handoff finding 7) | resolved |
 | F8 | `npm` is usable here, contradicting the recorded group-policy block; unverified for real installs | informational |
 | F11 | The disposable branch is now also the **Phase 2 integration test target** — `NEON_TEST_SCRAPER_URL` / `NEON_TEST_DATABASE_URL` (scraper) and `NEON_DATABASE_URL` (webapp local) all point at it. Reused rather than creating a second full copy of production data. Netlify's production env is untouched | Task 3 onward |
@@ -120,7 +141,7 @@ The deployment gate has two halves and only one has passed:
 | F13 | Task 7 must keep applying `stripGroupLocationSuffix()` to the manifest's group map: 60 of 430 keys still carry location suffixes, and dropping the strip would make those groups unreachable again | Task 7 |
 | F14 | Task 7's sync indicator must fall back to the semester label if `scraping_datetime` is null — the manifest serves null rather than 503-ing the site over a cosmetic field | Task 7 |
 | F15 | `total_pages: 0` is a legal manifest meaning an empty dataset. Task 7 must show the fallback rather than fetching page 0, which correctly 404s | Task 7 |
-| F16 | **The production scrape cannot run on this device.** Group policy refuses to launch executables from user-writable paths (`%APPDATA%`, `C:\Projects`, `%TEMP%` all verified), so Selenium Manager cannot run and `webdriver.Edge()` raises `NoSuchDriverException`. Edge itself is installed and allow-listed; no `msedgedriver` exists anywhere on the machine. Same policy class as F8's `npm` block. Unblocked only by an admin placing `msedgedriver.exe` in an allow-listed directory, or by scraping from an unpoliced machine. Task 9's CDP-attach approach sidesteps this for *verification* but not for scraping | Task 11, owner |
+| F16 | ~~**The production scrape cannot run on this device.**~~ **closed 2026-08-31, and the original diagnosis was wrong.** The policy is not path-based: the effective AppLocker EXE collection allows `O=MICROSOFT CORPORATION` for Everyone from any path. `selenium-manager.exe` is unsigned by Microsoft and is refused; `msedgedriver.exe` is Microsoft-signed and runs from an ordinary directory with no admin rights. Three path probes of one unsigned binary looked like a path rule; reading the policy took one query. Scraper `resolve_edge_service()` now points at an explicit driver | closed |
 | F17 | `26s_pipeline.py:285` prints an emoji in its WebDriver friendly-error handler. Under redirected stdout the console codepage is cp1257, so the handler crashes with `UnicodeEncodeError` and buries the real cause — every unattended failure reports the wrong problem. Not fixed; outside the scrape's scope | open |
 
 ## Deviations from the plan
