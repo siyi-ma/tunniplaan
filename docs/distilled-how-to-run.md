@@ -1,162 +1,105 @@
----
 # Distilled How to Run — TalTech Tunniplaan
 
 ## Start the app locally
 
-### Option 1: Custom Node.js server (recommended on Windows with Group Policy restrictions)
+### Supported Local Development Mode (Functions + Neon Data)
+
+The application fetches course data and timetable sessions through serverless functions. Run the local Node.js dev server:
 
 ```bash
-node server.js
-# App available at http://localhost:8888
-# Serves static files AND mocks the /.netlify/functions/getTimetable endpoint
-# Use this when netlify-cli is blocked by group policy
-```
-
-### Option 2: the local function server (the only mode where the page loads)
-
-```bash
+# Ensure NEON_DATABASE_URL is set in .env
 node scripts/dev-functions-server.js
-# or
-netlify dev
-# App available at http://localhost:8888
-# Serves the repo statically and dispatches /.netlify/functions/<name> to the
-# real handlers, returning their status, headers and body verbatim.
-# NOT Netlify: no routing, redirects, payload limits, or edge caching.
 ```
 
-### Option 3: Static-only (card view only — calendar view will fail)
+- Server runs on `http://localhost:8000`.
+- Reads `NEON_DATABASE_URL` from `.env` in the repository root.
+- Handles function endpoints: `/.netlify/functions/getDatasetManifest`, `/.netlify/functions/getCourses`, and `/.netlify/functions/getTimetable`.
 
-```bash
-python -m http.server 8000
-# App available at http://localhost:8000
-# Calendar view will show "Valitud ainete hulk on liiga suur..." (fetch 404)
-# Use only for HTML/CSS/filter work that does not touch the calendar
-```
+### Unsupported / Static-Only Commands
 
-> The calendar view requires `/.netlify/functions/getTimetable`. Any server that cannot execute Node.js functions (Python, Live Server) will return a 404, which the app surfaces as a misleading "too many courses" error message.
+- `npm run dev`: Static file server only. Functions do not run in this mode, causing the application to show a data load error. Useful only for rapid CSS editing.
+- `npm run dev:netlify`: Expands to `npx netlify dev`. Cannot be executed on environments where `npx` is restricted by group policy.
 
 ---
 
-## Environment variables
+## Environment Variables
 
-| Variable | Purpose | Where to get it |
+| Variable | Purpose | Where to Get It |
 |---|---|---|
-| `CLAUDE_CODE_GIT_BASH_PATH` | Tells Claude Code where `bash.exe` is on Windows | Set to `C:\Program Files\Git\bin\bash.exe` via user env vars (no admin required); see `docs/git_bash_setup.md` |
+| `NEON_DATABASE_URL` | Read-only connection string for querying Neon Postgres | Neon Console / Team secrets manager |
+| `NEON_SCRAPER_URL` | Read-write connection string used by scraper ingests | Neon Console / Team secrets manager |
 
-`NEON_DATABASE_URL` (read-only `webapp_ro`) is required — every function reads it, and the
-page loads all of its data through them. `TUNNIPLAAN_DATA_DIR` is needed only by the contract
-scripts. Netlify build hooks are in `.vscode/tasks.json` and `CLAUDE.md` (not secrets; they are deploy triggers only).
-
----
-
-## Data pipeline
-
-```
-External scraping scripts (Python, run manually)
-  |
-  |-- 25s_scrape_combine_doktoriope.py   (doctoral studies timetable)
-  |-- 25s_final_pipeline.py              (Bak/Mag timetables + merges doctoral output)
-  |
-  v
-sessions.json        (~42 MB)   individual session events
-unified_courses.json (~6 MB)    ROLLBACK ARTIFACT ONLY -- not the load path.
-                                Runtime course metadata is served from Neon via
-                                getDatasetManifest + getCourses.
-  |
-  |-- sessions.json is NOT in the webapp repo (gitignored); its data is ingested
-  |     into Neon and served by the functions
-  |-- unified_courses.json is committed via Git LFS as the rollback artifact only
-  v
-Neon Postgres  <- python neon_ingest.py, one transaction, no deploy
-  |-- getDatasetManifest / getCourses / getTimetable read from it
-  v
-Live site
-```
-
-Data is updated weekly. Commit messages follow: `Update YYYYMMDD session and unified courses: X groups and Y courses`.
-
-> The course dataset (now served from Neon, historically this file) is the authoritative
-> source for course–group–instructor relationships. Do not derive these relationships from `sessions.json` alone — doctoral courses without scheduled sessions are absent from `sessions.json` but present in `unified_courses.json`.
+Put these variables in `.env` in the repository root. Do not commit `.env` to Git.
 
 ---
 
-## Build and deploy
+## Data Pipeline
 
-```bash
-# Build-hook URLs are secrets: anyone holding one can trigger a deploy.
-# Get them from Netlify (Site configuration -> Build & deploy -> Build hooks).
-# Do not commit them.
-
-# Deploy to production (main branch)
-curl -X POST -d {} <build-hook-url>
-
-# Deploy to development preview (dev branch)  -- this hook was revoked; push to dev instead
-curl -X POST -d {} <build-hook-url>
-
-# Skip CI (documentation-only commits)
-git commit -m "Your message [skip ci]"
+```mermaid
+flowchart LR
+    Scraper["tunniplaanScraping Pipeline"] -->|"1. Live Web Scrape"| Artifacts["JSON Artifacts"]
+    Artifacts -->|"2. Atomic Ingest (neon_ingest.py)"| NeonDB[("Neon Postgres Database")]
+    NeonDB -->|"3. Query via SQL"| NetlifyFuncs["Netlify Functions"]
+    NetlifyFuncs -->|"4. JSON API Responses"| Browser["Browser App (main.js)"]
 ```
-
-Via VS Code: `Ctrl+Shift+P` → "Run Task" → select deployment task. Or `Ctrl+Shift+B` to start the local server.
-
-There is no `netlify.toml` in the repo — it was removed once the Neon backend was verified in
-production, so no build-ignore rule applies. Note that a data refresh does not produce a
-commit at all: it is an ingest, not a deploy.
 
 ---
 
-## Key data shapes
+## Build and Deploy
 
-### unified_courses.json
+- **Production Deployment**: Merging code into `main` automatically triggers a production build on Netlify.
+- **Preview Deployment**: Merging or pushing to `dev` creates a Netlify deploy preview URL.
+- **Data Refresh**: Data updates do **not** require a build or deployment. Running `neon_ingest.py` in `tunniplaanScraping` updates Neon Postgres, making new timetable data immediately visible in the live application.
 
-```
+---
+
+## Key Data Shape
+
+### Semester Metadata (`getDatasetManifest`)
+```json
 {
-  "courses": [
-    {
-      "id": "AAV3351",               // course code (used as primary key)
-      "name_et": "...",              // Estonian name
-      "name_en": "...",              // English name
-      "eap": 3.0,                    // credit points
-      "school_code": "...",          // faculty code
-      "school_name": "...",          // faculty name (ET)
-      "school_name_en": "...",       // faculty name (EN)
-      "institute_name": "...",
-      "institute_code": "...",
-      "groups": ["EAUI71", ...],     // flat list of all group codes
-      "group_sessions": [
-        {
-          "group": "EAUI71",
-          "session_status": "offline|hybrid|online",  // null treated as online
-          "instructors": [{ "name": "...", ... }],
-          "keel": ["est"],           // teaching language
-          "ainekv": "kohustuslik|valikuline"  // mandatory or elective
-        }
-      ]
-    }
-  ],
-  "scraping_datetime": "..."
+  "code": "26s",
+  "label": "2026/2027 sügis",
+  "name_et": "sügis 2026",
+  "name_en": "autumn 2026",
+  "start_date": "2026-08-27",
+  "end_date": "2027-01-15",
+  "week1_monday": "2026-08-31",
+  "dataset_version": "b1bc2f1b5e3915d2b2da32979885564fadae6d6e8b5921224c2f02156e8df2e3",
+  "groupToFacultyMap": { "IADB11": "I", "VDLR31": "V" }
 }
 ```
 
-### sessions.json
-
-Array of individual session events:
-
-```
-[
-  {
-    "course_id": "AAV3351",
-    "start": "2026-02-09T08:00:00",
-    "end": "2026-02-09T10:00:00",
-    "room": "...",
-    "type": "...",
-    "is_veebiope": true|false,
-    "groups": [{ "group": "EAUI71", "ainekv": "kohustuslik", "status": "kohustuslik" }],
-    "instructors": [...],
-    "comment": "..."
-  },
-  ...
-]
+### Course Object (`getCourses`)
+```json
+{
+  "id": "ITI0102",
+  "name_et": "Programmeerimise algkursus",
+  "name_en": "Introduction to Programming",
+  "eap": 6.0,
+  "school_code": "I",
+  "groups": ["IADB11", "IADB12"],
+  "group_sessions": [
+    {
+      "group": "IADB11",
+      "session_status": "hybrid",
+      "instructors": [{"name": "Jane Doe", "title": "PhD"}]
+    }
+  ]
+}
 ```
 
-Note: `groups[].ainekv` and `groups[].status` are both used in different data versions to indicate mandatory/elective status. Border color logic checks both fields.
+### Session Event (`getTimetable`)
+```json
+{
+  "course_id": "ITI0102",
+  "date": "2026-09-01",
+  "start_time": "10:00",
+  "end_time": "11:30",
+  "type": "Loeng",
+  "room": "ICT-315",
+  "weeks": "1-16",
+  "is_veebiope": false,
+  "groups": ["IADB11"]
+}
+```

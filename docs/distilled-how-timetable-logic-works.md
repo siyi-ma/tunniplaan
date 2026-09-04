@@ -1,132 +1,94 @@
----
 # Distilled How Timetable Logic Works — TalTech Tunniplaan
 
-## Core concept
+## Core Concept
 
-The app renders two views — a card grid and a weekly calendar — over the same course dataset. The card view operates client-side over the course dataset, which the browser assembles from
-`getDatasetManifest` plus paged `getCourses` responses. The calendar view requires server-side session filtering because `sessions.json` is 42 MB; the Netlify function `getTimetable` accepts a comma-separated list of course IDs and returns only the relevant session events. All filtering, sorting, and UI state are managed through a single global `activeFilters` object in `main.js`.
+The timetable engine resolves, aggregates, and renders course timetable sessions for any arbitrary combination of search filters or selected student groups. It transforms tabular academic scheduling data stored in Neon Postgres into two synchronized UI presentations: an interactive course card grid grouped by delivery mode and a calendar weekly schedule.
 
 ---
 
-## Algorithm / process
+## Algorithm / Workflow Process
 
-```
-Page load
-  |
-  v
-Fetch manifest, then every getCourses page
-  |
-  v
-postProcessUnifiedData()
-  Builds: allSchoolNames, schoolToInstitutes,
-          facultyToGroupsMap, allUniqueGroups
-  |
-  v
-applyFilters()  <-- called on every filter/search change
-  |
-  |-- 1. Text search (title, code, keywords, instructors)
-  |-- 2. School (faculty) filter
-  |-- 3. Institute filter
-  |-- 4. Group filter
-  |-- 5. EAP filter
-  |-- 6. Assessment form filter
-  |-- 7. Teaching language filter
-  |
-  v
-filteredCourses[]
-  |
-  +--[card view]--> renderCardView()
-  |                   group by session_status: online > hybrid > offline
-  |                   sort by course code within each group
-  |                   display instructors filtered to activeFilters.group (or deduplicated all)
-  |
-  +--[calendar view]--> fetch /.netlify/functions/getTimetable?courses=ID1,ID2,...
-                          |
-                          v
-                        renderWeeklyView()
-                          place sessions in time grid (8:00-22:00)
-                          toLocalISODate() for timezone-safe date keys
-                          online sessions shown above grid (deduplicated by course_id)
-                          4000 session limit enforced before fetch
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User
+    participant App as main.js State
+    participant Data as course-data.js
+    participant API as Netlify Functions
+    participant UI as Render Engine
+
+    User->>App: Page Load
+    App->>Data: fetchDatasetEnvelope()
+    Data->>API: GET /getDatasetManifest
+    API-->>Data: Manifest (version, active semester, groupToFacultyMap)
+    Data->>API: GET /getCourses (Pages 1..6)
+    API-->>Data: Course pages
+    Data-->>App: Unified course dataset
+    App->>UI: renderCourseCards()
+
+    User->>App: Select Filters / Add Groups / Toggle Calendar
+    App->>App: applyAllFiltersAndRender()
+    
+    alt Calendar View Active
+        App->>API: GET /getTimetable?version=...&courses=...
+        API-->>App: Sessions array (or 4000 limit error envelope)
+        App->>UI: renderWeeklyView(sessions)
+    end
 ```
 
 ---
 
-## Key parameters and signals
+## Key Parameters and Signals
 
-### activeFilters object
+### Session Status Classification
+Sessions and courses are classified into three delivery categories:
 
-```javascript
-{
-  school: '',         // faculty code
-  institute: '',      // institute name
-  group: '',          // group code (e.g. "TVTB22")
-  eap: '',            // credit points string
-  assessmentForm: '', // assessment type
-  language: '',       // teaching language code
-  searchText: '',     // free-text query
-  searchField: ''     // "study_group" when group builder is active
-}
-```
-
-### Session status → card border color
-
-| session_status | Border color | Hex |
+| Status | Rule / Input Condition | UI Visual Marker |
 |---|---|---|
-| `online` or `null` | Pink (tt-magenta) | `#e4067e` |
-| `hybrid` | Blue | `#4dbed2` |
-| `offline` | Gray | `#9396b0` |
+| `online` | All session weeks have `is_veebiope = true` | Pink left border / tag |
+| `offline` | All session weeks have `is_veebiope = false` | Gray left border / tag |
+| `hybrid` | Combination of online and offline weeks | Blue left border / tag |
 
-### Group mandatory/elective → calendar session border
+### Study Week Calculation (`week1_monday`)
+- The backend determines `week1_monday` by majority vote over dated sessions.
+- Client-side date math calculates active study week numbers based on offsets from `week1_monday`.
 
-Checked via `groupInfo.ainekv` OR `groupInfo.status` (both fields exist across data versions):
-
-| Value | Border color |
-|---|---|
-| `kohustuslik` (mandatory) | `#e4067e` (pink) |
-| `valikuline` (elective) | `#4dbed2` (blue) |
-
-### Semester constants (Spring 2026)
-
-```javascript
-SEMESTER_START = '2026-02-02'
-SEMESTER_END   = '2026-06-30'
-```
-
-### Calendar limits
-
-- Session fetch limit: 4000 sessions (enforced before calling `getTimetable`)
-- Calendar time range: 08:00–22:00 daily
-- Days shown: Mon–Sun
+### Server-Side Session Safeguard Limit
+- `getTimetable.js` enforces a limit of **4,000 sessions** per calendar query to protect memory and network payload bounds.
+- When query parameters match >4,000 sessions, the endpoint returns `{ error: "limit_exceeded", count, limit }` (HTTP 200) instead of a truncated array.
 
 ---
 
-## Output / score interpretation
+## View Breakdown & Rendering Modes
 
-The app produces no computed scores. The main "outputs" are:
+### 1. Course Card Grid
+- Courses are grouped into three collapsible sections: Online, Hybrid, Offline.
+- Sorted deterministically by course code within each group.
+- Displays course EAP, assessment form, instructor list (filtered by active group if group filter is active), and matching study group badges.
 
-| Output | Meaning |
-|---|---|
-| Card grid (online first) | Courses sorted by delivery mode then code; pink = online, blue = hybrid, gray = offline |
-| Calendar grid | Session blocks placed by day/time; pink border = mandatory, blue = elective |
-| Online row (calendar) | Courses with `is_veebiope === true` for the active group, deduplicated by course_id |
-| Shareable URL | Encodes active filters and group builder state as query parameters |
-| CSV export | Tab-separated rows for all sessions visible in the current calendar week |
+### 2. Weekly Calendar Grid
+- Time grid rendered from 08:00 to 22:00 (Monday through Saturday).
+- Timed events with fixed rooms and dates populate grid cells dynamically based on start/end times.
+- Online-only courses (without fixed room/time slots) render in a dedicated banner above the main time grid.
 
----
-
-## What the AI / external service does
-
-Nothing at runtime. The Netlify serverless function (`getTimetable.js`) is a plain file-read and array-filter — no AI or external API calls. The data pipeline (Python scraping scripts) that produces the source artifacts, and the
-atomic Neon ingest that loads them, run externally in the scraper repository.
+### 3. Multi-Group Timetable Builder
+- Allows entering multiple comma-separated groups (e.g. `IADB11, TVTB11`).
+- Supports wildcard prefix matching (e.g. `TVTB*` expands to all groups starting with `TVTB`).
+- Serializes chip state into URL query parameters for bookmarking and sharing.
 
 ---
 
-## Known limitations
+## Backend Services & Infrastructure
 
-- Faculty filter deduplication is fragile: faculty codes and names can differ between `unified_courses.json` and any supplementary mapping data, causing duplicate entries in the school dropdown.
-- `null` session_status is silently treated as `online`; this is a data quality assumption that may be incorrect for some courses.
-- The URL state couples the group builder to the old `searchField=study_group` filter model; changing one may inadvertently affect the other.
-- CSV export covers only the visible week; there is no full-semester export.
-- The 4000-session limit can prevent large group combinations from loading the calendar view.
-- `toLocalISODate()` is correct for the Estonian timezone (UTC+2/UTC+3) but was added as a fix to a real bug — any date comparison using `.toISOString()` elsewhere would regress.
+- **Neon Postgres**: Relational store containing `semesters`, `groups`, `courses`, and `sessions` tables.
+- **Netlify Functions**:
+  - `getDatasetManifest.js`: Serves manifest, semester metadata, and faculty mapping.
+  - `getCourses.js`: Returns paged course summaries.
+  - `getTimetable.js`: Executes SQL query over `sessions` table filtered by course IDs / semester code.
+
+---
+
+## Known Limitations
+
+- **Session Query Cap**: If an active filter set matches more than 4,000 sessions, the calendar view prompts the user to refine filters rather than displaying partial results.
+- **Static Fallback Mode**: If serverless functions fail or are unavailable, the application falls back to `unified_courses.json` (stored in Git LFS), which presents static course details but disables calendar rendering.

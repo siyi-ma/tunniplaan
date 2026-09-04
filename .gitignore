@@ -17,3 +17,14 @@ sessions.json
 
 # SDD review diffs are regenerable from the commit range recorded in each report.
 docs/superpowers/sdd/*.diff
+
+# Allow active distilled reference files
+!docs/distilled-*.md
+
+# Allow archive folder and its contents
+!docs/archive/
+!docs/archive/**
+
+# Allow the three latest handoff files
+!docs/*handoff*.md
+
