@@ -91,4 +91,5 @@ Sessions and courses are classified into three delivery categories:
 ## Known Limitations
 
 - **Session Query Cap**: If an active filter set matches more than 4,000 sessions, the calendar view prompts the user to refine filters rather than displaying partial results.
-- **Static Fallback Mode**: If serverless functions fail or are unavailable, the application falls back to `unified_courses.json` (stored in Git LFS), which presents static course details but disables calendar rendering.
+- **No Offline Fallback**: If the serverless functions fail or are unavailable, the application shows a load error rather than degrading to static data. `STATIC_FALLBACK_ENABLED` in `main.js` is `false` and `unified_courses.json` is no longer deployed: a committed dataset would be a public URL serving in full what the human-verification gate exists to withhold. An outage is visible rather than silently stale.
+- **Verification Required**: Every data endpoint answers `403 human_verification_required` without a valid signed `tt_human_verified` cookie. A `403` arriving mid-session is not treated as an outage — the frontend clears its marker and reloads once into the gate.

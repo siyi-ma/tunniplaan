@@ -1,7 +1,8 @@
-# Only the large generated dataset belongs in LFS. Never glob a structured-text
-# extension: an unqualified *.json rule previously swallowed package.json and
+# No file in this repository is tracked in LFS any more. unified_courses.json,
+# the only one that ever was, was removed on 2026-09-04: a committed copy of the
+# dataset is a public URL that bypasses the human-verification gate.
+#
+# The warning outlives the rule it was written for. Never glob a structured-text
+# extension: an unqualified *.json LFS rule previously swallowed package.json and
 # package-lock.json, so a clone without `git lfs pull` got 130-byte pointers.
-unified_courses.json filter=lfs diff=lfs merge=lfs -text
-
-# Everything else is ordinary text.
 *.json text eol=lf

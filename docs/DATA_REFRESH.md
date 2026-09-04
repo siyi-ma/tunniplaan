@@ -26,17 +26,23 @@ answer `409 version_changed` for the old version, and the page offers a reload r
 taking one. Somebody halfway through assembling a timetable does not lose it because a scrape
 landed.
 
-## The one exception during the observation window
+## There is no exception: a refresh never touches this repository
 
-`unified_courses.json` is still committed here as a rollback artifact, and the scraper's
-publish step still copies it in. **That commit is a deploy** — a deliberate transitional cost,
-not a regression against the no-deploy goal. The *routine* refresh path is deploy-free from
-the first production ingest; keeping the recovery artifact current is a separate, temporary
-obligation, because an artifact that has drifted weeks from production is not a recovery
-artifact.
+There used to be one. `unified_courses.json` was committed here as a rollback artifact and
+the scraper's publish step copied it in after every scrape, which made that one part of a
+refresh a deploy.
 
-It goes away at the end of the observation window, along with `STATIC_FALLBACK_ENABLED` in
-`main.js`.
+Both are gone as of 2026-09-04. The file is no longer committed or deployed,
+`STATIC_FALLBACK_ENABLED` in `main.js` is `false`, and the scraper's
+`publish_to_webapp.py` has been deleted.
+
+The reason is not that the observation window closed on schedule. Every data endpoint now
+sits behind a human-verification gate, and a committed copy of the dataset is a public URL on
+the deployed site that serves the whole thing to exactly the callers the gate refuses. The
+recovery artifact was the documented way around the protection it sat next to.
+
+**Do not reinstate it.** If a rollback copy is ever genuinely needed it is in Git history:
+`git show e28c72b:unified_courses.json`.
 
 ## Verifying from this repository
 
@@ -63,14 +69,16 @@ Then look at the site: the sync line top-right must show the new scrape timestam
 ingest is one transaction, so a failure leaves the previous dataset completely intact — there
 is no half-applied state to clean up.
 
-**The API is down.** The frontend falls back to the committed `unified_courses.json`
-automatically, shows a bilingual banner naming that file's date, and disables calendar view —
-there is no dataset version to pin sessions to, so the calendar would be querying today's
-sessions against older course metadata.
+**The API is down.** The page shows a load error. There is no static fallback any more — see
+"There is no exception" above for why the committed artifact was removed rather than kept.
 
-The fallback is scoped to genuine unavailability: an unreachable manifest, a 5xx, or a dead
-network. It deliberately does **not** trigger on a consistency failure, because serving an old
-file after a count mismatch would hide a broken ingest behind stale-but-plausible data.
+An outage is therefore visible instead of being answered with an undated, weeks-old dataset.
+That is the intended trade: the fallback only ever helped with genuine unavailability, and it
+already refused to trigger on a consistency failure, so what it bought was narrow and what it
+cost was an ungated copy of everything.
+
+Note that a `403` mid-session is **not** treated as unavailability. The frontend clears its
+verification marker and reloads once into the gate.
 
 ## Credentials
 

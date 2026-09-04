@@ -25,13 +25,12 @@ than a code deploy.
 - Styling: Tailwind CSS via CDN plus `main.css`
 - Backend: Netlify serverless functions in `netlify/functions/`
 - Database: Neon Postgres — `semesters`, `groups`, `courses`, `sessions`
-- Data: served from Neon through a versioned API. `unified_courses.json` remains in Git LFS
-  as a **rollback artifact only**, not the normal load path
+- Data: served from Neon through a versioned API, behind a human-verification gate.
+  `unified_courses.json` is no longer deployed or committed here at all
 
 ## Prerequisites
 
 - Node.js
-- Git LFS
 
 > **`npm` and `npx` are blocked by group policy on the maintainer's devices.** Invoke Node
 > directly instead: `node --test` for the suite, `node --check <file>` for syntax,
@@ -43,14 +42,14 @@ than a code deploy.
 ## Setup
 
 1. Clone the repository.
-2. Install Git LFS and pull large files.
-3. Install npm dependencies.
+2. Install npm dependencies.
 
 ```bash
-git lfs install
-git lfs pull
 npm install
 ```
+
+There is no Git LFS step. This repository tracks no LFS files any more -- `git lfs ls-files`
+is empty.
 
 ## Local Development
 
@@ -160,12 +159,21 @@ Three different things are easy to confuse, so they are named separately:
 |---|---|---|
 | **Source artifacts** | `unified_courses.json` + `sessions.json` + `metadata.json`, written by the scraper | the scraper's data directory (`TUNNIPLAAN_DATA_DIR`), **not** this repository |
 | **Runtime data** | the four Neon tables the site actually serves from | Neon Postgres; see `db/schema.sql` |
-| **Rollback artifact** | the committed `unified_courses.json` | this repository, Git LFS |
+| **Rollback artifact** | *(retired 2026-09-04)* | Git history only |
 
-The committed `unified_courses.json` is **not** the normal load path any more. It is a
-recovery artifact the frontend uses only when the API is unavailable, and it is republished
-on every scrape purely to keep it current — a recovery artifact that has drifted weeks from
-production is not a recovery artifact. It is removed at the end of the observation window.
+There used to be a third thing here: a committed copy of `unified_courses.json`, served as a
+static fallback when the API was unavailable. It was removed, and `STATIC_FALLBACK_ENABLED`
+in `main.js` is `false`.
+
+The reason is the human-verification gate below. A committed dataset is a public URL on the
+deployed site that hands the whole thing to anyone who asks — including precisely the callers
+the gate refuses. The fallback did not sit behind the gate; it *was* the way around it. An
+API outage is now a visible load error rather than a silently stale dataset, which is the
+smaller of the two problems.
+
+If a rollback copy is ever genuinely needed it is in Git history:
+`git show e28c72b:unified_courses.json`. The scraper's `publish_to_webapp.py`, which used to
+republish it on every scrape, has been deleted for the same reason.
 
 `sessions.json` is gitignored and absent from this repository.
 
@@ -174,8 +182,9 @@ production is not a recovery artifact. It is removed at the end of the observati
 ### Frontend
 
 - `index.html`: application shell, general course search UI, and dedicated group-timetable builder UI
-- `course-data.js`: loads the manifest and course pages, enforces bounded concurrency,
-  refuses partial data, and falls back to the static file only when the API is unavailable
+- `course-data.js`: loads the manifest and course pages, enforces bounded concurrency, and
+  refuses partial data — a missing, duplicated or version-mismatched page fails the load
+  rather than rendering a short list
 - `main.js`: state management, filtering, rendering, language toggle, group builder logic, calendar logic, CSV export
 - `main.css`: custom styles
 
@@ -187,15 +196,51 @@ production is not a recovery artifact. It is removed at the end of the observati
   (200 per page, immutable for a year)
 - `netlify/functions/getTimetable.js`: sessions for the requested courses, pinned to a
   dataset version, with a server-side session limit
-- `netlify/functions/lib/dataset.js`: shared constants and helpers. A subdirectory on purpose
-  — Netlify would deploy a top-level file here as its own endpoint
+- `netlify/functions/humanVerification.js`: POST-only. Mints the verification pass
+- `netlify/functions/lib/dataset.js`: shared cache policies, the version regex, the memoised
+  Neon client and the JSON response builder
+- `netlify/functions/lib/humanVerification.js`: sign/verify plus the `withHumanGate` wrapper
+  the three data endpoints are wrapped in
+- Both `lib/` files are in a subdirectory on purpose — Netlify deploys every top-level `.js`
+  in the functions directory as its own endpoint
 - `db/schema.sql`, `db/migrations/`: Neon schema and migrations
 - `scripts/contract-test-getcourses.js`, `scripts/contract-test-gettimetable.js`: verify the
   API reproduces the source artifacts exactly
 - `scripts/dev-functions-server.js`: local function server (see Local Development)
+- `scripts/run-sql.js`: run a `.sql` file against Neon
+- `scripts/lib/script-support.js`: `loadDotEnv`, `argValue`, `resolveSourceDir` and the
+  self-signed gate pass, shared by every script above
+
+### Human verification
+
+A "prove you are human" overlay stands in front of the app. The slider is UX; the security is
+an HMAC-SHA256 signed cookie, `tt_human_verified` — HttpOnly, SameSite=Lax, 12 hours. All
+three data endpoints are wrapped in `withHumanGate`, so the check is on the data, not on the
+page: serving `index.html` to a scraper costs nothing, serving 1026 courses and their sessions
+is the thing worth protecting.
+
+Three consequences worth knowing before changing anything here:
+
+- **The signing secret must be derivable, not random.** Each Netlify function is its own
+  process, so a per-process random secret would reject cookies minted by a sibling lambda at
+  random. It is `HUMAN_VERIFICATION_SECRET`, falling back to a one-way derivation from
+  `NEON_DATABASE_URL`.
+- **Gated responses are downgraded from `public` to `private` caching.** The Netlify CDN keys
+  on URL, not on cookie; one verified visitor would otherwise warm a shared cache that then
+  answers everyone. The year-long *browser* cache is kept.
+- **The gate fails open when no secret is available.** A missing environment variable must not
+  take the public timetable offline for the whole university. Set
+  `HUMAN_VERIFICATION_ENABLED=false` to disable it deliberately.
+
+Unit tests call `handleRequest`, which sits below the gate by design; the six tests in
+`tests/functions/humanVerification.test.js` that call `handler` are what actually pin the
+wiring. The contract-test scripts call `handler` too, and sign themselves a pass through
+`scripts/lib/script-support.js`.
 
 ### Data flow
 
+0. The browser posts to `/.netlify/functions/humanVerification` and receives the signed
+   cookie. Without it, every step below answers `403 human_verification_required`.
 1. The browser fetches `/.netlify/functions/getDatasetManifest` with `cache: no-store`. It
    returns the semester block, the group map, the course count, and a `dataset_version` —
    a SHA-256 of the two source artifacts.
@@ -220,13 +265,15 @@ tunniplaan/
 |-- course-data.js            loads the dataset from the API
 |-- main.js
 |-- main.css
-|-- unified_courses.json      rollback artifact only (Git LFS)
 |-- netlify/
 |   `-- functions/
 |       |-- getDatasetManifest.js
 |       |-- getCourses.js
 |       |-- getTimetable.js
-|       `-- lib/dataset.js    shared; not an endpoint
+|       |-- humanVerification.js       POST-only; mints the pass
+|       `-- lib/                       shared; never endpoints
+|           |-- dataset.js
+|           `-- humanVerification.js   sign/verify + withHumanGate
 |-- db/
 |   |-- schema.sql
 |   |-- roles.sql
@@ -234,7 +281,9 @@ tunniplaan/
 |-- scripts/
 |   |-- dev-functions-server.js
 |   |-- contract-test-getcourses.js
-|   `-- contract-test-gettimetable.js
+|   |-- contract-test-gettimetable.js
+|   |-- run-sql.js
+|   `-- lib/script-support.js      shared; not a script
 |-- tests/
 |   |-- functions/
 |   |-- frontend/
@@ -256,17 +305,21 @@ The site is hosted on Netlify.
 by an atomic Neon ingest; no commit, no push, and no build hook is involved. See
 [docs/DATA_REFRESH.md](docs/DATA_REFRESH.md).
 
-A deploy is only needed when application code changes — or, during the observation window, to
-keep the `unified_courses.json` rollback artifact current.
+A deploy is only needed when application code changes. There is no longer any data artifact
+in this repository to keep current, so a scrape never touches it.
 
 ## Notes for Contributors
 
-- Keep `unified_courses.json` in Git LFS. Never glob `*.json` in `.gitattributes` — it once
-  swallowed `package.json`, so a clone without `git lfs pull` got a pointer stub.
+- **Do not re-commit `unified_courses.json`, or any other full dump of the dataset.** It
+  would be served from a public URL and would make the human-verification gate decorative.
+  Nothing in the test suite would fail, which is exactly why it is written down here.
+- Never glob `*.json` in `.gitattributes` — an unqualified rule once swallowed `package.json`,
+  so a clone without `git lfs pull` got a pointer stub. The rule is gone; the trap is not.
 - Run the app against `node scripts/dev-functions-server.js`. A static-only server cannot
   serve the course data at all now, so the page will not load.
 - Run `node --test` plus both contract scripts before proposing a data-layer change. The
-  contract scripts need `NEON_DATABASE_URL` and a matching ingested dataset.
+  contract scripts need `NEON_DATABASE_URL` and a matching ingested dataset. Note that
+  `node --test tests/` fails on Windows with MODULE_NOT_FOUND; bare `node --test` is correct.
 - Preserve bilingual UI strings in the `uiTexts` object in `main.js`.
 - Keep search UX and group-timetable UX conceptually separate.
 - Be careful with calendar performance. The app enforces a 4000-session limit before rendering the weekly view.
@@ -280,4 +333,4 @@ keep the `unified_courses.json` rollback artifact current.
 
 ## Last Updated
 
-2026-08-30
+2026-09-04

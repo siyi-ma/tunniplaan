@@ -18,7 +18,7 @@ TalTech Tunniplaan is a course timetable viewer for Tallinn University of Techno
 - **Styling**: Tailwind CSS (via CDN), custom CSS in [main.css](main.css)
 - **Backend**: Netlify serverless functions (`netlify/functions/`) — `getDatasetManifest`, `getCourses`, `getTimetable`, `humanVerification`
 - **Database**: Neon Postgres (`semesters`, `groups`, `courses`, `sessions` tables)
-- **Data Storage**: Neon Postgres. `unified_courses.json` is **no longer deployed**; the last committed copy stays in Git history (LFS) as a rollback artifact
+- **Data Storage**: Neon Postgres. `unified_courses.json` is **no longer committed or deployed**. Do not re-add it or any other full dump of the dataset: it would be served from a public URL and would make the human gate decorative, and no test would fail. Recovery, if ever needed, is `git show e28c72b:unified_courses.json`
 - **Hosting**: Netlify
 
 ---
