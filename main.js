@@ -31,9 +31,14 @@ function updateDynamicTitle() {
 // main.js - FINAL VERSION
 // This script is fully optimized to work with the final data structure and includes all new features.
 
+// Nothing loads until the visitor has proved they are human. runHumanGate never
+// rejects -- see its own comment -- so this is not a path the app can get stuck
+// on; the serverless functions enforce the pass themselves either way.
 document.addEventListener('DOMContentLoaded', () => {
-    initializeApp();
-    renderCourseCardLegend();
+    runHumanGate().then(() => {
+        initializeApp();
+        renderCourseCardLegend();
+    });
 });
 
 // --- DOM Elements ---
@@ -105,6 +110,15 @@ function semesterPhraseEn() {
 
 const uiTexts = {
     pageTitle: { et: 'TalTech kursused', en: 'TalTech Courses' },
+    // The opening gate renders both languages at once rather than picking one:
+    // the ET/EN toggle is behind it, so there is no chosen language yet. Keys
+    // match the survey app they were ported from.
+    humanGateChecking: { et: 'Kontrollime…', en: 'Checking…' },
+    humanGateError: { et: 'Kontroll ebaõnnestus. Proovi uuesti.', en: 'Verification failed. Please try again.' },
+    humanGatePrivacy: {
+        et: 'Kontroll aitab hoida tunniplaani kättesaadavana. Isikuandmeid ei koguta.',
+        en: 'This check helps keep the timetable available. No personal data is collected.',
+    },
     searchInputLabel: { et: 'Otsisõna (eralda komaga)', en: 'Search term (separate by comma)' },
     searchPlaceholder: { et: 'Sisesta otsisõna või -sõnad...', en: 'Enter search term(s)...' },
     searchPlaceholder_all: { et: 'Nt andmebaasid, ITI', en: 'E.g. databases, ITI' },
@@ -993,12 +1007,18 @@ async function toggleCalendarView() {
         const versionParam = activeDatasetVersion
             ? `&version=${encodeURIComponent(activeDatasetVersion)}` : '';
         const response = await fetch(
-            `/.netlify/functions/getTimetable?courses=${courseIds}${versionParam}`);
+            `/.netlify/functions/getTimetable?courses=${courseIds}${versionParam}`,
+            { credentials: 'same-origin' });
         if (response.status === 409) {
             // The dataset moved under this tab. Never merge the new sessions
             // into the course objects already rendered; offer a reload instead,
             // reusing the same notice the freshness check raises.
             handleCalendarVersionConflict();
+            return;
+        }
+        // The pass expired while this tab sat open. Same recovery as the
+        // initial load: clear the stale marker and reload into the gate.
+        if (response.status === 403 && recoverFromHumanVerification()) {
             return;
         }
         if (!response.ok) {
@@ -1781,6 +1801,9 @@ async function initializeApp() {
         updateSyncInfoText();
         renderDatasetNotices();
         startFreshnessWatch();
+        // The dataset arrived, so whatever the pass was doing, it worked. Arm
+        // the single reload again for the next time it lapses.
+        clearHumanGateRetry();
 
         // --- CORRECTED LOGIC STARTS HERE ---
         const params = new URLSearchParams(window.location.search);
@@ -1845,6 +1868,13 @@ async function initializeApp() {
 
     } catch (error) {
         console.error("Initialization failed:", error);
+        // The pass lapsed between the gate and the first data request. Reload
+        // once so the gate comes back, rather than showing a load error the
+        // visitor has no way to act on.
+        if (error && error.kind === 'human_verification_required'
+            && recoverFromHumanVerification()) {
+            return;
+        }
         courseListContainerDOM.innerHTML = `<div class="p-4 bg-red-100 text-red-800 rounded-md col-span-full"><strong>Error: Could not load initial data.</strong><br>${error.message}</div>`;
     } finally {
         loadingIndicatorDOM.classList.add('hidden');
@@ -1853,9 +1883,12 @@ async function initializeApp() {
 
 // --- Dataset notices (fallback banner, new-version prompt) ---
 
-// The committed unified_courses.json is still deployed as a rollback path
-// during the Phase 2 observation window. Task 12 removes it and this flag.
-const STATIC_FALLBACK_ENABLED = true;
+// Task 12. unified_courses.json is no longer deployed. It sat at a public URL
+// that handed the entire dataset to anyone who asked, which made the human gate
+// decorative: a caller the gate turned away could just take the file instead.
+// The artifact still exists in Git history as the rollback path -- it is only
+// unreachable over HTTP, so nothing here may ask for it.
+const STATIC_FALLBACK_ENABLED = false;
 
 // A pending new version, if the freshness check has seen one and the user has
 // not dismissed it. Never acted on automatically.
@@ -2028,4 +2061,184 @@ function updateSyncInfoText() {
     // The removed inline script used textContent; interpolating it into
     // innerHTML would have been a new injection surface for a scraped value.
     syncInfoDOM.querySelector('#syncDate').textContent = shown;
+}
+
+// --- Prove-you-are-human gate ---------------------------------------------
+//
+// Ported from survey_maj_dekanaadi_kysitlus. The slider is the visible half;
+// the half that matters is the signed httpOnly cookie the POST below brings
+// back, which getDatasetManifest, getCourses and getTimetable all require.
+// Nothing here is a security boundary on its own -- this code runs on the
+// visitor's machine and can be skipped -- so skipping it buys an unlocked page
+// whose every data request answers 403.
+
+const HUMAN_GATE_URL = '/.netlify/functions/humanVerification';
+const HUMAN_GATE_MARKER = 'tt_human_verified_until';
+
+// Deliberately shorter than the server's twelve hours. The other way round
+// would unlock the page for someone whose pass had already lapsed, and every
+// request behind it would 403 with no gate on screen to explain why.
+const HUMAN_GATE_MARKER_MS = 11 * 60 * 60 * 1000;
+
+// The server floor for a plausible human gesture. Matched here so a fast but
+// genuine drag is not sent only to be rejected.
+const HUMAN_GATE_MIN_DURATION_MS = 250;
+
+function humanGateBilingual(key) {
+    return `<span lang="et">${uiTexts[key].et}</span>`
+        + '<span class="human-gate-divider" aria-hidden="true">·</span>'
+        + `<span lang="en">${uiTexts[key].en}</span>`;
+}
+
+function unlockHumanGate() {
+    document.documentElement.classList.add('human-gate-passed');
+    try {
+        localStorage.setItem(HUMAN_GATE_MARKER, String(Date.now() + HUMAN_GATE_MARKER_MS));
+    } catch (error) {
+        // Private mode or storage disabled. The gate simply shows again next
+        // visit, which is a mild annoyance rather than a failure.
+    }
+}
+
+/**
+ * Resolves when the page may open.
+ *
+ * Never rejects, and never leaves the promise pending on an error. A gate that
+ * cannot reach its own endpoint must not become the reason nobody can see the
+ * timetable -- the functions check the signature themselves, so the worst a
+ * lenient client does is show a page whose data requests are refused.
+ */
+function runHumanGate() {
+    const gate = document.getElementById('humanGate');
+    const input = document.getElementById('humanGateInput');
+    const slider = document.getElementById('humanGateSlider');
+    const status = document.getElementById('humanGateStatus');
+    const root = document.documentElement;
+
+    // Lifted before first paint by the inline script in index.html, or the gate
+    // markup is not on this page at all. Either way there is nothing to wait
+    // for -- and the marker is deliberately NOT refreshed here, or a tab left
+    // open across a reload would renew itself forever while the cookie behind
+    // it quietly expired.
+    if (!gate || !input || !slider || !status || root.classList.contains('human-gate-passed')) {
+        return Promise.resolve();
+    }
+
+    return new Promise((resolve) => {
+        let startedAt = null;
+        let submitted = false;
+
+        function setStatus(key, isError) {
+            status.innerHTML = humanGateBilingual(key);
+            status.classList.toggle('is-error', Boolean(isError));
+        }
+
+        // The painted track and knob follow one custom property; the range
+        // input underneath stays the single source of the value.
+        function setProgress(value) {
+            const next = Math.min(100, Math.max(0, Number(value) || 0));
+            input.value = String(next);
+            slider.style.setProperty('--slider-progress', `${next}%`);
+            return next;
+        }
+
+        function reset() {
+            submitted = false;
+            startedAt = null;
+            setProgress(0);
+        }
+
+        async function complete(durationMs) {
+            if (submitted) return;
+            submitted = true;
+            setStatus('humanGateChecking', false);
+            try {
+                const response = await fetch(HUMAN_GATE_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    cache: 'no-store',
+                    body: JSON.stringify({ completed: true, progress: 100, durationMs }),
+                });
+                // A 404 means the functions are not deployed at all. The data
+                // endpoints are then unreachable too and the page falls back to
+                // the committed unified_courses.json, so refusing to open here
+                // would hide a working page behind a slider that can never
+                // succeed. Every other failure is a real one.
+                if (!response.ok && response.status !== 404) {
+                    throw new Error(`humanVerification returned ${response.status}`);
+                }
+            } catch (error) {
+                console.warn('Human verification failed:', error);
+                setStatus('humanGateError', true);
+                reset();
+                return;
+            }
+            unlockHumanGate();
+            gate.remove();
+            resolve();
+        }
+
+        function markStart() {
+            if (startedAt === null) startedAt = Date.now();
+        }
+
+        input.addEventListener('pointerdown', markStart);
+        input.addEventListener('keydown', markStart);
+        input.addEventListener('input', () => {
+            if (submitted) return;
+            markStart();
+            if (setProgress(input.value) < 100) return;
+            // Floored at the server minimum: a keyboard user pressing End, or
+            // anyone whose pointer events arrive in one batch, is a person, and
+            // rejecting them for being quick would be the gate failing at its
+            // only job.
+            complete(Math.max(HUMAN_GATE_MIN_DURATION_MS, Date.now() - startedAt));
+        });
+
+        // Released partway: snap back, so the control never sits in a half
+        // state that reads as stuck. Only on pointer release -- doing the same
+        // on blur would wipe a keyboard user's progress every time they tabbed.
+        input.addEventListener('pointerup', () => {
+            if (!submitted && Number(input.value) < 100) reset();
+        });
+
+        setProgress(0);
+        setStatus('humanGatePrivacy', false);
+        input.focus({ preventScroll: true });
+    });
+}
+
+// A 403 from a data endpoint means the pass expired or was never accepted. A
+// twelve-hour cookie outliving an open tab is the ordinary case, and what is
+// stale is the localStorage marker -- so it is cleared and the page reloaded,
+// which brings the gate back.
+//
+// Once only. If the reload comes straight back with another 403 the cookie is
+// being refused outright -- cookies blocked, or a clock outside the skew
+// tolerance -- and a loop of reloads would be a far worse answer than an error
+// message somebody can read.
+const HUMAN_GATE_RETRY_FLAG = 'tt_human_gate_retried';
+
+function recoverFromHumanVerification() {
+    let alreadyRetried = false;
+    try {
+        alreadyRetried = sessionStorage.getItem(HUMAN_GATE_RETRY_FLAG) === '1';
+        sessionStorage.setItem(HUMAN_GATE_RETRY_FLAG, '1');
+        localStorage.removeItem(HUMAN_GATE_MARKER);
+    } catch (error) {
+        // Storage disabled. Without somewhere to record the attempt there is no
+        // way to stop a loop, so no reload is attempted at all.
+        return false;
+    }
+    if (alreadyRetried) return false;
+    document.documentElement.classList.remove('human-gate-passed');
+    window.location.reload();
+    return true;
+}
+
+function clearHumanGateRetry() {
+    try {
+        sessionStorage.removeItem(HUMAN_GATE_RETRY_FLAG);
+    } catch (error) { /* nothing was ever stored */ }
 }

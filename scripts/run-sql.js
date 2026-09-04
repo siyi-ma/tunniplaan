@@ -8,19 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const { neon } = require('@neondatabase/serverless');
-
-function loadDotEnv(file) {
-  if (!fs.existsSync(file)) return;
-  for (const line of fs.readFileSync(file, 'utf-8').split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eq = trimmed.indexOf('=');
-    if (eq < 1) continue;
-    const key = trimmed.slice(0, eq).trim();
-    // An exported variable wins over the file, as everywhere else in Phase 2.
-    if (process.env[key] === undefined) process.env[key] = trimmed.slice(eq + 1).trim();
-  }
-}
+const { loadDotEnv } = require('./lib/script-support.js');
 
 async function main() {
   const [file, envVar = 'NEON_ADMIN_URL'] = process.argv.slice(2);

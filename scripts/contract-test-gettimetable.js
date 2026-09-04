@@ -9,6 +9,7 @@ const crypto = require('crypto');
 const assert = require('assert');
 const { neon } = require('@neondatabase/serverless');
 const { handleRequest, _resetSemesterCache } = require('../netlify/functions/getTimetable.js');
+const { loadDotEnv, resolveSourceDir, humanHeaders } = require('./lib/script-support.js');
 
 const MAX_BATCH_SESSIONS = 3500; // keep each batch under getTimetable's 4000 limit
 
@@ -23,41 +24,6 @@ function canonicalize(value) {
 // One sortable string per event so the two sides compare order-independently.
 function fingerprints(events) {
   return events.map((e) => JSON.stringify(canonicalize(e))).sort();
-}
-
-function loadDotEnv(file) {
-  if (!fs.existsSync(file)) return;
-  for (const line of fs.readFileSync(file, 'utf-8').split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eq = trimmed.indexOf('=');
-    if (eq < 1) continue;
-    const key = trimmed.slice(0, eq).trim();
-    if (process.env[key] === undefined) process.env[key] = trimmed.slice(eq + 1).trim();
-  }
-}
-
-// Phase 1 deleted sessions.json from this repository and gitignored it, so the
-// old `<repo root>/sessions.json` read could not run at all. The source pair
-// lives in the scraper's data directory: --source-dir > TUNNIPLAAN_DATA_DIR,
-// with no repo-root fallback, because a silent fallback is how a contract test
-// passes against the wrong data. (Spec 7.2.2. Task 8 owns adding dataset
-// version support here; this is only the source path.)
-function resolveSourceDir() {
-  const argv = process.argv.slice(2);
-  const flag = argv.indexOf('--source-dir');
-  const inline = argv.find((a) => a.startsWith('--source-dir='));
-  const cli = flag !== -1 ? argv[flag + 1]
-    : (inline ? inline.slice('--source-dir='.length) : undefined);
-  for (const [value, origin] of [[cli, '--source-dir'],
-    [process.env.TUNNIPLAAN_DATA_DIR, 'TUNNIPLAAN_DATA_DIR']]) {
-    if (!value) continue;
-    if (!fs.existsSync(value) || !fs.statSync(value).isDirectory()) {
-      throw new Error(`${origin} points at ${value}, which is not a directory`);
-    }
-    return path.resolve(value);
-  }
-  throw new Error('No source directory. Pass --source-dir or set TUNNIPLAAN_DATA_DIR.');
 }
 
 async function main() {
@@ -137,7 +103,10 @@ async function main() {
       // hunting for the answer the failing process already had.
       let active = '(unknown: the manifest could not be read)';
       try {
-        const manifest = await require('../netlify/functions/getDatasetManifest.js').handler({});
+        // The manifest endpoint is gated, so this diagnostic has to arrive as a
+        // verified visitor or it would report "(unknown)" for every mismatch.
+        const manifest = await require('../netlify/functions/getDatasetManifest.js')
+          .handler({ headers: humanHeaders() });
         active = JSON.parse(manifest.body).dataset_version || active;
       } catch (e) { /* the version mismatch is the story, not this */ }
       throw new Error(

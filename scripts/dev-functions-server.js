@@ -23,6 +23,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const url = require('node:url');
+const { loadDotEnv, argValue } = require('./lib/script-support.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const FUNCTIONS_DIR = path.join(ROOT, 'netlify', 'functions');
@@ -38,35 +39,47 @@ const MIME = {
   '.ico': 'image/x-icon',
 };
 
-function loadDotEnv(file) {
-  if (!fs.existsSync(file)) return;
-  for (const line of fs.readFileSync(file, 'utf-8').split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eq = trimmed.indexOf('=');
-    if (eq < 1) continue;
-    const key = trimmed.slice(0, eq).trim();
-    if (process.env[key] === undefined) process.env[key] = trimmed.slice(eq + 1).trim();
-  }
-}
-
-function argValue(name, fallback) {
-  const argv = process.argv.slice(2);
-  const i = argv.indexOf(`--${name}`);
-  if (i !== -1 && argv[i + 1]) return argv[i + 1];
-  return fallback;
-}
-
 // Only the fields the handlers actually read. Inventing more would let a
 // handler start depending on something Netlify does not supply.
-function buildEvent(parsed) {
+//
+// headers, httpMethod and body were added for the human-verification gate: it
+// reads the Cookie header on every data request and the method and JSON body on
+// the POST that mints the pass. Without them the gate would reject every local
+// request and the local server would prove nothing.
+function buildEvent(parsed, request, body) {
   return {
     queryStringParameters: parsed.query && Object.keys(parsed.query).length
       ? parsed.query : {},
+    httpMethod: (request && request.method) || 'GET',
+    headers: (request && request.headers) || {},
+    body: body === undefined ? null : body,
   };
 }
 
-async function dispatchFunction(name, parsed, response) {
+// Netlify hands the handler a body string, so it is collected here rather than
+// streamed. Capped because this is a dev server on a laptop and an unbounded
+// read is how one lands in swap.
+const MAX_BODY_BYTES = 64 * 1024;
+
+function readBody(request) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    request.on('data', (chunk) => {
+      size += chunk.length;
+      if (size > MAX_BODY_BYTES) {
+        reject(new Error(`request body exceeds ${MAX_BODY_BYTES} bytes`));
+        request.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    request.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')));
+    request.on('error', reject);
+  });
+}
+
+async function dispatchFunction(name, parsed, request, response) {
   const modulePath = path.join(FUNCTIONS_DIR, `${name}.js`);
   // 404 for an unknown name, so a typo in a check fails loudly instead of
   // silently exercising nothing.
@@ -77,8 +90,10 @@ async function dispatchFunction(name, parsed, response) {
   }
   let result;
   try {
+    const body = request.method === 'GET' || request.method === 'HEAD'
+      ? undefined : await readBody(request);
     const fn = require(modulePath);
-    result = await fn.handler(buildEvent(parsed));
+    result = await fn.handler(buildEvent(parsed, request, body));
   } catch (error) {
     console.error(`[functions] ${name} threw:`, error && error.message);
     response.writeHead(500, { 'Content-Type': 'application/json' });
@@ -123,7 +138,8 @@ function main() {
   const server = http.createServer((request, response) => {
     const parsed = url.parse(request.url, true);
     if (parsed.pathname.startsWith(FUNCTION_PREFIX)) {
-      dispatchFunction(parsed.pathname.slice(FUNCTION_PREFIX.length), parsed, response);
+      dispatchFunction(
+        parsed.pathname.slice(FUNCTION_PREFIX.length), parsed, request, response);
       return;
     }
     serveStatic(parsed.pathname, response);

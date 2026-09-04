@@ -184,3 +184,200 @@ body { font-family: 'Proxima Nova', system-ui, -apple-system, BlinkMacSystemFont
   outline: 2px solid #4dbed2;
   outline-offset: 2px;
 }
+
+/* --- Prove-you-are-human gate -------------------------------------------- */
+/* Ported from survey_maj_dekanaadi_kysitlus, retuned to the palette above:
+   #342b60 dark blue, #e4067e magenta, #4dbed2 light blue, Proxima Nova.
+
+   The lock is keyed off <html> rather than <body> so the inline script in
+   index.html can lift it before <body> is parsed -- a returning visitor with a
+   valid pass never sees the gate flash. */
+html:not(.human-gate-passed) body { overflow: hidden; }
+html:not(.human-gate-passed) body > *:not(#humanGate) { display: none !important; }
+html.human-gate-passed #humanGate { display: none; }
+
+.human-gate-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 200;             /* above #loadingIndicator, which sits at z-100 */
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: clamp(1.5rem, 6vw, 4rem) 1rem;
+  background: #ffffff;
+}
+
+.human-gate-shell::before,
+.human-gate-shell::after {
+  position: absolute;
+  content: "";
+  border-radius: 999px;
+  pointer-events: none;
+  filter: blur(2px);
+}
+
+.human-gate-shell::before {
+  width: 18rem;
+  height: 18rem;
+  top: 4%;
+  left: 8%;
+  background: rgba(77, 190, 210, 0.16);
+}
+
+.human-gate-shell::after {
+  width: 20rem;
+  height: 20rem;
+  right: 4%;
+  bottom: -10%;
+  background: rgba(228, 6, 126, 0.08);
+}
+
+.human-gate-card {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 38rem);
+  padding: clamp(2rem, 6vw, 3.4rem) clamp(1.5rem, 6vw, 3.5rem);
+  border: 1px solid rgba(52, 43, 96, 0.14);
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 28px 80px rgba(13, 22, 50, 0.14);
+  text-align: center;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.human-gate-mark {
+  display: grid;
+  place-items: center;
+  width: 4.5rem;
+  height: 4.5rem;
+  margin: 0 auto 1.4rem;
+  border-radius: 50%;
+  background: #342b60;
+  color: #ffffff;
+  font-size: 1.75rem;
+}
+
+.human-gate-eyebrow {
+  margin: 0 0 0.75rem;
+  color: #9396b0;
+  font-weight: 600;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.human-gate-divider {
+  margin: 0 0.35rem;
+  opacity: 0.45;
+}
+
+/* Both languages are shown at once, stacked, because the ET/EN toggle is
+   behind the gate and neither language can be assumed yet. */
+.human-gate-bilingual {
+  display: grid;
+  gap: 0.22rem;
+}
+
+.human-gate-card h1 {
+  margin: 0;
+  color: #342b60;
+  font-weight: 700;
+  font-size: clamp(1.55rem, 4vw, 2.15rem);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+.human-gate-instruction {
+  margin: 1rem 0 0.7rem;
+  color: #342b60;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.human-gate-slider {
+  --slider-progress: 0%;
+  position: relative;
+  height: 3.2rem;
+  margin: 0 auto;
+  border-radius: 999px;
+  isolation: isolate;
+}
+
+.human-gate-slider-track,
+.human-gate-slider-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.human-gate-slider-track {
+  z-index: -2;
+  background: #dedde0;
+}
+
+.human-gate-slider-fill {
+  z-index: -1;
+  width: var(--slider-progress);
+  background: #e4067e;
+  transition: width 80ms linear;
+}
+
+/* Clamped so the knob stays inside the track at both ends rather than
+   hanging half off the rounded cap. */
+.human-gate-slider-knob {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: clamp(1.6rem, var(--slider-progress), calc(100% - 1.6rem));
+  display: grid;
+  place-items: center;
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 50%;
+  background: #e4067e;
+  color: #ffffff;
+  font-size: 1rem;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 3px 10px rgba(228, 6, 126, 0.28);
+  pointer-events: none;
+  transition: left 80ms linear;
+}
+
+/* The real control, made invisible but left fully operable on top of the
+   painted track. Hiding it with display:none would take the keyboard and the
+   screen reader with it. */
+.human-gate-slider-input {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: grab;
+  opacity: 0;
+}
+
+.human-gate-slider-input:active { cursor: grabbing; }
+
+.human-gate-slider:focus-within {
+  outline: 3px solid rgba(77, 190, 210, 0.45);
+  outline-offset: 4px;
+}
+
+.human-gate-status {
+  min-height: 2.4rem;
+  margin: 0.85rem 0 0;
+  color: #9396b0;
+  font-weight: 500;
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.human-gate-status.is-error { color: #b91c1c; }
+
+@media (prefers-reduced-motion: reduce) {
+  .human-gate-slider-fill,
+  .human-gate-slider-knob { transition: none; }
+}

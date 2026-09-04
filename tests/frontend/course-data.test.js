@@ -433,3 +433,83 @@ test('a dead network falls back', async () => {
   const data = await CourseData.loadCourseData({ fetchImpl, allowFallback: true });
   assert.strictEqual(data.source, 'fallback');
 });
+
+// --- the human gate --------------------------------------------------------
+
+test('a gate refusal never falls back to the static file', async () => {
+  // The regression this pins: loadFromApi used to relabel every manifest
+  // failure as api_unavailable, so a 403 from the gate looked like a dead API
+  // and the tab helped itself to unified_courses.json -- the whole dataset,
+  // ungated. A refused caller must be refused, not rerouted.
+  let staticFetched = false;
+  const fetchImpl = async (url) => {
+    if (url.includes('getDatasetManifest')) {
+      return {
+        ok: false,
+        status: 403,
+        json: async () => ({ error: 'human_verification_required' }),
+      };
+    }
+    if (url.includes('unified_courses.json')) {
+      staticFetched = true;
+      return jsonResponse(STATIC);
+    }
+    throw new Error(`unexpected fetch: ${url}`);
+  };
+
+  await assert.rejects(
+    () => CourseData.loadCourseData({ fetchImpl, allowFallback: true }),
+    (error) => error.kind === 'human_verification_required');
+  assert.strictEqual(staticFetched, false,
+    'the static dataset must not be served to a caller the gate turned away');
+});
+
+test('a gate refusal on a course page does not fall back either', async () => {
+  // The pass can lapse between the manifest and page five. Same rule.
+  let staticFetched = false;
+  const fetchImpl = async (url) => {
+    if (url.includes('getDatasetManifest')) return jsonResponse(manifest());
+    if (url.includes('unified_courses.json')) {
+      staticFetched = true;
+      return jsonResponse(STATIC);
+    }
+    return {
+      ok: false,
+      status: 403,
+      json: async () => ({ error: 'human_verification_required' }),
+    };
+  };
+
+  await assert.rejects(
+    () => CourseData.loadCourseData({ fetchImpl, allowFallback: true }),
+    (error) => error.kind === 'human_verification_required');
+  assert.strictEqual(staticFetched, false);
+});
+
+test('a genuinely unavailable API still falls back', async () => {
+  // The other half of the same edit: narrowing the relabel must not cost the
+  // rollback path it was written for.
+  const fetchImpl = async (url) => {
+    if (url.includes('getDatasetManifest')) {
+      return { ok: false, status: 404, json: async () => ({}) };
+    }
+    return jsonResponse(STATIC);
+  };
+  const data = await CourseData.loadCourseData({ fetchImpl, allowFallback: true });
+  assert.strictEqual(data.source, 'fallback');
+});
+
+test('the dataset calls are made with same-origin credentials', async () => {
+  // Without the cookie the gate sees an anonymous caller and every one of
+  // these is a 403.
+  const seen = [];
+  const fetchImpl = async (url, options) => {
+    seen.push(options && options.credentials);
+    if (url.includes('getDatasetManifest')) return jsonResponse(manifest());
+    const pageNumber = Number(new URL(url, 'http://x').searchParams.get('page'));
+    return jsonResponse(DEFAULT_PAGES[pageNumber]);
+  };
+  await CourseData.loadCourseData({ fetchImpl });
+  assert.strictEqual(seen.length, 4, 'one manifest and three pages');
+  for (const credentials of seen) assert.strictEqual(credentials, 'same-origin');
+});

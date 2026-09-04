@@ -72,8 +72,13 @@
     return manifest;
   }
 
+  // Cookies are already same-origin by default in every browser this runs in,
+  // but the human-verification pass is now the difference between a 200 and a
+  // 403 on every one of these calls, so it is stated rather than assumed.
+  const REQUEST_OPTIONS = { credentials: 'same-origin' };
+
   async function fetchJson(fetchImpl, url, options) {
-    const response = await fetchImpl(url, options);
+    const response = await fetchImpl(url, { ...REQUEST_OPTIONS, ...options });
     if (!response.ok) {
       let body = null;
       try { body = await response.json(); } catch (e) { /* not JSON; status is enough */ }
@@ -199,7 +204,15 @@
       // deployed, a 503 because no dataset is active, a dead network -- is the
       // unavailability the fallback exists for. A manifest that arrives and is
       // wrong is not, and validateManifest below keeps its own error kind.
-      error.kind = 'api_unavailable';
+      //
+      // A 403 from the human gate is the second exception, and the one that
+      // matters most: the API answered, it just refused this caller. Filing
+      // that as unavailability would hand the tab the static fallback -- the
+      // entire dataset, ungated -- every time a pass expires, which is the one
+      // outcome the gate exists to prevent.
+      if (error.kind !== 'human_verification_required') {
+        error.kind = 'api_unavailable';
+      }
       throw error;
     }
     const manifest = validateManifest(manifestBody);

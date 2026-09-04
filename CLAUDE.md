@@ -16,9 +16,9 @@ TalTech Tunniplaan is a course timetable viewer for Tallinn University of Techno
 
 - **Frontend**: Vanilla JavaScript (no framework), HTML5, CSS3
 - **Styling**: Tailwind CSS (via CDN), custom CSS in [main.css](main.css)
-- **Backend**: Netlify serverless functions (`netlify/functions/`) — `getDatasetManifest`, `getCourses`, `getTimetable`
+- **Backend**: Netlify serverless functions (`netlify/functions/`) — `getDatasetManifest`, `getCourses`, `getTimetable`, `humanVerification`
 - **Database**: Neon Postgres (`semesters`, `groups`, `courses`, `sessions` tables)
-- **Data Storage**: Neon Postgres. `unified_courses.json` stays in Git LFS as a **rollback artifact only**
+- **Data Storage**: Neon Postgres. `unified_courses.json` is **no longer deployed**; the last committed copy stays in Git history (LFS) as a rollback artifact
 - **Hosting**: Netlify
 
 ---
@@ -30,6 +30,8 @@ TalTech Tunniplaan is a course timetable viewer for Tallinn University of Techno
 - [main.css](main.css): Custom brand styling and Tailwind overrides
 - [course-data.js](course-data.js): API pagination reassembly and dataset envelope loading
 - [netlify/functions/getTimetable.js](netlify/functions/getTimetable.js): Production timetable endpoint querying Neon Postgres
+- [netlify/functions/lib/humanVerification.js](netlify/functions/lib/humanVerification.js): sign/verify for the human gate, plus the withHumanGate wrapper
+- [scripts/lib/script-support.js](scripts/lib/script-support.js): loadDotEnv, argValue, resolveSourceDir and the self-signed human pass, shared by every script in scripts/
 - [db/schema.sql](db/schema.sql): Neon Postgres relational database schema
 - [.vscode/tasks.json](.vscode/tasks.json): Configured local server and deployment tasks
 
@@ -67,12 +69,26 @@ node scripts/dev-functions-server.js
 - Fetches `getDatasetManifest` (`no-store`), then fetches every `getCourses` page (4 at a time).
 - Reassembles the `{semester, courses, groupToFacultyMap, scraping_datetime}` envelope.
 - Refuses partial data: missing/duplicated pages or count mismatches fail the load rather than displaying incomplete lists.
-- Falls back to committed `unified_courses.json` only when API serverless functions are unavailable.
+- The static fallback is off (`STATIC_FALLBACK_ENABLED = false` in main.js). An API outage is now a load error rather than a silently stale dataset, because that fallback file was also an ungated copy of everything the human gate protects.
 
 ### 2. Backend Functions (`netlify/functions/`)
 - `getDatasetManifest.js`: Returns semester metadata, group map, total pages, and active `dataset_version`. Assembled via single SQL statement.
 - `getCourses.js`: Returns paged courses (200 courses per page ordered by ID), cached for 1 year when version-pinned.
 - `getTimetable.js`: Queries `sessions` table in Neon Postgres for requested courses (`?courses=ID1,ID2`). Enforces a 4,000 session limit envelope (`{ "error": "limit_exceeded", "count", "limit" }`).
+- `humanVerification.js`: POST-only. Mints the human-verification pass. See below.
+
+### 2b. Human Verification Gate
+
+A "prove you are human" overlay stands in front of the app, ported from
+`survey_maj_dekanaadi_kysitlus`. The slider is UX; the security is an
+HMAC-SHA256 signed cookie (`tt_human_verified`, HttpOnly, SameSite=Lax, 12 h).
+
+- [netlify/functions/lib/humanVerification.js](netlify/functions/lib/humanVerification.js) holds sign/verify plus the `withHumanGate` wrapper. It lives in `lib/` because Netlify publishes every top-level `.js` in the functions directory as an endpoint.
+- All three data endpoints wrap `exports.handler` in `withHumanGate`. Unit tests call `handleRequest` and so bypass the gate by design; the contract-test scripts call `handler` and therefore sign themselves a pass.
+- Gated responses are downgraded from `public` to `private` caching. The Netlify CDN keys on URL, not on cookie, so one verified visitor would otherwise warm a shared cache that then answers everyone. The year-long *browser* cache is kept.
+- The gate **fails open** when no signing secret is available: a missing env var must not take the public timetable offline for the whole university.
+- Env: `HUMAN_VERIFICATION_SECRET` (falls back to a one-way derivation from `NEON_DATABASE_URL`), `HUMAN_VERIFICATION_ENABLED=false` to disable.
+- A 403 mid-session is **not** treated as API unavailability. Treating it that way would route the tab to the static fallback, which was itself an ungated copy of the dataset. The frontend clears its marker and reloads once into the gate.
 
 ### 3. Search & Multi-Group Timetable Builder
 - Top search box supports comma-separated search terms across course names, codes, keywords, instructors, and study groups.

@@ -18,6 +18,7 @@ const {
   toIsoDate,
   foldGroupMap,
 } = require('./lib/dataset.js');
+const { withHumanGate } = require('./lib/humanVerification.js');
 
 async function handleRequest(event, sql) {
   try {
@@ -83,7 +84,12 @@ async function handleRequest(event, sql) {
   }
 }
 
-exports.handler = async (event) => {
+// The gate wraps the handler, not handleRequest: handleRequest is the dataset
+// contract and the tests exercise it directly, so admission control stays out
+// of it. Being the first endpoint a page load touches, this is also where an
+// unverified visitor is turned away most cheaply -- before a database
+// connection, and before five course pages are even requested.
+exports.handler = async (event) => withHumanGate(event, async () => {
   let sql;
   try {
     sql = getSql();
@@ -92,7 +98,7 @@ exports.handler = async (event) => {
     return jsonResponse(500, { error: 'manifest_unavailable' });
   }
   return handleRequest(event, sql);
-};
+});
 exports.handleRequest = handleRequest;
 exports.PAGE_SIZE = PAGE_SIZE;
 exports.NO_STORE_HEADERS = NO_STORE_HEADERS;

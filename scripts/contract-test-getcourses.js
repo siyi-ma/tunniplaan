@@ -18,46 +18,31 @@ const crypto = require('crypto');
 
 const PAGE_BYTE_CEILING = 4.5 * 1024 * 1024;
 
-function loadDotEnv(file) {
-  if (!fs.existsSync(file)) return;
-  for (const line of fs.readFileSync(file, 'utf-8').split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eq = trimmed.indexOf('=');
-    if (eq < 1) continue;
-    const key = trimmed.slice(0, eq).trim();
-    // An exported variable wins over the file, as everywhere else in Phase 2.
-    if (process.env[key] === undefined) process.env[key] = trimmed.slice(eq + 1).trim();
-  }
+const human = require('../netlify/functions/lib/humanVerification.js');
+const { loadDotEnv, resolveSourceDir, humanHeaders } = require('./lib/script-support.js');
+
+// The endpoints are gated, so the contract test has to arrive as a verified
+// visitor -- it signs its own pass rather than reaching for the HTTP endpoint,
+// because what is under test is the dataset contract, not the gate.
+function humanEvent(extra) {
+  return { headers: humanHeaders(), ...(extra || {}) };
 }
 
-function argValue(name) {
-  const argv = process.argv.slice(2);
-  const i = argv.indexOf(`--${name}`);
-  if (i !== -1) return argv[i + 1];
-  const inline = argv.find((a) => a.startsWith(`--${name}=`));
-  return inline ? inline.slice(name.length + 3) : undefined;
+// A gated page is downgraded from `public` to `private`, because Netlify's CDN
+// keys on the URL and not on the cookie. The policy is therefore derived rather
+// than written out twice: hardcoding `public` here would turn the very bypass
+// the gate closes into a passing assertion.
+// Evaluated at call time, not at load time: getSecret() derives from
+// NEON_DATABASE_URL, which loadDotEnv has not read yet when this file is parsed.
+function expectedPageCache() {
+  return human.scopeCacheToClient({
+    headers: { 'Cache-Control': 'public, max-age=31536000, immutable' },
+  }).headers['Cache-Control'];
 }
 
 function fail(message) {
   console.error(`CONTRACT FAILED: ${message}`);
   process.exit(1);
-}
-
-function resolveSourceDir() {
-  const candidates = [
-    [argValue('source-dir'), '--source-dir'],
-    [process.env.TUNNIPLAAN_DATA_DIR, 'TUNNIPLAAN_DATA_DIR'],
-  ];
-  for (const [value, origin] of candidates) {
-    if (!value) continue;
-    if (!fs.existsSync(value) || !fs.statSync(value).isDirectory()) {
-      fail(`${origin} points at ${value}, which is not a directory`);
-    }
-    return path.resolve(value);
-  }
-  fail('no source directory. Pass --source-dir or set TUNNIPLAAN_DATA_DIR. '
-     + 'There is no repository-root fallback on purpose.');
 }
 
 // Key order and course order are presentation, not content, so both are
@@ -140,7 +125,14 @@ async function main() {
     fail('NEON_DATABASE_URL is not set (webapp_ro connection string)');
   }
 
-  const sourceDir = resolveSourceDir();
+  // The shared helper throws so each caller keeps its own reporting; here
+  // that is fail(), which prints the CONTRACT FAILED prefix and exits 1.
+  let sourceDir;
+  try {
+    sourceDir = resolveSourceDir();
+  } catch (error) {
+    fail(error.message);
+  }
   const unifiedPath = path.join(sourceDir, 'unified_courses.json');
   const sessionsPath = path.join(sourceDir, 'sessions.json');
   for (const file of [unifiedPath, sessionsPath]) {
@@ -176,7 +168,7 @@ async function main() {
   const manifestFn = require('../netlify/functions/getDatasetManifest.js');
   const coursesFn = require('../netlify/functions/getCourses.js');
 
-  const manifestResponse = await manifestFn.handler({});
+  const manifestResponse = await manifestFn.handler(humanEvent());
   if (manifestResponse.statusCode !== 200) {
     fail(`manifest returned ${manifestResponse.statusCode}: ${manifestResponse.body}`);
   }
@@ -205,9 +197,9 @@ async function main() {
   const apiCourses = [];
   let maxPageBytes = 0;
   for (let page = 0; page < manifest.total_pages; page++) {
-    const response = await coursesFn.handler({
+    const response = await coursesFn.handler(humanEvent({
       queryStringParameters: { version: manifest.dataset_version, page: String(page) },
-    });
+    }));
     if (response.statusCode !== 200) {
       fail(`page ${page} returned ${response.statusCode}: ${response.body}`);
     }
@@ -216,7 +208,7 @@ async function main() {
     if (bytes >= PAGE_BYTE_CEILING) {
       fail(`page ${page} is ${bytes} bytes, at or over the ${PAGE_BYTE_CEILING} ceiling`);
     }
-    if (response.headers['Cache-Control'] !== 'public, max-age=31536000, immutable') {
+    if (response.headers['Cache-Control'] !== expectedPageCache()) {
       fail(`page ${page} is not immutable: ${response.headers['Cache-Control']}`);
     }
     const body = JSON.parse(response.body);

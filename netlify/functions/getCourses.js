@@ -16,6 +16,7 @@ const {
   toCount,
   totalPages,
 } = require('./lib/dataset.js');
+const { withHumanGate } = require('./lib/humanVerification.js');
 
 // A page index is a non-negative integer with no leading '+', no decimal point
 // and no exponent: '1.5', '1e2' and ' 1' are all malformed, not rounded.
@@ -139,7 +140,11 @@ async function handleRequest(event, sql) {
   }
 }
 
-exports.handler = async (event) => {
+// withHumanGate also rewrites the IMMUTABLE_HEADERS below from `public` to
+// `private`. A gated page must not be shared-cacheable: Netlify's CDN keys on
+// the URL and not on the cookie, so one verified visitor would otherwise warm a
+// cache that answers everyone. The year-long browser cache is unaffected.
+exports.handler = async (event) => withHumanGate(event, async () => {
   let sql;
   try {
     sql = getSql();
@@ -148,6 +153,6 @@ exports.handler = async (event) => {
     return jsonResponse(500, { error: 'courses_unavailable' });
   }
   return handleRequest(event, sql);
-};
+});
 exports.handleRequest = handleRequest;
 exports.toCourse = toCourse;

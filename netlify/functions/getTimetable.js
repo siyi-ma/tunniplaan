@@ -1,5 +1,3 @@
-const { neon } = require('@neondatabase/serverless');
-
 const SESSION_LIMIT = parseInt(process.env.CALENDAR_SESSION_LIMIT, 10) || 4000;
 const SEMESTER_CACHE_MS = 5 * 60 * 1000;
 
@@ -8,8 +6,10 @@ const JSON_HEADERS = {
   'Cache-Control': 'public, max-age=300, stale-while-revalidate=3600',
 };
 
-// Shared with the other Phase 2 endpoints. Two copies of one cache policy and
-// one version regex is two things to keep in step; lib/ is a subdirectory
+// Shared with the other Phase 2 endpoints: the cache policies, the version
+// regex, the memoised Neon client and the response builder. A second copy of
+// any of them is a second place to keep in step -- this file used to carry its
+// own getSql and ten hand-built response literals. lib/ is a subdirectory
 // precisely so it is not itself deployed as a function.
 //
 // IMMUTABLE_HEADERS applies to a versioned 200 whose body is the session array:
@@ -17,8 +17,11 @@ const JSON_HEADERS = {
 const {
   IMMUTABLE_HEADERS,
   NO_STORE_HEADERS,
+  getSql,
   isDatasetVersion,
+  jsonResponse,
 } = require('./lib/dataset.js');
+const { withHumanGate } = require('./lib/humanVerification.js');
 
 // limit_exceeded does NOT get that policy. Its content depends on
 // CALENDAR_SESSION_LIMIT, an environment variable that can change without the
@@ -27,14 +30,6 @@ const LIMIT_ENVELOPE_HEADERS = {
   'Content-Type': 'application/json',
   'Cache-Control': 'public, max-age=300',
 };
-
-let cachedSql = null;
-function getSql() {
-  if (!cachedSql) {
-    cachedSql = neon(process.env.NEON_DATABASE_URL);
-  }
-  return cachedSql;
-}
 
 // Cached with a TTL so a semester flip at ingest reaches warm lambdas within minutes.
 let semesterCache = { code: null, expiresAt: 0 };
@@ -70,13 +65,12 @@ async function handleVersionedRequest(sql, courseIds, version) {
 
   // Short-circuit: a stale version must not reach the row query at all.
   if (!counted || counted.version_match !== true) {
-    return { statusCode: 409, headers: NO_STORE_HEADERS,
-      body: JSON.stringify({ error: 'version_changed' }) };
+    return jsonResponse(409, { error: 'version_changed' });
   }
   const count = Number(counted.count) || 0;
   if (count > SESSION_LIMIT) {
-    return { statusCode: 200, headers: LIMIT_ENVELOPE_HEADERS,
-      body: JSON.stringify({ error: 'limit_exceeded', count, limit: SESSION_LIMIT }) };
+    return jsonResponse(200, { error: 'limit_exceeded', count, limit: SESSION_LIMIT },
+      LIMIT_ENVELOPE_HEADERS);
   }
 
   // One envelope row, always: version_match plus the array, even when empty. An
@@ -100,11 +94,9 @@ async function handleVersionedRequest(sql, courseIds, version) {
                       WHERE s.course_id = ANY(${courseIds})), '[]'::jsonb) AS sessions
   `;
   if (!envelope || envelope.version_match !== true) {
-    return { statusCode: 409, headers: NO_STORE_HEADERS,
-      body: JSON.stringify({ error: 'version_changed' }) };
+    return jsonResponse(409, { error: 'version_changed' });
   }
-  return { statusCode: 200, headers: IMMUTABLE_HEADERS,
-    body: JSON.stringify(envelope.sessions || []) };
+  return jsonResponse(200, envelope.sessions || [], IMMUTABLE_HEADERS);
 }
 
 async function handleRequest(event, sql) {
@@ -116,14 +108,13 @@ async function handleRequest(event, sql) {
   // today stays compatible through the rollout.
   if (version !== undefined) {
     if (!isDatasetVersion(version)) {
-      return { statusCode: 400, headers: NO_STORE_HEADERS,
-        body: JSON.stringify({ error: 'bad_request' }) };
+      return jsonResponse(400, { error: 'bad_request' });
     }
   } else if (!coursesParam) {
     // Legacy shortcut, unchanged. A *versioned* request with no courses does
     // not take it: the client asked for a pinned answer, so it still gets the
     // version checked rather than an unpinned empty array cached for a year.
-    return { statusCode: 200, headers: JSON_HEADERS, body: JSON.stringify([]) };
+    return jsonResponse(200, [], JSON_HEADERS);
   }
   const courseIds = (coursesParam || '').split(',').map((s) => s.trim()).filter(Boolean);
 
@@ -140,11 +131,8 @@ async function handleRequest(event, sql) {
     `;
 
     if (count > SESSION_LIMIT) {
-      return {
-        statusCode: 200,
-        headers: JSON_HEADERS,
-        body: JSON.stringify({ error: 'limit_exceeded', count, limit: SESSION_LIMIT }),
-      };
+      return jsonResponse(200, { error: 'limit_exceeded', count, limit: SESSION_LIMIT },
+        JSON_HEADERS);
     }
 
     // Wire format contract: dotted dates, HH:MM times, exact field names --
@@ -159,24 +147,27 @@ async function handleRequest(event, sql) {
       WHERE semester_code = ${semesterCode} AND course_id = ANY(${courseIds})
     `;
 
-    return { statusCode: 200, headers: JSON_HEADERS, body: JSON.stringify(rows) };
+    return jsonResponse(200, rows, JSON_HEADERS);
   } catch (error) {
     console.error('getTimetable query failed:', error);
-    return { statusCode: 500, headers: NO_STORE_HEADERS,
-      body: JSON.stringify({ error: 'Error processing timetable data.' }) };
+    return jsonResponse(500, { error: 'Error processing timetable data.' });
   }
 }
 
-exports.handler = async (event) => {
+// Sessions are the most expensive thing here to serve and the most valuable
+// thing to scrape, so the gate matters most on this endpoint. It wraps the
+// handler rather than handleRequest so the contract test, which replays the
+// legacy filter against handleRequest directly, keeps testing the query and not
+// the admission check.
+exports.handler = async (event) => withHumanGate(event, async () => {
   let sql;
   try {
     sql = getSql();
   } catch (error) {
     console.error('getTimetable configuration error:', error);
-    return { statusCode: 500, headers: NO_STORE_HEADERS,
-      body: JSON.stringify({ error: 'Error processing timetable data.' }) };
+    return jsonResponse(500, { error: 'Error processing timetable data.' });
   }
   return handleRequest(event, sql);
-};
+});
 exports.handleRequest = handleRequest;
 exports._resetSemesterCache = () => { semesterCache = { code: null, expiresAt: 0 }; };
