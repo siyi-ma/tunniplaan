@@ -206,6 +206,9 @@ republish it on every scrape, has been deleted for the same reason.
 - `db/schema.sql`, `db/migrations/`: Neon schema and migrations
 - `scripts/contract-test-getcourses.js`, `scripts/contract-test-gettimetable.js`: verify the
   API reproduces the source artifacts exactly
+- `scripts/sample-verify-vs-official.js`: diff sampled groups against TalTech's own public
+  REST API. The contract tests above compare the dataset with itself, so they cannot catch a
+  scrape that misread the site; this can. `--groups N`, `--seed S`, `--only CODES`, `--out FILE`
 - `scripts/dev-functions-server.js`: local function server (see Local Development)
 - `scripts/run-sql.js`: run a `.sql` file against Neon
 - `scripts/lib/script-support.js`: `loadDotEnv`, `argValue`, `resolveSourceDir` and the
@@ -282,6 +285,7 @@ tunniplaan/
 |   |-- dev-functions-server.js
 |   |-- contract-test-getcourses.js
 |   |-- contract-test-gettimetable.js
+|   |-- sample-verify-vs-official.js
 |   |-- run-sql.js
 |   `-- lib/script-support.js      shared; not a script
 |-- tests/

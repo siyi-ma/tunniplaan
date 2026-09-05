@@ -118,7 +118,15 @@ HMAC-SHA256 signed cookie (`tt_human_verified`, HttpOnly, SameSite=Lax, 12 h).
    node scripts/contract-test-getcourses.js
    node scripts/contract-test-gettimetable.js
    ```
-4. Verify multi-group search: single group, comma-separated groups, wildcard prefix expansion, and URL state reloading.
+4. After a data refresh, verify the dataset against the upstream source of truth:
+   ```bash
+   node scripts/sample-verify-vs-official.js --groups 20
+   ```
+   The contract tests prove the API serves exactly what the scrape wrote; both
+   sides of that comparison come from the same Selenium run, so a scrape that
+   misread the site passes them at 100%. This script diffs against TalTech's own
+   public REST API instead, and is the only check that catches that class of bug.
+5. Verify multi-group search: single group, comma-separated groups, wildcard prefix expansion, and URL state reloading.
 
 ---
 
