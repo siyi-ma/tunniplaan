@@ -305,6 +305,8 @@ The site is hosted on Netlify.
 - `main` branch: production
 - `dev` branch: development deployment
 
+The same app can also be built for ChatGPT Sites (`tunniplaan.taltech.chatgpt.site`). That build is `npm run build:sites`, and publishing it is manual. Netlify is unchanged. See [docs/chatgpt-sites.md](docs/chatgpt-sites.md).
+
 **Refreshing the data is not a deployment.** A routine timetable refresh is a scrape followed
 by an atomic Neon ingest; no commit, no push, and no build hook is involved. See
 [docs/DATA_REFRESH.md](docs/DATA_REFRESH.md).
@@ -316,7 +318,9 @@ in this repository to keep current, so a scrape never touches it.
 
 - **Do not re-commit `unified_courses.json`, or any other full dump of the dataset.** It
   would be served from a public URL and would make the human-verification gate decorative.
-  Nothing in the test suite would fail, which is exactly why it is written down here.
+  The same rule applies to `dist/`: `npm run build:sites` copies an allow-list and refuses
+  a dump name in the output. Nothing in the test suite would fail if a dump were simply
+  added to the static copy, which is exactly why it is written down here.
 - Never glob `*.json` in `.gitattributes` — an unqualified rule once swallowed `package.json`,
   so a clone without `git lfs pull` got a pointer stub. The rule is gone; the trap is not.
 - Run the app against `node scripts/dev-functions-server.js`. A static-only server cannot

@@ -513,3 +513,33 @@ test('the dataset calls are made with same-origin credentials', async () => {
   assert.strictEqual(seen.length, 4, 'one manifest and three pages');
   for (const credentials of seen) assert.strictEqual(credentials, 'same-origin');
 });
+
+test('the default target keeps the Netlify function URLs', async () => {
+  const { fetchImpl, calls } = makeFetch();
+  await CourseData.loadCourseData({ fetchImpl });
+  assert.strictEqual(calls[0].url, '/.netlify/functions/getDatasetManifest');
+  assert.ok(calls.some((call) => call.url.startsWith('/.netlify/functions/getCourses?')));
+});
+
+test('a sites target calls /api and not the Netlify functions', async () => {
+  const { fetchImpl, calls } = makeFetch();
+  await CourseData.loadCourseData({ fetchImpl, target: 'sites' });
+  assert.strictEqual(calls[0].url, '/api/getDatasetManifest');
+  assert.ok(calls.some((call) => call.url.startsWith('/api/getCourses?')));
+  assert.ok(!calls.some((call) => call.url.includes('/.netlify/')));
+});
+
+test('the freshness check follows the sites manifest', async () => {
+  const calls = [];
+  const fetchImpl = async (url) => {
+    calls.push(url);
+    return jsonResponse(manifest());
+  };
+  const checker = CourseData.createFreshnessChecker({
+    fetchImpl,
+    target: 'sites',
+    intervalMs: 0,
+  });
+  await checker.check(VERSION);
+  assert.deepStrictEqual(calls, ['/api/getDatasetManifest']);
+});

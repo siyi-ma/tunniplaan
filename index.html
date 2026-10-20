@@ -24,12 +24,28 @@
         // httpOnly cookie this script cannot read, and the Netlify functions
         // check that signature on every request -- so forging the marker buys a
         // visitor an unlocked page that answers 403 and sends them back here.
-        try {
-            var ttHumanUntil = Number(localStorage.getItem('tt_human_verified_until'));
-            if (Number.isFinite(ttHumanUntil) && ttHumanUntil > Date.now()) {
-                document.documentElement.classList.add('human-gate-passed');
-            }
-        } catch (e) { /* private mode, or storage disabled: show the gate */ }
+        //
+        // On the ChatGPT Site the visitor is already signed in with Uni-ID.
+        // The slider is a Netlify control; showing it there asks a student to
+        // prove they are human a second time. Kept in step with
+        // deploymentTarget() in course-data.js. The Sites build injects a
+        // tunniplaan-target meta set to sites, which covers a custom domain
+        // that is not a chatgpt.site host.
+        var ttSites = false;
+        var ttTargetMeta = document.querySelector('meta[name="tunniplaan-target"]');
+        if (ttTargetMeta && ttTargetMeta.getAttribute('content') === 'sites') ttSites = true;
+        if (/(^|\.)chatgpt\.site$/i.test(location.hostname || '')) ttSites = true;
+        if (ttSites) {
+            document.documentElement.classList.add('human-gate-passed');
+            document.documentElement.setAttribute('data-tunniplaan-target', 'sites');
+        } else {
+            try {
+                var ttHumanUntil = Number(localStorage.getItem('tt_human_verified_until'));
+                if (Number.isFinite(ttHumanUntil) && ttHumanUntil > Date.now()) {
+                    document.documentElement.classList.add('human-gate-passed');
+                }
+            } catch (e) { /* private mode, or storage disabled: show the gate */ }
+        }
     </script>
 </head>
 <body class="bg-white text-black body-text">

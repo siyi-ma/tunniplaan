@@ -49,7 +49,8 @@ flowchart LR
 
 - **Production Deployment**: Merging code into `main` automatically triggers a production build on Netlify.
 - **Preview Deployment**: Merging or pushing to `dev` creates a Netlify deploy preview URL.
-- **Data Refresh**: Data updates do **not** require a build or deployment. Running `neon_ingest.py` in `tunniplaanScraping` updates Neon Postgres, making new timetable data immediately visible in the live application.
+- **ChatGPT Sites**: `npm run build:sites` writes `dist/` for `tunniplaan.taltech.chatgpt.site`. Publishing that output is manual. See [chatgpt-sites.md](chatgpt-sites.md). Netlify does not publish `dist/`.
+- **Data Refresh**: Data updates do **not** require a build or deployment. Running `neon_ingest.py` in `tunniplaanScraping` updates Neon Postgres, making new timetable data immediately visible on both hosts.
 
 ---
 

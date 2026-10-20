@@ -19,7 +19,7 @@ TalTech Tunniplaan is a course timetable viewer for Tallinn University of Techno
 - **Backend**: Netlify serverless functions (`netlify/functions/`) — `getDatasetManifest`, `getCourses`, `getTimetable`, `humanVerification`
 - **Database**: Neon Postgres (`semesters`, `groups`, `courses`, `sessions` tables)
 - **Data Storage**: Neon Postgres. `unified_courses.json` is **no longer committed or deployed**. Do not re-add it or any other full dump of the dataset: it would be served from a public URL and would make the human gate decorative, and no test would fail. Recovery, if ever needed, is `git show e28c72b:unified_courses.json`
-- **Hosting**: Netlify
+- **Hosting**: Netlify (production and the `dev` preview). A second target, ChatGPT Sites at `tunniplaan.taltech.chatgpt.site`, is built with `npm run build:sites` and deployed by hand. See [docs/chatgpt-sites.md](docs/chatgpt-sites.md). Netlify is not replaced by it.
 
 ---
 
@@ -29,8 +29,10 @@ TalTech Tunniplaan is a course timetable viewer for Tallinn University of Techno
 - [main.js](main.js): Application state, filtering, card grid & calendar rendering, language toggle
 - [main.css](main.css): Custom brand styling and Tailwind overrides
 - [course-data.js](course-data.js): API pagination reassembly and dataset envelope loading
-- [netlify/functions/getTimetable.js](netlify/functions/getTimetable.js): Production timetable endpoint querying Neon Postgres
-- [netlify/functions/lib/humanVerification.js](netlify/functions/lib/humanVerification.js): sign/verify for the human gate, plus the withHumanGate wrapper
+- [server/api/](server/api): Shared dataset queries (`getDatasetManifest`, `getCourses`, `getTimetable`). Both adapters call these.
+- [netlify/functions/getTimetable.js](netlify/functions/getTimetable.js): Netlify adapter for the timetable query. Opens Neon from `process.env` and applies the human gate.
+- [netlify/functions/lib/humanVerification.js](netlify/functions/lib/humanVerification.js): sign/verify for the human gate, plus the withHumanGate wrapper. Netlify only; the Sites bundle must not import it (`node:crypto`).
+- [sites/worker/app.ts](sites/worker/app.ts): ChatGPT Sites adapter. Identity header, `/api/*` routing, `ASSETS` for static files.
 - [scripts/lib/script-support.js](scripts/lib/script-support.js): loadDotEnv, argValue, resolveSourceDir and the self-signed human pass, shared by every script in scripts/
 - [db/schema.sql](db/schema.sql): Neon Postgres relational database schema
 - [.vscode/tasks.json](.vscode/tasks.json): Configured local server and deployment tasks
@@ -59,7 +61,18 @@ node scripts/dev-functions-server.js
 ### Netlify Deployments
 
 - **Automatic Deployments**: Pushing to `dev` produces a Netlify preview deploy (`https://dev--taltech-tunniplaan.netlify.app`), and pushing to `main` produces the production deploy.
-- **Data Refreshes**: A routine data refresh is an ingest into Neon Postgres (`python neon_ingest.py` in `tunniplaanScraping`), **not a deployment**. Deployments are required only for frontend code changes.
+- **Data Refreshes**: A routine data refresh is an ingest into Neon Postgres (`python neon_ingest.py` in `tunniplaanScraping`), **not a deployment**. Deployments are required only for frontend code changes. Both targets read the same Neon database, so an ingest shows up on both without a Site rebuild.
+
+### ChatGPT Sites build
+
+```bash
+npm run build:sites
+npm run sites:release -- --dest /path/to/the/site/source/folder
+```
+
+- `build:sites` writes `dist/client`, `dist/server/index.js` and `dist/.openai/hosting.json`. It does not deploy, and Netlify does not publish `dist/`.
+- `sites:release` refuses a dirty worktree, then copies that dist into the folder a version is saved from. Saving a version and deploying it are manual, in the Sites UI.
+- Runbook: [docs/chatgpt-sites.md](docs/chatgpt-sites.md).
 
 ---
 
@@ -90,6 +103,17 @@ HMAC-SHA256 signed cookie (`tt_human_verified`, HttpOnly, SameSite=Lax, 12 h).
 - Env: `HUMAN_VERIFICATION_SECRET` (falls back to a one-way derivation from `NEON_DATABASE_URL`), `HUMAN_VERIFICATION_ENABLED=false` to disable.
 - A 403 mid-session is **not** treated as API unavailability. Treating it that way would route the tab to the static fallback, which was itself an ungated copy of the dataset. The frontend clears its marker and reloads once into the gate.
 
+### 2c. ChatGPT Sites
+
+A second host, `tunniplaan.taltech.chatgpt.site`. The dataset queries are the ones in `server/api/`; the Site does not carry a second copy of the SQL.
+
+- The Worker entry is [sites/worker/index.ts](sites/worker/index.ts). It calls `handleFetch` in [sites/worker/app.ts](sites/worker/app.ts). Static files go out through `env.ASSETS`. `/api/getDatasetManifest`, `/api/getCourses` and `/api/getTimetable` call the shared handlers.
+- Settings arrive on the request `env` (`NEON_DATABASE_URL`, `ALLOWED_EMAIL_DOMAINS`, `CALENDAR_SESSION_LIMIT`). Do not read them from `process.env` on this path, and do not compile them into the bundle.
+- Admission is the platform header `oai-authenticated-user-email`. Missing or unusable → 401 `{ "error": "unauthenticated" }`. Domain not in `ALLOWED_EMAIL_DOMAINS` (default `taltech.ee`; `*` allows any signed-in address) → 403 `{ "error": "forbidden_domain" }`. The slider is not shown: the Sites build injects `<meta name="tunniplaan-target" content="sites">`, and a `*.chatgpt.site` hostname does the same. The Netlify gate is untouched.
+- Gated data responses have `public` cache policies rewritten to `private`, same rule as `scopeCacheToClient`, without importing the signer.
+- The Worker bundle must not contain `node:crypto`, `node:buffer`, or the human-verification signer. `npm run build:sites` fails if they appear, and it fails if a dataset dump is in `dist/`.
+- `.openai/hosting.json` is the project link only. Never a secret.
+
 ### 3. Search & Multi-Group Timetable Builder
 - Top search box supports comma-separated search terms across course names, codes, keywords, instructors, and study groups.
 - Multi-group builder supports chip-based group selection, wildcard matching (`TVTB*`), URL parameter serialization, and weekly CSV exporting.
@@ -111,8 +135,8 @@ HMAC-SHA256 signed cookie (`tt_human_verified`, HttpOnly, SameSite=Lax, 12 h).
 - Preserve timezone safety (`toLocalISODate`) and online-only banner rendering above grid.
 
 ### Testing Guidance
-1. Syntax-check `main.js` if modified.
-2. Verify local execution with `node scripts/dev-functions-server.js`.
+1. Syntax-check `main.js` if modified. `npm test` runs the unit tests, including the Sites worker adapter (401 without the identity header, domain rejection, routing, `limit_exceeded`).
+2. Verify local execution with `node scripts/dev-functions-server.js`. `npm run build:sites` must succeed after a Worker or static-shell change.
 3. Run backend API contract test scripts:
    ```bash
    node scripts/contract-test-getcourses.js
@@ -141,4 +165,4 @@ HMAC-SHA256 signed cookie (`tt_human_verified`, HttpOnly, SameSite=Lax, 12 h).
 
 ## Last Updated
 
-2026-09-04
+2026-10-20

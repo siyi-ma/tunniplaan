@@ -19,9 +19,48 @@
 }(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  const MANIFEST_URL = '/.netlify/functions/getDatasetManifest';
-  const COURSES_URL = '/.netlify/functions/getCourses';
+  // Netlify and the ChatGPT Site do not share a URL space. The Site worker
+  // routes /api/*; Netlify keeps /.netlify/functions/*. Which one this tab
+  // calls is decided per page, not baked into the file Netlify deploys.
+  //
+  // Kept in step with the inline script in index.html, which has to decide
+  // before this file runs so the slider does not flash on the Site.
+  const NETLIFY_ENDPOINTS = {
+    manifest: '/.netlify/functions/getDatasetManifest',
+    courses: '/.netlify/functions/getCourses',
+    timetable: '/.netlify/functions/getTimetable',
+    humanVerification: '/.netlify/functions/humanVerification',
+  };
+  const SITES_ENDPOINTS = {
+    manifest: '/api/getDatasetManifest',
+    courses: '/api/getCourses',
+    timetable: '/api/getTimetable',
+    humanVerification: null,
+  };
+  const SITES_HOST = /(^|\.)chatgpt\.site$/i;
+  const MANIFEST_URL = NETLIFY_ENDPOINTS.manifest;
+  const COURSES_URL = NETLIFY_ENDPOINTS.courses;
   const STATIC_FALLBACK_URL = './unified_courses.json';
+
+  function deploymentTarget() {
+    if (typeof document !== 'undefined' && document.documentElement) {
+      const marked = document.documentElement.getAttribute('data-tunniplaan-target');
+      if (marked === 'sites' || marked === 'netlify') return marked;
+      const meta = document.querySelector('meta[name="tunniplaan-target"]');
+      if (meta && meta.getAttribute('content') === 'sites') return 'sites';
+    }
+    const host = typeof location !== 'undefined' && location.hostname ? location.hostname : '';
+    if (SITES_HOST.test(host)) return 'sites';
+    return 'netlify';
+  }
+
+  function endpointsFor(target) {
+    return (target || deploymentTarget()) === 'sites' ? SITES_ENDPOINTS : NETLIFY_ENDPOINTS;
+  }
+
+  function endpoint(name, target) {
+    return endpointsFor(target)[name];
+  }
 
   // Four at a time. Enough to hide latency across six pages, few enough not to
   // stampede a 0.25 CU database from every tab that opens at 08:00.
@@ -120,10 +159,10 @@
     return results;
   }
 
-  async function fetchAllPages(fetchImpl, manifest, tracker) {
+  async function fetchAllPages(fetchImpl, manifest, tracker, coursesUrl) {
     const pageNumbers = Array.from({ length: manifest.total_pages }, (_, i) => i);
     return mapWithConcurrency(pageNumbers, MAX_CONCURRENCY, async (page) => {
-      const url = `${COURSES_URL}?version=${encodeURIComponent(manifest.dataset_version)}`
+      const url = `${coursesUrl}?version=${encodeURIComponent(manifest.dataset_version)}`
         + `&page=${page}`;
       let body;
       try {
@@ -195,10 +234,10 @@
     };
   }
 
-  async function loadFromApi(fetchImpl, tracker) {
+  async function loadFromApi(fetchImpl, tracker, endpoints) {
     let manifestBody;
     try {
-      manifestBody = await fetchJson(fetchImpl, MANIFEST_URL, { cache: 'no-store' });
+      manifestBody = await fetchJson(fetchImpl, endpoints.manifest, { cache: 'no-store' });
     } catch (error) {
       // Not reaching the manifest at all -- a 404 because the function is not
       // deployed, a 503 because no dataset is active, a dead network -- is the
@@ -216,7 +255,7 @@
       throw error;
     }
     const manifest = validateManifest(manifestBody);
-    const pages = await fetchAllPages(fetchImpl, manifest, tracker);
+    const pages = await fetchAllPages(fetchImpl, manifest, tracker, endpoints.courses);
     return assemble(manifest, pages);
   }
 
@@ -242,10 +281,11 @@
     const settings = options || {};
     const fetchImpl = settings.fetchImpl || defaultFetch();
     const tracker = settings.tracker || null;
+    const endpoints = endpointsFor(settings.target);
 
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        return await loadFromApi(fetchImpl, tracker);
+        return await loadFromApi(fetchImpl, tracker, endpoints);
       } catch (error) {
         const isRace = error.kind === 'version_changed';
         if (isRace && attempt === 0) continue;   // discard everything, start over
@@ -285,6 +325,7 @@
   function createFreshnessChecker(options) {
     const settings = options || {};
     const fetchImpl = settings.fetchImpl || defaultFetch();
+    const manifestUrl = endpointsFor(settings.target).manifest;
     const now = settings.now || (() => Date.now());
     const interval = settings.intervalMs === undefined
       ? FRESHNESS_INTERVAL_MS : settings.intervalMs;
@@ -302,7 +343,7 @@
         lastCheck = time;
         let manifest;
         try {
-          manifest = await fetchJson(fetchImpl, MANIFEST_URL, { cache: 'no-store' });
+          manifest = await fetchJson(fetchImpl, manifestUrl, { cache: 'no-store' });
         } catch (error) {
           return null;   // a failed freshness check is not worth telling anyone about
         }
@@ -325,6 +366,11 @@
     MANIFEST_URL,
     COURSES_URL,
     STATIC_FALLBACK_URL,
+    NETLIFY_ENDPOINTS,
+    SITES_ENDPOINTS,
+    deploymentTarget,
+    endpointsFor,
+    endpoint,
     MAX_CONCURRENCY,
     FRESHNESS_INTERVAL_MS,
   };

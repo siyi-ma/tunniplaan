@@ -1007,7 +1007,7 @@ async function toggleCalendarView() {
         const versionParam = activeDatasetVersion
             ? `&version=${encodeURIComponent(activeDatasetVersion)}` : '';
         const response = await fetch(
-            `/.netlify/functions/getTimetable?courses=${courseIds}${versionParam}`,
+            `${CourseData.endpoint('timetable')}?courses=${courseIds}${versionParam}`,
             { credentials: 'same-origin' });
         if (response.status === 409) {
             // The dataset moved under this tab. Never merge the new sessions
@@ -2115,6 +2115,14 @@ function runHumanGate() {
     const status = document.getElementById('humanGateStatus');
     const root = document.documentElement;
 
+    // The Site has no slider and no cookie. Drop the dialog so it is not left
+    // in the accessibility tree behind display:none, and open the page.
+    if (typeof CourseData !== 'undefined' && CourseData.deploymentTarget() === 'sites') {
+        root.classList.add('human-gate-passed');
+        if (gate) gate.remove();
+        return Promise.resolve();
+    }
+
     // Lifted before first paint by the inline script in index.html, or the gate
     // markup is not on this page at all. Either way there is nothing to wait
     // for -- and the marker is deliberately NOT refreshed here, or a tab left
@@ -2153,7 +2161,7 @@ function runHumanGate() {
             submitted = true;
             setStatus('humanGateChecking', false);
             try {
-                const response = await fetch(HUMAN_GATE_URL, {
+                const response = await fetch(CourseData.endpoint('humanVerification') || HUMAN_GATE_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'same-origin',

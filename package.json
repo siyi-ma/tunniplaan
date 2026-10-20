@@ -9,6 +9,8 @@
   "scripts": {
     "dev": "npx http-server . -p 8000 -c-1",
     "dev:netlify": "npx netlify dev -p 8000",
+    "build:sites": "node scripts/build-sites.mjs",
+    "sites:release": "node scripts/sites-release.mjs",
     "test": "node --test"
   },
   "repository": {
@@ -24,6 +26,7 @@
   },
   "homepage": "https://github.com/siyi-ma/tunniplaan#readme",
   "devDependencies": {
+    "esbuild": "^0.28.2",
     "http-server": "^14.1.1"
   },
   "dependencies": {
