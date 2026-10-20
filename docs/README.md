@@ -29,6 +29,7 @@ Active reference documents for TalTech Tunniplaan.
 | File | Purpose |
 |---|---|
 | [DATA_REFRESH.md](DATA_REFRESH.md) | Operational procedure for manual dataset refreshes and Neon ingests |
+| [chatgpt-sites.md](chatgpt-sites.md) | Second deployment target: ChatGPT Sites build, release, deploy, rollback |
 | [AI_agent_comm_guidelines.md](AI_agent_comm_guidelines.md) | Communication standards for AI agent collaboration |
 | [git_bash_setup.md](git_bash_setup.md) | Git Bash environment configuration notes |
 
