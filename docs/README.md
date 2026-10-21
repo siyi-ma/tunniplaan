@@ -18,9 +18,9 @@ Active reference documents for TalTech Tunniplaan.
 
 | File | Date | Summary |
 |---|---|---|
-| [260831-handoff-session-status-fix-and-ingest.md](260831-handoff-session-status-fix-and-ingest.md) | 2026-08-31 | Null session_status fix and Neon ingest validation |
-| [260831-handoff-phase2-migrations-scrape-unblock.md](260831-handoff-phase2-migrations-scrape-unblock.md) | 2026-08-31 | Database migration unblock and dataset schema alignment |
-| [260830-handoff-phase2-spec-review.md](260830-handoff-phase2-spec-review.md) | 2026-08-30 | Phase 2 architecture spec review and Neon API verification |
+| [261020-handoff-verify-and-chatgpt-sites.md](261020-handoff-verify-and-chatgpt-sites.md) | 2026-10-20 | Live Neon verified 3018/3018 vs TalTech API; ChatGPT Sites dual target in PR #2 |
+| [260904-handoff-gate-hardening-and-fallback-retirement.md](260904-handoff-gate-hardening-and-fallback-retirement.md) | 2026-09-04 | Human gate hardening; static fallback retired |
+| [260904-handoff-daily-view-scrape-fix.md](260904-handoff-daily-view-scrape-fix.md) | 2026-09-04 | Daily-view scrape fix and independent verification script |
 
 ---
 
